@@ -16,6 +16,7 @@ try{
   const data=JSON.parse(options.body),id=options.method==='PUT'?options.headers['X-Operation-Id']:data.commandId;
   calls.push({url,id,body:options.body,revision:options.headers['If-Match']});
   if(mode==='gate'){arrived();await gate;}
+  if(mode==='mismatch')return Response.json({error:'Different account',code:'command_mismatch'},{status:409});
   if(mode==='unauthorized')return Response.json({error:'Sign in required'},{status:401});
   if(mode==='reject'){mode='ok';return Response.json({error:'Rejected before saving'},{status:400});}
   if(!receipts.has(id)){
@@ -33,5 +34,11 @@ try{
  h=await reset();let release;gate=new Promise(r=>release=r);const started=new Promise(r=>arrived=r);mode='gate';const first=h.runBulk(command);await started;assert.equal(render().data.items.length,0);assert.equal((await h.runBulk(command)).ok,false);assert.equal(calls.length,1);mode='ok';release();assert.equal((await first).ok,true);
  // A stale version must keep the proposal and require review, not overwrite newer data.
  h=await reset();server.recipes[1].active=false;revision++;result=await h.runBulk(command);assert.equal(result.conflict,true);assert.equal(server.items.length,0);h=render();assert.equal((await h.refreshBulk()).ok,true);h=render();assert.equal(h.data.recipes[1].active,false);assert.equal((await h.runBulk(command)).ok,true);
+ // Export during first in-flight attempt, then restore after losing the entire page.
+ h=await reset();gate=new Promise(r=>release=r);const exporting=new Promise(r=>arrived=r);mode='gate';const original=h.runBulk(command);await exporting;const backup=render().getBulkRecovery();assert.ok(backup);assert.deepEqual(backup.command,command);mode='lost';release();await original;assert.equal(server.items.length,2);
+ globalThis.hooks={values:[],cursor:0};h=render();await h.load();h=render();assert.equal(h.restoreBulkRecovery(backup).ok,true);h=render();assert.equal(h.getBulkRecovery().id,backup.id);assert.equal(calls.length,1,'restoring performs no POST');
+ mode='mismatch';result=await h.runBulk(command);assert.equal(result.pending,true);assert.equal(result.code,'command_mismatch');assert.match(result.error,/account/);mode='unauthorized';assert.equal((await render().runBulk(command)).pending,true);
+ mode='ok';server.recipes[1].active=false;revision++;assert.equal((await render().runBulk(command)).ok,true);h=render();assert.equal(h.data.items.length,2);assert.equal(h.data.recipes[1].active,false);assert.equal(receipts.size,1);assert.ok(calls.every(c=>c.id===backup.id));
+ h=await reset();h.update(n=>applyBulkCommand(n,{recipeId,rows:reconcileDraft('Unsaved ingredient',[],[])}));h=render();assert.equal(h.restoreBulkRecovery(backup).ok,false);assert.equal(h.getBulkRecovery(),null);assert.equal(h.data.items.length,1);
  console.log('Passed client transitions: staged proposal; rejected save/edit/retry; frozen ID/body across network loss and401; fresh replay; idempotent preflush; concurrent submit guard; conflict reload/review.');
 }finally{await rm(dir,{recursive:true,force:true});}

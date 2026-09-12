@@ -49,7 +49,7 @@ export default function KitchenApp(){
  <TabsContent value="overview"><div className="view-heading"><h1>What your dishes have in common</h1><p className="muted">Shows items listed directly in each active dish. Each menu dish is counted once, even across variants.</p></div><SnapshotStats data={data}/><IngredientOverview notebook={data} onEdit={setEditing} onDish={chooseDish}/>
 
  </TabsContent></Tabs></fieldset><footer className="page-footer"><span>{nb.loaded&&nb.updatedAt?`Last saved ${new Date(nb.updatedAt).toLocaleString('en-GB')} · ${nb.updatedBy}`:'Shared notebook · Sign-in required'}</span><a href="https://www.labula.cz/menu" target="_blank" rel="noreferrer">Source menu · 12 Sep 2026 ↗</a></footer></main>
- {bulkId&&<BulkIngredients notebook={data} recipeId={bulkId} onClose={()=>{setBulkId(null);nb.dismissBulk();}} onApply={nb.runBulk} onRefresh={nb.refreshBulk} unauthorized={nb.unauthorized}/>}
+ {bulkId&&<BulkIngredients notebook={data} recipeId={bulkId} onClose={()=>{setBulkId(null);nb.dismissBulk();}} onApply={nb.runBulk} onRefresh={nb.refreshBulk} getRecovery={nb.getBulkRecovery} onRestoreRecovery={nb.restoreBulkRecovery} unauthorized={nb.unauthorized}/>}
  {selectedItem&&<ItemEditor key={selectedItem.id} item={selectedItem} onClose={()=>setEditing(null)} onSave={commitItem}/>}
  {creating&&<CreateItemDialog key="create-item" name={creating.name} items={data.items} onClose={()=>setCreating(null)} onCreate={item=>{const callback=creating.done;if(!data.items.some(i=>i.id===item.id))update(old=>({...old,items:[...old.items,item]}));setCreating(null);callback(item);}}/>}
 
