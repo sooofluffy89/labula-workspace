@@ -16,8 +16,8 @@ export const menu: { id:string; name:string; category:Category; note?:string; va
  {id:'p1',name:'Braised Chicken Feet/Pork Feet',category:'Specials',variants:['Chicken feet','Pork feet']},
  {id:'p2',name:'Beef skewers',category:'Specials'},
  {id:'p3',name:'Lá Bù Lá Mapo Tofu',category:'Specials'},
- {id:'p4',name:'Today Green Market-until sold-out',category:'Specials',note:'The website repeats the Mapo Tofu description here. Enter the actual dish name in the notes and confirm the recipe.'},
- {id:'p5',name:'Secret Hidden Menu-until sold-out',category:'Specials',note:'Changing chalkboard dish. Add a named variant for each recipe you regularly prepare.'},
+ {id:'p4',name:'Today Green Market-until sold-out',category:'Specials',note:'The website repeats the Mapo Tofu description here. List the ingredients of the dish currently served.'},
+ {id:'p5',name:'Secret Hidden Menu-until sold-out',category:'Specials',note:'Changing chalkboard dish. List the ingredients of the dish currently served.'},
  {id:'p6',name:"Children's menu",category:'Specials',note:'Possible duplicate of Kids Menu in Main Dishes. Keep only the listing you actually sell active if both refer to the same recipe.'},
 ];
 export const categories:Category[]=['Starters','Main Dishes','Specials'];
