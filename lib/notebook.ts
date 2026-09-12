@@ -25,13 +25,14 @@ export type Item = z.infer<typeof itemSchema>;
 export type Recipe = z.infer<typeof recipeSchema>;
 export type Notebook = z.infer<typeof notebookSchema>;
 export const normalizeName = (s:string) => s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,' ');
-export function validationMessage(error:unknown):string { if(error instanceof z.ZodError)return 'Check the entered values: amounts and yields must be positive, names cannot be blank, and unknown amounts should be left empty.';return error instanceof Error?error.message:'Please check the recipe details and try again.'; }
+export function validationMessage(error:unknown):string { if(error instanceof z.ZodError)return 'Check the entered values: names cannot be blank, shelf-life limits must be positive, and unknown values should be left empty.';return error instanceof Error?error.message:'Please check the recipe details and try again.'; }
 export function newItem(name:string,kind:Item['kind']='bought',unit:Item['unit']='g'):Item { return {
  id:crypto.randomUUID(),name:name.trim(),kind,unit,specification:'',inputs:[],yieldAmount:null,activeMinutes:null,passiveMinutes:null,frequencyHours:null,batchMinimum:null,batchMaximum:null,method:'',
  storage:{condition:'unknown',temperatureC:null,container:'',qualityHours:null,safetyHours:null,evidence:'unknown',reference:'',cooling:'',afterOpeningHours:null,thawing:''},
 }; }
-export function initialNotebook():Notebook { return {schemaVersion:1,items:[],equipment:{blastChiller:'unknown',notes:''},recipes:menu.flatMap(d=>(d.variants??['Standard']).map((variant,i)=>({id:`${d.id}-v${i+1}`,menuId:d.id,variant,portions:1,inputs:[],notes:'',active:true,recorded:false,weekdayPortions:null,busyPortions:null})))}; }
-export function completeRecipe(r:Recipe):boolean { return r.inputs.length>0 && r.portions!==null && r.inputs.every(i=>i.amount!==null); }
+export function initialNotebook():Notebook { return {schemaVersion:1,items:[],equipment:{blastChiller:'unknown',notes:''},recipes:menu.flatMap(d=>(d.variants??['Standard']).map((variant,i)=>({id:`${d.id}-v${i+1}`,menuId:d.id,variant,portions:null,inputs:[],notes:'',active:true,recorded:false,weekdayPortions:null,busyPortions:null})))}; }
+export function completeRecipe(r:Recipe):boolean { return r.inputs.length>0; }
+export function hasRecipeQuantities(r:Recipe):boolean { return completeRecipe(r) && r.portions!==null && r.inputs.every(i=>i.amount!==null); }
 export function recipeTitle(r:Recipe):string { const dish=menu.find(m=>m.id===r.menuId);return `${dish?.name??r.menuId}${r.variant==='Standard'?'':` · ${r.variant}`}`; }
 export function validateNotebook(input:unknown):Notebook {
  const n=notebookSchema.parse(input);const ids=new Set<string>();const names=new Set<string>();
@@ -40,9 +41,9 @@ export function validateNotebook(input:unknown):Notebook {
   if(i.batchMinimum!==null&&i.batchMaximum!==null&&i.batchMinimum>i.batchMaximum)throw new Error(`Minimum batch exceeds maximum for ${i.name}.`);
   if(i.storage.evidence==='documented' && (i.storage.safetyHours===null||!i.storage.reference.trim()))throw new Error(`Add a safety limit and its document reference for ${i.name}.`);
  }
- const checkInputs=(inputs:RecipeInput[])=>{const seen=new Set<string>();for(const i of inputs){if(!ids.has(i.itemId))throw new Error('An ingredient no longer exists.');if(seen.has(i.itemId))throw new Error('An ingredient is listed twice in one recipe. Combine its amounts.');seen.add(i.itemId);}};
+ const checkInputs=(inputs:RecipeInput[])=>{const seen=new Set<string>();for(const i of inputs){if(!ids.has(i.itemId))throw new Error('An ingredient no longer exists.');if(seen.has(i.itemId))throw new Error('An ingredient is listed twice in one recipe. Keep one entry for each ingredient.');seen.add(i.itemId);}};
  const rids=new Set<string>();const variantKeys=new Set<string>();
- for(const r of n.recipes){if(!menu.some(d=>d.id===r.menuId))throw new Error('Unknown menu dish.');if(rids.has(r.id))throw new Error('Duplicate recipe ID.');rids.add(r.id);const key=r.menuId+':'+normalizeName(r.variant);if(variantKeys.has(key))throw new Error('That variant already exists for this dish.');variantKeys.add(key);checkInputs(r.inputs);if(r.recorded&&!completeRecipe(r))throw new Error('Enter the yield and all ingredient amounts before marking a recipe recorded.');}
+ for(const r of n.recipes){if(!menu.some(d=>d.id===r.menuId))throw new Error('Unknown menu dish.');if(rids.has(r.id))throw new Error('Duplicate recipe ID.');rids.add(r.id);const key=r.menuId+':'+normalizeName(r.variant);if(variantKeys.has(key))throw new Error('That variant already exists for this dish.');variantKeys.add(key);checkInputs(r.inputs);if(r.recorded&&!completeRecipe(r))throw new Error('Add the ingredient list before marking a recipe recorded.');}
  for(const d of menu)if(!n.recipes.some(r=>r.menuId===d.id))throw new Error('Every menu listing must retain at least one recipe.');
  const visiting=new Set<string>(),done=new Set<string>();const byId=new Map(n.items.map(i=>[i.id,i]));
  const visit=(id:string)=>{if(visiting.has(id))throw new Error('A preparation cannot contain itself, directly or through another preparation.');if(done.has(id))return;visiting.add(id);const i=byId.get(id)!;checkInputs(i.inputs);for(const part of i.inputs)visit(part.itemId);visiting.delete(id);done.add(id);};
@@ -60,17 +61,22 @@ export function perPortion(n:Notebook,r:Recipe):{amounts:Map<string,number>;miss
  const walk=(part:RecipeInput,multiplier:number,path:Set<string>)=>{const item=items.get(part.itemId);if(!item)return;if(part.amount===null){missing.add(`Amount: ${item.name}`);return;}const demand=part.amount*multiplier;amounts.set(item.id,(amounts.get(item.id)??0)+demand);if(item.kind==='prep'){if(path.has(item.id)){missing.add('Recipe cycle');return;}if(!item.yieldAmount||!item.inputs.length){missing.add(`Prep yield or recipe: ${item.name}`);return;}const next=new Set(path).add(item.id);for(const child of item.inputs)walk(child,demand/item.yieldAmount,next);}};
  if(!r.portions){missing.add('Dish yield');return {amounts,missing:[...missing]};}for(const i of r.inputs)walk(i,1/r.portions,new Set());return {amounts,missing:[...missing]};
 }
+export function collectionGaps(n:Notebook){const usage=usageMap(n);return {
+ recipes:n.recipes.filter(r=>r.active&&!completeRecipe(r)).length,
+ preparations:n.items.filter(i=>i.kind==='prep'&&(usage.get(i.id)?.all.size??0)>0&&!i.inputs.length).length,
+ storage:planningGaps(n).storage,
+};}
 export function planningGaps(n:Notebook){const active=n.recipes.filter(r=>r.active);const usage=usageMap(n);const used=n.items.filter(i=>(usage.get(i.id)?.all.size??0)>0);return {
- recipes:active.filter(r=>!completeRecipe(r)).length,
+ recipes:active.filter(r=>!hasRecipeQuantities(r)).length,
  yields:used.filter(i=>i.kind==='prep'&&(!i.yieldAmount||!i.inputs.length||i.inputs.some(p=>p.amount===null))).length,
  storage:used.filter(i=>i.storage.evidence!=='documented'||i.storage.safetyHours===null||!i.storage.reference.trim()||i.storage.condition==='unknown'||(i.storage.condition==='chilled'&&(!i.storage.cooling.trim()&&i.kind==='prep'))).length,
  demand:active.filter(r=>r.weekdayPortions===null||r.busyPortions===null).length,
 };}
 export function safeCsvCell(v:unknown){let s=v===null||v===undefined?'':String(v);if(/^[\s]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
 export function exportCsv(n:Notebook):string{
- const rows:unknown[][]=[['Record type','Dish / prep','Variant','Ingredient','Ingredient type','Amount','Unit','Recipe output','Output unit','Active','Quality hours','Safety hours (reported)','Evidence status','Storage','Temperature C','Reference','Notes']];
+ const rows:unknown[][]=[['Record type','Dish / prep','Variant','Ingredient','Ingredient type','Active','Quality hours','Safety hours (reported)','Evidence status','Storage','Temperature C','Reference','Notes']];
  const byId=new Map(n.items.map(i=>[i.id,i]));
- for(const r of n.recipes){const title=menu.find(d=>d.id===r.menuId)?.name??r.menuId;for(const part of r.inputs){const i=byId.get(part.itemId)!;rows.push(['dish input',title,r.variant,i.name,i.kind,part.amount,i.unit,r.portions,'portions',r.active,'','','','','','',part.note]);}if(!r.inputs.length)rows.push(['empty dish',title,r.variant,'','','','',r.portions,'portions',r.active,'','','','','','',r.notes]);}
- for(const i of n.items){rows.push(['catalog',i.name,'','',i.kind,'',i.unit,i.yieldAmount,i.unit,'',i.storage.qualityHours,i.storage.safetyHours,i.storage.evidence,i.storage.condition,i.storage.temperatureC,i.storage.reference,i.specification]);for(const part of i.inputs){const child=byId.get(part.itemId)!;rows.push(['prep input',i.name,'',child.name,child.kind,part.amount,child.unit,i.yieldAmount,i.unit,'','','','','','','',part.note]);}}
+ for(const r of n.recipes){const title=menu.find(d=>d.id===r.menuId)?.name??r.menuId;for(const part of r.inputs){const i=byId.get(part.itemId)!;rows.push(['dish input',title,r.variant,i.name,i.kind,r.active,'','','','','','',part.note]);}if(!r.inputs.length)rows.push(['empty dish',title,r.variant,'','',r.active,'','','','','','',r.notes]);}
+ for(const i of n.items){rows.push(['catalog',i.name,'','',i.kind,'',i.storage.qualityHours,i.storage.safetyHours,i.storage.evidence,i.storage.condition,i.storage.temperatureC,i.storage.reference,i.specification]);for(const part of i.inputs){const child=byId.get(part.itemId)!;rows.push(['prep input',i.name,'',child.name,child.kind,'','','','','','','',part.note]);}}
  return '\uFEFF'+rows.map(row=>row.map(safeCsvCell).join(',')).join('\r\n');
 }
