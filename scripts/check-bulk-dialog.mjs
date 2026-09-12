@@ -122,7 +122,7 @@ try{
  extraProps={getEarlierRecovery:()=>earlierReceipt,onRestoreEarlierRecovery:receipt=>{earlierReceipt=structuredClone(receipt);extraProps.earlierSavePending=true;return {ok:true,pending:true};},onRetryEarlierSave:async()=>{notebook=applyBulkCommand(notebook,{recipeId:'s1-v1',rows:reconcileDraft('Salt',[],[])});earlierReceipt=null;extraProps.earlierSavePending=false;return {ok:true,pending:false,notebook};}};render();
  await selectFile(JSON.stringify(unsentWithEarlier));await confirmRestore();
  const beforeSeparateAdd=sent.length;await click('Retry earlier save');resolve(workers.at(-1));
- assert.equal(sent.length,beforeSeparateAdd);assert.equal(notebook.items.length,1);assert.equal(button('Add 1 ingredient').props.disabled,false);
+ assert.equal(sent.length,beforeSeparateAdd);assert.equal(notebook.items.length,1);assert.equal(button('Add 1 ingredient').props.disabled,true,'a new exact catalog identity needs review');await click('Confirm name and type');assert.equal(button('Add 1 ingredient').props.disabled,false);
  assert.equal(flatten(tree).filter(n=>n==='Already in this dish').length,1);
  await click('Add 1 ingredient');assert.equal(sent.length,beforeSeparateAdd+1);assert.deepEqual(notebook.items.map(i=>i.name),['Salt','Ginger']);assert.equal(closed,1);
 

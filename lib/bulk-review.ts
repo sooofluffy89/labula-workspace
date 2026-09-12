@@ -19,7 +19,7 @@ export function matchPairs(rows:DraftRow[],items:Item[],matches:Map<string,BulkS
  for(const row of rows){const a=endpoint(row);if(!a)continue;for(const s of matches.get(row.key)??[]){let b:MatchEnd|null=null;if(s.target.type==='row'){const other=byKey.get(s.target.key);b=other?endpoint(other):null;}else{const item=byId.get(s.target.id);if(item)b={type:'item',key:item.id,name:item.name,kind:item.kind};}if(!b||(a.type==='item'&&b.type==='item')||a.type===b.type&&a.key===b.key)continue;const id=pairId(a,b);if(!pairs.has(id))pairs.set(id,{id,a,b});}}
  return [...pairs.values()];
 }
-export function useMatch(rows:DraftRow[],pair:MatchPair,chosen:MatchEnd):DraftRow[]{
+export function applyMatch(rows:DraftRow[],pair:MatchPair,chosen:MatchEnd):DraftRow[]{
  const other=pair.a.type===chosen.type&&pair.a.key===chosen.key?pair.b:pair.a;
  if(other.type!=='row')throw Error('Use the existing catalog item. Catalog entries cannot be merged here.');
  return rows.map(r=>r.key===other.key?{...r,target:chosen.type==='item'?{type:'item' as const,id:chosen.key}:{type:'row' as const,key:chosen.key},separate:false}:r);

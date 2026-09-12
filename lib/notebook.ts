@@ -4,6 +4,7 @@ import { menu } from './menu';
 const amount = z.number().finite().positive().max(1e9).nullable();
 const nonnegative = z.number().finite().min(0).max(1e9).nullable();
 const text = z.string().max(6000);
+export const itemNameSchema = z.string().trim().min(1, 'Enter an item name before continuing.').max(160, 'Shorten the item name to 160 characters or fewer. Your text has been kept.');
 export const units = ['g', 'ml', 'pcs'] as const;
 export const inputSchema = z.object({ itemId:z.string().min(1).max(100), amount, note:text });
 export const storageSchema = z.object({
@@ -12,7 +13,7 @@ export const storageSchema = z.object({
   cooling:text, afterOpeningHours:amount, thawing:text,
 });
 export const itemSchema = z.object({
-  id:z.string().min(1).max(100), name:z.string().trim().min(1).max(160), aliases:z.array(z.string().trim().min(1).max(160)).max(30), kind:z.enum(['bought','prep']), unit:z.enum(units),
+  id:z.string().min(1).max(100), name:itemNameSchema, aliases:z.array(itemNameSchema).max(30), kind:z.enum(['bought','prep']), unit:z.enum(units),
   specification:text, inputs:z.array(inputSchema).max(150), yieldAmount:amount, activeMinutes:nonnegative, passiveMinutes:nonnegative,
   frequencyHours:amount, batchMinimum:amount, batchMaximum:amount, method:text, storage:storageSchema,
 });

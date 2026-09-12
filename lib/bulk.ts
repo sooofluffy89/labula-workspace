@@ -1,6 +1,8 @@
 import {z} from 'zod';
 import {normalizeName,newItem,validateNotebook,type Notebook,type Item} from './notebook';
 import {namesOf} from './catalog';
+import {serializeNotebook} from './notebook-size';
+import {matchingScore} from './name-matching';
 
 const targetSchema=z.discriminatedUnion('type',[
  z.object({type:z.literal('item'),id:z.string().min(1).max(100)}).strict(),
@@ -50,25 +52,12 @@ export function applyBulkCommand(n:Notebook,command:BulkCommand){
  const plan=planBulk(n,command),next=structuredClone(n),recipe=next.recipes.find(r=>r.id===command.recipeId)!;
  for(const addition of plan.additions){let id=addition.itemId;if(!id){const item=newItem(addition.name,addition.kind);next.items.push(item);id=item.id;}recipe.inputs.push({itemId:id,amount:null,note:''});}
  if(plan.count)recipe.recorded=false;
- const result=validateNotebook(next);if(JSON.stringify(result).length>750000)throw Error('The notebook is too large. Shorten this list before saving.');return result;
+ const result=validateNotebook(next);serializeNotebook(result);return result;
 }
 
-// Banded edit distance discards names outside the suggestion threshold early.
-function matchScore(a:string,b:string){
- if(a===b)return 1;const longest=Math.max(a.length,b.length),limit=Math.floor(longest*.3),at=a.split(' '),bt=b.split(' ');
- const overlap=at.filter(t=>bt.includes(t)).length/Math.max(at.length,bt.length)*.9;
- if(Math.abs(a.length-b.length)>limit)return overlap;
- // Shared prefixes/suffixes do not change edit distance; remove them before DP.
- let prefix=0;while(prefix<Math.min(a.length,b.length)&&a[prefix]===b[prefix])prefix++;a=a.slice(prefix);b=b.slice(prefix);
- while(a.length&&b.length&&a[a.length-1]===b[b.length-1]){a=a.slice(0,-1);b=b.slice(0,-1);}
- if(!a.length||!b.length)return Math.max(overlap,1-Math.max(a.length,b.length)/longest);
- let prev=Array.from({length:b.length+1},(_,i)=>i);
- for(let i=1;i<=a.length;i++){const row=Array(b.length+1).fill(limit+1);row[0]=i;let min=limit+1;for(let j=Math.max(1,i-limit);j<=Math.min(b.length,i+limit);j++){row[j]=Math.min(row[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));min=Math.min(min,row[j]);}if(min>limit)return overlap;prev=row;}
- return Math.max(overlap,1-prev[b.length]/longest);
-}
 export type BulkSuggestion={target:NonNullable<DraftRow['target']>;name:string;score:number};
 export function draftSuggestions(items:Item[],rows:Pick<DraftRow,'key'|'name'>[]){
  const catalog=items.map(item=>({item,labels:namesOf(item).map(normalizeName)}));const result=new Map<string,BulkSuggestion[]>();
- for(const row of rows){const candidates:BulkSuggestion[]=[];for(const {item,labels} of catalog){const score=Math.max(...labels.map(label=>matchScore(row.key,label)));if(score>=.7)candidates.push({target:{type:'item',id:item.id},name:item.name,score});}for(const other of rows)if(other.key!==row.key){const score=matchScore(row.key,other.key);if(score>=.7)candidates.push({target:{type:'row',key:other.key},name:other.name,score});}result.set(row.key,candidates.sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name)).slice(0,6));}
+ for(const row of rows){const candidates:BulkSuggestion[]=[];for(const {item,labels} of catalog){const score=Math.max(...labels.map(label=>matchingScore(row.key,label)));if(score>=.7)candidates.push({target:{type:'item',id:item.id},name:item.name,score});}for(const other of rows)if(other.key!==row.key){const score=matchingScore(row.key,other.key);if(score>=.7)candidates.push({target:{type:'row',key:other.key},name:other.name,score});}result.set(row.key,candidates.sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name)).slice(0,6));}
  return result;
 }

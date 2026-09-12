@@ -1,9 +1,10 @@
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
-import {readNotebook,owner,snapshot,RequestError,type Row} from './notebook-server';
+import {readNotebook,owner,snapshot,RequestError,notebookPayload} from './notebook-server';
 import {validateNotebook,validationMessage,type Notebook} from './notebook';
 import {validateOrdinaryEdit} from './catalog';
 import {bulkCommandSchema,applyBulkCommand} from './bulk';
+import {NotebookCapacityError} from './notebook-size';
 
 type Receipt={id:string;kind:string;actor_id:string;fingerprint:string;before_revision:number;after_revision:number;created_at:string};
 async function command(user:ChatGPTUser,revision:number,id:string,kind:'bulk'|'save',request:unknown,prepare:(before:Notebook)=>Promise<Notebook>){
@@ -17,8 +18,8 @@ async function command(user:ChatGPTUser,revision:number,id:string,kind:'bulk'|'s
  const previous=await receipt();if(previous)return respond(previous,true);
  const row=await readNotebook(user);
  if(row.revision!==revision){const raced=await receipt();if(raced)return respond(raced,true);throw new RequestError('The shared notebook changed. Keep your list, load the latest notebook and review it again.',409,'revision_conflict');}
- let next:Notebook;try{next=await prepare(validateNotebook(JSON.parse(row.payload)));}catch(e){if(e instanceof RequestError)throw e;throw new RequestError(validationMessage(e));}
- const payload=JSON.stringify(next);if(new TextEncoder().encode(payload).length>750000)throw new RequestError('The notebook is too large.',413);
+ let next:Notebook;try{next=await prepare(validateNotebook(JSON.parse(row.payload)));}catch(e){if(e instanceof RequestError)throw e;if(e instanceof NotebookCapacityError)throw new RequestError(e.message,413,'capacity_limit');throw new RequestError(validationMessage(e));}
+ const payload=notebookPayload(next);
  const now=new Date().toISOString();
  const result=await db.batch([
   db.prepare('INSERT INTO notebook_commands (id,kind,actor_id,fingerprint,before_revision,after_revision,created_at) SELECT ?,?,?,?,revision,revision+1,? FROM notebooks WHERE id=? AND revision=?').bind(id,kind,user.userId,fingerprint,now,'kitchen',revision),

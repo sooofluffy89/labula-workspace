@@ -8,9 +8,9 @@ try{
  const stub=path.join(dir,'hooks.mjs');
  await writeFile(stub,`export function useState(initial){const h=globalThis.hooks,i=h.cursor++;if(!(i in h.values))h.values[i]=typeof initial==='function'?initial():initial;return [h.values[i],v=>{h.values[i]=typeof v==='function'?v(h.values[i]):v;}];}export function useRef(initial){const h=globalThis.hooks,i=h.cursor++;return h.values[i]??(h.values[i]={current:initial});}export const useCallback=fn=>fn;export const useEffect=()=>{};`);
  const outfile=path.join(dir,'client.mjs');await build({stdin:{contents:"export {useNotebook} from './app/use-notebook';export {initialNotebook} from './lib/notebook';export {reconcileDraft,applyBulkCommand} from './lib/bulk';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile,alias:{react:stub},logLevel:'silent'});
- const {useNotebook,initialNotebook,reconcileDraft,applyBulkCommand}=await import(outfile);
+ const {useNotebook:renderNotebookHook,initialNotebook,reconcileDraft,applyBulkCommand}=await import(outfile);
  let server,revision,receipts,calls,mode,gate,arrived;
- const render=()=>{globalThis.hooks.cursor=0;return useNotebook();};
+ const render=()=>{globalThis.hooks.cursor=0;return renderNotebookHook();};
  const freshPage=async()=>{globalThis.hooks={values:[],cursor:0};const next=render();assert.equal(await next.load(),true);return render();};
  const reset=async()=>{globalThis.hooks={values:[],cursor:0};server=initialNotebook();revision=0;receipts=new Map();calls=[];mode='ok';globalThis.fetch=async(url,options={})=>{
   if(!options.method)return Response.json({data:server,revision,updatedAt:'2026-09-12',updatedBy:'test',isOwner:false});

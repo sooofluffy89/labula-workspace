@@ -7,7 +7,7 @@ import {Textarea} from '@/components/ui/textarea';
 import {Checkbox} from '@/components/ui/checkbox';
 import {reconcileDraft,planBulk,resolveDraft,nameIndex,type DraftRow,type BulkCommand,type BulkSuggestion} from '@/lib/bulk';
 import {copiedLines,transformCopiedLine,validKeptNames,type CopiedLine} from '@/lib/bulk-input';
-import {matchPairs,useMatch,type MatchEnd,type MatchPair} from '@/lib/bulk-review';
+import {matchPairs,applyMatch,type MatchEnd,type MatchPair} from '@/lib/bulk-review';
 import {MAX_DRAFT_BYTES,readIngredientDraft,makeIngredientDraft,restoreIngredientDraft,type IngredientDraft,type BulkRecovery} from '@/lib/bulk-draft';
 import {validationMessage,recipeTitle,normalizeName,type Notebook,type Item} from '@/lib/notebook';
 import SuggestionWorker from '../lib/bulk-suggestion-worker?worker';
@@ -17,7 +17,7 @@ import type {SaveRecovery} from '@/lib/save-recovery';
 type Props={notebook:Notebook;recipeId:string;onClose:()=>void;onApply:(command:BulkCommand)=>Promise<BulkResult>;onRefresh:()=>Promise<BulkResult>;getRecovery:()=>BulkRecovery|null;onRestoreRecovery:(recovery:BulkRecovery)=>BulkResult;unauthorized:boolean;earlierSavePending?:boolean;earlierSaveConflict?:boolean;getEarlierRecovery?:()=>SaveRecovery|null;onRestoreEarlierRecovery?:(recovery:SaveRecovery)=>BulkResult;onRetryEarlierSave?:()=>Promise<BulkResult>;onUseShared?:()=>BulkResult};
 const kindLabel=(kind:Item['kind'])=>kind==='prep'?'Made in-house':'Bought ingredient';
 export function BulkIngredients({notebook,recipeId,onClose,onApply,onRefresh,getRecovery,onRestoreRecovery,unauthorized,earlierSavePending=false,earlierSaveConflict=false,getEarlierRecovery,onRestoreEarlierRecovery,onRetryEarlierSave,onUseShared}:Props){
- const [text,setText]=useState(''),[rows,setRows]=useState<DraftRow[]>([]),[review,setReview]=useState(false),[formatting,setFormatting]=useState(false),[keptNames,setKeptNames]=useState<string[]>([]);
+ const [text,setText]=useState(''),[rows,setRows]=useState<DraftRow[]>([]),[review,setReviewState]=useState(false),[formatting,setFormatting]=useState(false),[keptNames,setKeptNames]=useState<string[]>([]);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[pending,setPending]=useState(false),[conflict,setConflict]=useState(false),[accountIssue,setAccountIssue]=useState(false);
  const [confirmClose,setConfirmClose]=useState(false),[confirmSeparate,setConfirmSeparate]=useState(false),[confirmShared,setConfirmShared]=useState(false),[incoming,setIncoming]=useState<IngredientDraft|null>(null);
  const [keptPairs,setKeptPairs]=useState<string[]>([]),[needsReview,setNeedsReview]=useState<string[]>([]),[unverified,setUnverified]=useState(false),[allMatches,setAllMatches]=useState(false);
@@ -26,14 +26,15 @@ export function BulkIngredients({notebook,recipeId,onClose,onApply,onRefresh,get
  const recipe=notebook.recipes.find(r=>r.id===recipeId)!;
  const locked=busy||pending||unverified||earlierSavePending;
  const namesKey=JSON.stringify(rows.map(({key,name})=>({key,name})));
- const checkedNames=useRef<{items:Item[]|null;key:string}>({items:null,key:''});
- const checksReady=checkedNames.current.items===notebook.items&&checkedNames.current.key===namesKey;
- const [matches,setMatches]=useState<Map<string,BulkSuggestion[]>>(new Map()),[checking,setChecking]=useState(false),[checkError,setCheckError]=useState(''),[checkAttempt,setCheckAttempt]=useState(0);
+ const [checkAttempt,setCheckAttempt]=useState(0),[checkResult,setCheckResult]=useState<{items:Item[]|null;key:string;attempt:number;matches:Map<string,BulkSuggestion[]>;error:string}>({items:null,key:'',attempt:-1,matches:new Map(),error:''});
+ const completedCheck=checkResult.items===notebook.items&&checkResult.key===namesKey&&checkResult.attempt===checkAttempt;
+ const checksReady=completedCheck&&!checkResult.error,checking=review&&!completedCheck,checkError=completedCheck?checkResult.error:'',matches=checkResult.matches;
+ const setReview=(value:boolean)=>{setReviewState(value);if(value)setCheckAttempt(v=>v+1);};
  useEffect(()=>{
   if(!review)return;
-  let active=true,worker:Worker;setChecking(true);setCheckError('');
-  const fail=()=>{if(!active)return;setCheckError('We could not check similar names. Retry the check before adding this list.');setChecking(false);worker?.terminate();};
-  try{worker=new SuggestionWorker();worker.onmessage=(event:MessageEvent)=>{if(!active)return;if(event.data.error||!(event.data.matches instanceof Map)){fail();return;}checkedNames.current={items:notebook.items,key:namesKey};setMatches(event.data.matches);setChecking(false);worker.terminate();};worker.onerror=fail;worker.postMessage({items:notebook.items,rows:JSON.parse(namesKey)});}catch{fail();}
+  let active=true,worker:Worker|undefined;
+  const fail=()=>{if(!active)return;setCheckResult({items:notebook.items,key:namesKey,attempt:checkAttempt,matches:new Map(),error:'We could not check similar names. Retry the check before adding this list.'});worker?.terminate();};
+  try{worker=new SuggestionWorker();worker.onmessage=(event:MessageEvent)=>{if(!active)return;if(event.data.error||!(event.data.matches instanceof Map)){fail();return;}setCheckResult({items:notebook.items,key:namesKey,attempt:checkAttempt,matches:event.data.matches,error:''});worker?.terminate();};worker.onerror=fail;worker.postMessage({items:notebook.items,rows:JSON.parse(namesKey)});}catch{queueMicrotask(fail);}
   return()=>{active=false;worker?.terminate();};
  },[notebook.items,namesKey,review,checkAttempt]);
  useEffect(()=>{if(review||formatting)heading.current?.focus();else input.current?.focus();},[review,formatting]);
@@ -57,7 +58,7 @@ export function BulkIngredients({notebook,recipeId,onClose,onApply,onRefresh,get
  const focusRow=(key:string,message:string)=>{setFocusRequest({key});setAnnouncement(message);};
  const patch=(key:string,change:Partial<DraftRow>)=>{if(busyRef.current||locked)return;setRows(old=>old.map(r=>r.key===key?{...r,...change}:r));setNeedsReview(old=>old.filter(k=>k!==key));if(!conflict)setError('');};
  const resetMatch=(row:DraftRow)=>{const exact=index.get(row.key);patch(row.key,{target:exact?{type:'item',id:exact.id}:null,kind:exact?.kind??row.kind,separate:false});focusRow(row.key,`Reviewing ${row.name} again.`);};
- const chooseMatch=(pair:MatchPair,chosen:MatchEnd)=>{if(locked)return;setRows(old=>useMatch(old,pair,chosen));const other=pair.a.type===chosen.type&&pair.a.key===chosen.key?pair.b:pair.a;setNeedsReview(old=>old.filter(key=>key!==other.key));focusRow(other.key,`Will use ${chosen.name}, ${kindLabel(chosen.kind)}.`);};
+ const chooseMatch=(pair:MatchPair,chosen:MatchEnd)=>{if(locked)return;setRows(old=>applyMatch(old,pair,chosen));const other=pair.a.type===chosen.type&&pair.a.key===chosen.key?pair.b:pair.a;setNeedsReview(old=>old.filter(key=>key!==other.key));focusRow(other.key,`Will use ${chosen.name}, ${kindLabel(chosen.kind)}.`);};
  const keepPair=(pair:MatchPair)=>{if(locked)return;setKeptPairs(old=>[...new Set([...old,pair.id])]);focusRow(pair.a.type==='row'?pair.a.key:pair.b.key,'These ingredients will stay separate.');};
  const close=()=>{if(busyRef.current||pending)return;if(text.trim()&&!canFinish)setConfirmClose(true);else onClose();};
  const downloadDraft=()=>{try{const recovery=getRecovery();const file=makeIngredientDraft(notebook,recipeId,text,rows,keptPairs,needsReview,recovery,unverified,keptNames,getEarlierRecovery?.()??null);const url=URL.createObjectURL(new Blob([JSON.stringify(file,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='labula-ingredient-draft.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);setNotice('Draft download started. Use Restore draft in this dish to continue later.');}catch(e){setError(validationMessage(e));}};

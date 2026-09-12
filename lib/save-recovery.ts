@@ -1,7 +1,8 @@
 import {z} from 'zod';
 import {validateNotebook} from './notebook';
 
-export const MAX_NOTEBOOK_PAYLOAD_BYTES=750000;
+import {MAX_NOTEBOOK_PAYLOAD_BYTES} from './notebook-size';
+export {MAX_NOTEBOOK_PAYLOAD_BYTES} from './notebook-size';
 
 // A recovery receipt must replay the original serialized request. Validation
 // checks its contents without replacing it with a normalized notebook object.
