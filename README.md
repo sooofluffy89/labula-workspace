@@ -7,7 +7,7 @@ Private English-language recipe collection app for the restaurant owner and chef
 - 24 starter recipe records, including the explicit menu variants; no ingredients or safety durations invented.
 - First-version form: only named ingredients or house-made preparations directly used in each dish, without amounts, notes or work details.
 - Shared catalog entries can be reused across dishes and renamed consistently.
-- Recipes can be marked recorded after listing ingredients, without amounts or portion yields.
+- Dish status is visible in the desktop list, mobile picker, variant selector and summary: Not started, In progress, Completed, or Inactive. Completion requires the chef’s explicit confirmation for every active variant; ingredient edits reopen the list. Inactive dishes do not inflate the progress denominator. No schema or recipe-data migration is needed.
 - Overview counts direct use in distinct active menu dishes, across variants; catalog totals shown in statistics include directly used items only.
 - Nested preparation recipes, quantities, finishing, methods, times, storage, shelf life and equipment are deferred. All previously saved fields remain intact in storage and the complete JSON export.
 - Bulk entry keeps text and confirmed choices separate from the notebook until a server-confirmed atomic save. Editing/reordering the list preserves decisions, repeated names share one decision, and suggestions cover both catalog entries and new rows. Similarity checks run in a cancellable background worker.
@@ -29,6 +29,7 @@ Use Node 22.13+ and the committed npm lockfile. `npm run dev` serves the local p
 `npm run db:generate` generates schema-only Drizzle migrations. Production migrations are applied by Sites. Local D1 must use the generated Worker config with `.wrangler/state` as its persistence directory.
 
 ## Validation
+- `node scripts/check-recipe-progress.mjs`: explicit completion, bulk reopening, no-op preservation, partial active variants, inactive exclusion and empty totals.
 - `node scripts/check-model.mjs`: nested yields, deduplicated dish usage, graph integrity, missing quantities, evidence metadata, composition-only completion, numeric-data preservation and safe CSV cells.
 - `node scripts/check-bulk.mjs`: draft reconciliation, within-list matches, original data, limits, authenticated bulk/save receipts, atomic rollback, races and newer-write preservation.
 - `node scripts/check-bulk-ux.mjs`: pair identity/canonical reuse, file validation, restored choices, changed/missing matches, legacy restrictions and immutable pending drafts.

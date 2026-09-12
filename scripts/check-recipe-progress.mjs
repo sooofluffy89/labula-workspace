@@ -1,0 +1,32 @@
+import {build} from 'esbuild';
+import assert from 'node:assert/strict';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+const dir=await mkdtemp(path.join(tmpdir(),'labula-progress-'));
+try{
+ const outfile=path.join(dir,'progress.mjs');
+ await build({stdin:{contents:"export * from './lib/recipe-progress';export {initialNotebook,newItem} from './lib/notebook';export {reconcileDraft,applyBulkCommand} from './lib/bulk';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile,logLevel:'silent'});
+ const {initialNotebook,newItem,recipeStatus,dishProgress,notebookProgress,reconcileDraft,applyBulkCommand}=await import(outfile);
+ let n=initialNotebook();const item=newItem('Coriander');n.items.push(item);
+ assert.equal(notebookProgress(n).counts['not-started'],19);
+ assert.equal(recipeStatus(n.recipes[0]),'not-started');
+ const input={itemId:item.id,amount:null,note:''};n.recipes[0].inputs=[input];
+ assert.equal(recipeStatus(n.recipes[0]),'in-progress','a saved ingredient does not confirm completeness');
+ n.recipes[0].recorded=true;assert.equal(recipeStatus(n.recipes[0]),'completed');
+ const same=applyBulkCommand(n,{recipeId:n.recipes[0].id,rows:reconcileDraft('Coriander',[],n.items)});
+ assert.equal(recipeStatus(same.recipes[0]),'completed','reusing only existing ingredients must preserve completion');
+ n=applyBulkCommand(n,{recipeId:n.recipes[0].id,rows:reconcileDraft('Salt',[],n.items)});
+ assert.equal(recipeStatus(n.recipes[0]),'in-progress','a new bulk ingredient reopens completion');
+ const variants=n.recipes.filter(r=>r.menuId==='m1');variants[0].inputs=[input];variants[0].recorded=true;
+ assert.deepEqual(dishProgress(n.recipes,'m1'),{status:'in-progress',completed:1,total:2});
+ variants[1].inputs=[input];assert.equal(dishProgress(n.recipes,'m1').status,'in-progress');
+ variants[1].recorded=true;assert.equal(dishProgress(n.recipes,'m1').status,'completed');
+ variants[1].active=false;assert.deepEqual(dishProgress(n.recipes,'m1'),{status:'completed',completed:1,total:1});
+ variants[0].active=false;assert.deepEqual(dishProgress(n.recipes,'m1'),{status:'inactive',completed:0,total:0});
+ assert.equal(notebookProgress(n).active,18);assert.equal(notebookProgress(n).counts.inactive,1);
+ variants[1].active=true;variants[1].recorded=false;variants[1].inputs=[];assert.equal(dishProgress(n.recipes,'m1').status,'not-started','inactive variants do not contribute progress');
+ for(const r of n.recipes){r.active=false;}assert.equal(notebookProgress(n).active,0);assert.equal(notebookProgress(n).counts.completed,0);
+ assert.equal(recipeStatus({...n.recipes[0],active:true,recorded:true,inputs:[]}),'not-started','invalid empty legacy data cannot look completed');
+ console.log('Passed completion states: explicit confirmation, bulk reopening, no-op preservation, partial variants, inactive exclusion and empty notebook.');
+}finally{await rm(dir,{recursive:true,force:true});}
