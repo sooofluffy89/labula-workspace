@@ -5,6 +5,12 @@ export type MatchEnd={type:'row'|'item';key:string;name:string;kind:Item['kind']
 export type MatchPair={id:string;a:MatchEnd;b:MatchEnd};
 export const pairId=(a:MatchEnd,b:MatchEnd)=>JSON.stringify([a,b].map(({type,key})=>[type,key]).sort((x,y)=>JSON.stringify(x).localeCompare(JSON.stringify(y))));
 
+export function validKeptPairs(ids:string[],rows:DraftRow[],items:Item[]):string[]{
+ const resolve=resolveDraft(rows,items).resolve,roots=new Set<string>(),catalog=new Set(items.map(i=>i.id));
+ for(const row of rows){try{const r=resolve(row);if(!r.itemId)roots.add(r.key.slice(4));}catch{}}
+ return [...new Set(ids)].filter(id=>{try{const ends=JSON.parse(id);return Array.isArray(ends)&&ends.length===2&&ends.every(e=>Array.isArray(e)&&e.length===2&&typeof e[1]==='string'&&(e[0]==='row'?roots.has(e[1]):e[0]==='item'&&catalog.has(e[1])))&&ends.some(e=>e[0]==='row')&&JSON.stringify(ends[0])!==JSON.stringify(ends[1])&&JSON.stringify([...ends].sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))))===id;}catch{return false;}});
+}
+
 // Resolve suggestions to their current roots, then present each pair only once.
 export function matchPairs(rows:DraftRow[],items:Item[],matches:Map<string,BulkSuggestion[]>):MatchPair[]{
  const {resolve}=resolveDraft(rows,items),byKey=new Map(rows.map(r=>[r.key,r])),byId=new Map(items.map(i=>[i.id,i]));

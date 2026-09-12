@@ -24,6 +24,7 @@
 
 [data-slot=alert-dialog-content].bulk-confirm{max-height:calc(100dvh - 24px);max-width:min(680px,calc(100vw - 24px));overflow:auto}.bulk-confirm *{min-width:0;overflow-wrap:anywhere}.bulk-confirm [data-slot=button]{white-space:normal;height:auto;min-height:40px}
 .bulk-footer>.sr-only{top:0;left:0;min-height:0}@media(max-height:360px){.bulk-step{display:none}}
+.bulk-formatting{display:flex;flex-direction:column;gap:16px}.bulk-copy-card{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:14px;border:1px solid #edce97;background:#fff8eb;border-radius:8px}.bulk-copy-option{display:flex;flex-direction:column;gap:6px;background:#fff;padding:12px;border:1px solid var(--border);border-radius:6px}.bulk-copy-option ul{padding-left:20px;margin:0;font-size:.875rem}.bulk-copy-option [data-slot=button]{align-self:flex-start}.bulk-copy-card>strong{font-size:1rem}.bulk-formatting textarea{font-size:.875rem!important;min-height:140px}
 
 /* Completion describes a chef-confirmed ingredient list, across active variants. */
 .recipe-progress-summary{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;padding:16px 18px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:.875rem}
