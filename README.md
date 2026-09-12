@@ -1,0 +1,32 @@
+# Lá Bù Lá kitchen recipe notebook
+
+Private English-language recipe collection app for the restaurant owner and chef.
+
+## Included scope
+- 19 menu listings from https://www.labula.cz/menu, captured 2026-09-12.
+- 24 starter recipe records, including the explicit menu variants; no ingredients or safety durations invented.
+- Shared catalog of bought ingredients and house-made preparations, including nested preparations.
+- Amounts in grams, millilitres or pieces. Inputs always refer to the parent recipe’s complete usable output.
+- Per-portion expansion and distinct active menu-dish usage across all variants.
+- Preparation yield, active/passive time, batch capacity, frequency, sales estimates and equipment notes.
+- Separate quality estimates, reported safety limits, supporting references, cooling, opening and thawing notes.
+- Durable D1 storage, automatic saves and optimistic concurrency; conflicts retain local changes for export.
+- CSV tables and a complete JSON export. No automatic safety validation or batch recommendation.
+
+## Source caveats retained for the chef
+The two children’s listings are not silently merged. The changing Green Market entry repeats another description on the source site. The Xiao Mian source calls a chicken-broth option vegan. These entries are flagged for confirmation, not treated as dietary facts.
+
+## Development
+Use Node 22.13+ and the committed npm lockfile. `npm run dev` serves the local preview. The bundled development-only sign-in is `/signin-with-chatgpt?return_to=/`; production uses Sites access control and forwarded identity headers.
+
+`npm run db:generate` generates schema-only Drizzle migrations. Production migrations are applied by Sites. Local D1 must use the generated Worker config with `.wrangler/state` as its persistence directory.
+
+## Validation
+- `node scripts/check-model.mjs`: nested yields, deduplicated dish usage, graph integrity, missing quantities, evidence metadata, completion rules and safe CSV cells.
+- TypeScript no-emit check and Sites production build.
+- Local API roundtrip, anonymous denial, origin validation, invalid payload rejection, optimistic concurrency and restoration of test changes.
+- No broad browser UI testing requested or performed.
+- WebMCP tools are feature-detected and optional. No supported WebMCP validation context was available; their browser contracts are not claimed verified. The ordinary form does not depend on them.
+
+## Access and data
+The entire notebook is shared with visitors permitted by the Site access policy. All permitted visitors can fill recipes; no private-per-user split is intended. The access policy must remain private/custom for these internal recipe records. The client never receives source credentials. Server writes require identity and a matching origin; a stale revision is rejected atomically.
