@@ -10,7 +10,8 @@ Private English-language recipe collection app for the restaurant owner and chef
 - Recipes can be marked recorded after listing ingredients, without amounts or portion yields.
 - Overview counts direct use in distinct active menu dishes, across variants; catalog totals shown in statistics include directly used items only.
 - Nested preparation recipes, quantities, finishing, methods, times, storage, shelf life and equipment are deferred. All previously saved fields remain intact in storage and the complete JSON export.
-- Bulk entry previews one item per line, reuses exact primary/alternative names, suggests similar names and commits the full list without duplicate links.
+- Bulk entry keeps text and confirmed choices separate from the notebook until a server-confirmed atomic save. Editing/reordering the list preserves decisions, repeated names share one decision, and suggestions cover both catalog entries and new rows. Similarity checks run in a cancellable background worker.
+- Bulk and ordinary saves use actor-bound request receipts for safe retries after lost responses. An uncertain bulk request stays frozen until resolved; conflicts keep the draft for re-review. Closing/reloading warns about unsubmitted text and a draft download is available.
 - Owner-only alternative names, duplicate review, atomic audited merges and conservative undo; protected fields cannot be changed through ordinary notebook saves. Conflicting hidden metadata or input amounts/notes block merges. Undo is available only before another saved change.
 - List/matrix overview with direct-use counts, variant details, all/shared/single filters and three-state CSV matrix export.
 - Recipe CSV exports only the direct dish-to-item list. Internal nested calculations and historical export helpers remain available for a later phase.
@@ -27,10 +28,13 @@ Use Node 22.13+ and the committed npm lockfile. `npm run dev` serves the local p
 
 ## Validation
 - `node scripts/check-model.mjs`: nested yields, deduplicated dish usage, graph integrity, missing quantities, evidence metadata, composition-only completion, numeric-data preservation and safe CSV cells.
+- `node scripts/check-bulk.mjs`: draft reconciliation, within-list matches, original data, limits, authenticated bulk/save receipts, atomic rollback, races and newer-write preservation.
+- `node scripts/check-bulk-client.mjs`: actual save hook transitions, staged data, network loss,401, preflush, double submission and conflict recovery with a controlled request adapter.
+- `node scripts/check-bulk-dialog.mjs`: actual dialog handlers with isolated hook/primitive adapters; edit/reorder decisions, failure/retry, close warning, worker reuse and stale result cancellation.
 - TypeScript no-emit check and Sites production build.
 - Local API roundtrip, anonymous denial, origin validation, invalid payload rejection, optimistic concurrency and restoration of test changes.
 - `node scripts/check-catalog.mjs`: bulk and aliases, merge preservation/conflicts, migration, matrix/export agreement, server authorization, CAS, atomic audit, idempotent retries and undo.
-- Targeted desktop and mobile browser QA on local test data: bulk preview/save, alias reuse, suggestions, dismissed pairs, merge/history/undo, matrix details and filters. Production test data is never inserted.
+- Targeted desktop and mobile browser QA on local test data: bulk preview/save, alias reuse, suggestions, dismissed pairs, merge/history/undo, matrix details and filters. Bulk fixes also verified through a temporary local proxy simulating rejection before saving and a lost reply after commit, including mobile retry. Test data is restored afterward; no fault injection is shipped and production test data is never inserted.
 - WebMCP tools are feature-detected and optional. No supported WebMCP validation context was available; their browser contracts are not claimed verified. The ordinary form does not depend on them.
 
 ## Access and data

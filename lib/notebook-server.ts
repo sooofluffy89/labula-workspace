@@ -2,7 +2,7 @@ import { getRawDb } from '@/db';
 import { getChatGPTUser,type ChatGPTUser } from '@/app/chatgpt-auth';
 import { initialNotebook,migrateNotebook,validateNotebook,validationMessage,type Notebook } from './notebook';
 import { operationSchema,applyOperation,validateOrdinaryEdit } from './catalog';
-export class RequestError extends Error {constructor(message:string,public status=400){super(message);}}
+export class RequestError extends Error {constructor(message:string,public status=400,public code?:string){super(message);}}
 const checked=<T>(fn:()=>T):T=>{try{return fn();}catch(e){throw new RequestError(validationMessage(e));}};
 export const respond=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 export type Row={payload:string;revision:number;updated_at:string;updated_by:string};
@@ -45,4 +45,4 @@ export async function catalogCommand(user:ChatGPTUser,revision:number,raw:unknow
  if(!results[0].meta.changes||!results[1].meta.changes){const receipt=await replay();if(receipt)return receipt;throw new RequestError('The notebook changed. Reload and review the operation again.',409);}
  return {...snapshot(await readNotebook(user),user,true),operationId:body.operationId,replayed:false};
 }
-export function failure(error:unknown){if(error instanceof RequestError)return respond({error:error.message},error.status);if(error instanceof Error&&error.name==='ZodError')return respond({error:validationMessage(error)},400);console.error('Notebook operation failed',error);return respond({error:'Could not confirm this operation. Your draft is kept here. Please retry.'},503);}
+export function failure(error:unknown){if(error instanceof RequestError)return respond({error:error.message,code:error.code},error.status);if(error instanceof Error&&error.name==='ZodError')return respond({error:validationMessage(error)},400);console.error('Notebook operation failed',error);return respond({error:'Could not confirm this operation. Your draft is kept here. Please retry.'},503);}
