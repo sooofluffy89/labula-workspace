@@ -5,12 +5,12 @@ Private English-language recipe collection app for the restaurant owner and chef
 ## Included scope
 - 19 menu listings from https://www.labula.cz/menu, captured 2026-09-12.
 - 24 starter recipe records, including the explicit menu variants; no ingredients or safety durations invented.
-- Shared catalog of bought ingredients and house-made preparations, including nested preparations.
-- Composition-first forms: recipes can be marked recorded after listing ingredients, without amounts or portion yields.
-- Distinct active menu-dish usage across all variants, including ingredients nested inside preparations.
-- Preparation active/passive time, frequency and equipment notes.
-- Ingredient quantities, units, batch output, capacity, sales estimates and the per-portion calculator are deferred. Existing numeric data and calculation helpers remain intact for the next phase; new recipe yields stay unknown. The complete JSON export preserves all data, while the CSV focuses on composition.
-- Separate quality estimates, reported safety limits, supporting references, cooling, opening and thawing notes.
+- First-version form: only named ingredients or house-made preparations directly used in each dish, without amounts, notes or work details.
+- Shared catalog entries can be reused across dishes and renamed consistently.
+- Recipes can be marked recorded after listing ingredients, without amounts or portion yields.
+- Overview counts direct use in distinct active menu dishes, across variants; catalog totals shown in statistics include directly used items only.
+- Nested preparation recipes, quantities, finishing, methods, times, storage, shelf life and equipment are deferred. All previously saved fields remain intact in storage and the complete JSON export.
+- CSV exports only the direct dish-to-item list. Internal nested calculations and historical export helpers remain available for a later phase.
 - Durable D1 storage, automatic saves and optimistic concurrency; conflicts retain local changes for export.
 - CSV tables and a complete JSON export. No automatic safety validation or batch recommendation.
 

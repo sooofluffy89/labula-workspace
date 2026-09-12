@@ -80,3 +80,10 @@ export function exportCsv(n:Notebook):string{
  for(const i of n.items){rows.push(['catalog',i.name,'','',i.kind,'',i.storage.qualityHours,i.storage.safetyHours,i.storage.evidence,i.storage.condition,i.storage.temperatureC,i.storage.reference,i.specification]);for(const part of i.inputs){const child=byId.get(part.itemId)!;rows.push(['prep input',i.name,'',child.name,child.kind,'','','','','','','',part.note]);}}
  return '\uFEFF'+rows.map(row=>row.map(safeCsvCell).join(',')).join('\r\n');
 }
+
+export function exportDishIngredientsCsv(n:Notebook):string{
+ const rows:unknown[][]=[['Dish','Variant','Ingredient / preparation','Item type','Active','Ingredient list confirmed']];
+ const byId=new Map(n.items.map(i=>[i.id,i]));
+ for(const r of n.recipes){const title=menu.find(d=>d.id===r.menuId)?.name??r.menuId;if(!r.inputs.length)rows.push([title,r.variant,'','',r.active,r.recorded]);for(const part of r.inputs){const item=byId.get(part.itemId)!;rows.push([title,r.variant,item.name,item.kind==='prep'?'House-made preparation':'Bought ingredient',r.active,r.recorded]);}}
+ return '\uFEFF'+rows.map(row=>row.map(safeCsvCell).join(',')).join('\r\n');
+}
