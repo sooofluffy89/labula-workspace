@@ -14,12 +14,15 @@ export function useNotebook(){
  const [data,setData]=useState<Notebook>(initialNotebook),[loaded,setLoaded]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[unauthorized,setUnauthorized]=useState(false),[dirty,setDirty]=useState(false),[saving,setSaving]=useState(false),[savePending,setSavePending]=useState(false),[operating,setOperating]=useState(false),[operationPending,setOperationPending]=useState(false),[bulkPending,setBulkPending]=useState(false),[isOwner,setIsOwner]=useState(false),[updatedAt,setUpdatedAt]=useState(''),[updatedBy,setUpdatedBy]=useState('');
  const [serverRevision,setServerRevision]=useState(0),[user,setUser]=useState('');
  const [saveRecoveryConflict,setSaveRecoveryConflict]=useState(false);
+ const [preparationBusy,setPreparationBusy]=useState(false);
+ const preparation=useRef<{signal:AbortSignal;release:()=>void}|null>(null);
+ useEffect(()=>()=>{preparation.current?.release();},[]);
  const current=useRef(data),revision=useRef(0),saved=useRef(''),inFlight=useRef<Promise<boolean>|null>(null),halted=useRef(false),locked=useRef(false),loadingRef=useRef(false),pending=useRef<Pending|null>(null),saveRequest=useRef<{id:string;revision:number;payload:string;uncertain:boolean;localPayload?:string;restored?:boolean;conflict?:boolean}|null>(null),errorRef=useRef('');
  const report=(message:string)=>{errorRef.current=message;setError(message);};
  const accept=(body:Reply)=>{const next=validateNotebook(body.data);current.current=next;setData(next);revision.current=body.revision;setServerRevision(body.revision);if(body.user)setUser(body.user);saved.current=JSON.stringify(next);setUpdatedAt(body.updatedAt);setUpdatedBy(body.updatedBy);setIsOwner(body.isOwner===true);setDirty(false);setLoaded(true);halted.current=false;setUnauthorized(false);};
- const load=useCallback(async()=>{if(inFlight.current||locked.current||loadingRef.current||pending.current)return false;if(saveRequest.current?.uncertain||saveRequest.current?.restored){report('Retry the unfinished save before reloading the notebook.');return false;}loadingRef.current=true;setLoading(true);report('');try{const {res,body}=await requestJson<Reply>('/api/notebook',{cache:'no-store'});if(!res.ok){setUnauthorized(res.status===401);throw Error(body.error??'Could not load recipes.');}accept(body);pending.current=null;saveRequest.current=null;setOperationPending(false);setBulkPending(false);return true;}catch(e){report(e instanceof RequestTimeoutError?'Loading took too long. Your current data has been kept. Try again.':validationMessage(e));return false;}finally{loadingRef.current=false;setLoading(false);}},[]);
+ const load=useCallback(async()=>{if(preparation.current||inFlight.current||locked.current||loadingRef.current||pending.current)return false;if(saveRequest.current?.uncertain||saveRequest.current?.restored){report('Retry the unfinished save before reloading the notebook.');return false;}loadingRef.current=true;setLoading(true);report('');try{const {res,body}=await requestJson<Reply>('/api/notebook',{cache:'no-store'});if(!res.ok){setUnauthorized(res.status===401);throw Error(body.error??'Could not load recipes.');}accept(body);pending.current=null;saveRequest.current=null;setOperationPending(false);setBulkPending(false);return true;}catch(e){report(e instanceof RequestTimeoutError?'Loading took too long. Your current data has been kept. Try again.':validationMessage(e));return false;}finally{loadingRef.current=false;setLoading(false);}},[]);
  useEffect(()=>{let active=true;void Promise.resolve().then(()=>{if(active)return load();});return()=>{active=false;};},[load]);
- const update=useCallback((transform:(old:Notebook)=>Notebook)=>{if(loadingRef.current)throw Error('Wait for the notebook to finish loading.');if(locked.current||pending.current||saveRequest.current?.uncertain||saveRequest.current?.restored)throw Error('Finish or retry the pending change first.');const next=validateNotebook(transform(current.current));current.current=next;setData(next);setDirty(JSON.stringify(next)!==saved.current);},[]);
+ const update=useCallback((transform:(old:Notebook)=>Notebook)=>{if(preparation.current)throw Error('Close preparation details before editing recipes. Your earlier changes are kept.');if(loadingRef.current)throw Error('Wait for the notebook to finish loading.');if(locked.current||pending.current||saveRequest.current?.uncertain||saveRequest.current?.restored)throw Error('Finish or retry the pending change first.');const next=validateNotebook(transform(current.current));current.current=next;setData(next);setDirty(JSON.stringify(next)!==saved.current);},[]);
  const save=useCallback(async():Promise<boolean>=>{
   if(inFlight.current)return inFlight.current;if(!loaded||loadingRef.current||pending.current)return false;
   if(!saveRequest.current){const payload=JSON.stringify(current.current);if(payload===saved.current){setDirty(false);return true;}try{validateNotebook(current.current);}catch(e){report(validationMessage(e));halted.current=true;return false;}saveRequest.current={id:crypto.randomUUID(),revision:revision.current,payload,uncertain:false};}
@@ -38,9 +41,34 @@ export function useNotebook(){
    revision.current=body.revision;setServerRevision(body.revision);if(body.user)setUser(body.user);saved.current=command.payload;saveRequest.current=null;setSavePending(false);setUpdatedAt(body.updatedAt);setUpdatedBy(body.updatedBy);setDirty(JSON.stringify(current.current)!==command.payload);halted.current=false;return true;
   }catch(e){if(saveRequest.current){saveRequest.current.uncertain=true;setSavePending(true);}halted.current=true;report(validationMessage(e));return false;}finally{setSaving(false);inFlight.current=null;}})();inFlight.current=task;return task;
  },[loaded]);
- const flush=async()=>{if(inFlight.current&&!await inFlight.current)return false;if(!await save())return false;return JSON.stringify(current.current)===saved.current||await save();};
+ const settled=()=>!inFlight.current&&!saveRequest.current&&!pending.current&&!loadingRef.current&&JSON.stringify(current.current)===saved.current;
+ const flush=async(signal?:AbortSignal)=>{
+  if(signal?.aborted)return false;
+  if(inFlight.current&&!await inFlight.current)return false;
+  if(signal?.aborted||!await save())return false;
+  if(signal?.aborted)return false;
+  if(!settled()&&!await save())return false;
+  if(signal?.aborted)return false;
+  if(!settled()){report('Your latest recipe changes are still waiting to save. Try again when you have finished editing.');return false;}
+  return true;
+ };
+ const beginPreparation=async(signal:AbortSignal):Promise<()=>void>=>{
+  const cancelled=()=>new DOMException('Preparation opening cancelled.','AbortError');
+  if(signal.aborted)throw cancelled();
+  if(preparation.current)throw Error('Preparation details are already opening or open.');
+  if(!loaded||loadingRef.current||locked.current||pending.current)throw Error('Finish the current notebook change before opening preparation details.');
+  const session={signal,release:()=>{signal.removeEventListener('abort',session.release);if(preparation.current===session){preparation.current=null;setPreparationBusy(false);}}};
+  // Acquire synchronously: an older rendered handler cannot slip in another edit.
+  preparation.current=session;setPreparationBusy(true);signal.addEventListener('abort',session.release,{once:true});
+  try{
+   const ok=await flush(signal);
+   if(signal.aborted||preparation.current!==session)throw cancelled();
+   if(!ok||!settled())throw Error(errorRef.current||'Save or retry your recipe changes before opening preparation details.');
+   return session.release;
+  }catch(e){session.release();throw e;}
+ };
  const execute=async(kind:'catalog'|'bulk',request:CatalogOperation|BulkCommand):Promise<BulkResult>=>{
-  if(locked.current||loadingRef.current)return {ok:false,pending:!!pending.current,error:'Another change is still being saved.'};
+  if(preparation.current||locked.current||loadingRef.current)return {ok:false,pending:!!pending.current,error:'Another change is still being saved or preparation details are open.'};
   if(pending.current&&(pending.current.kind!==kind||JSON.stringify(pending.current.request)!==JSON.stringify(request)))return {ok:false,pending:true,error:'Retry the unchanged pending request first.'};
   locked.current=true;setOperating(true);report('');
   try{
@@ -58,34 +86,41 @@ export function useNotebook(){
  const getSavedBase=()=>saved.current?{revision:revision.current,notebook:validateNotebook(JSON.parse(saved.current))}:null;
  const getSaveRecovery=():SaveRecovery|null=>{const p=saveRequest.current;return p?{id:p.id,revision:p.revision,payload:p.payload,localPayload:p.localPayload??JSON.stringify(current.current)}:null;};
  const restoreSaveRecovery=(raw:SaveRecovery):BulkResult=>{
-  if(!loaded||loadingRef.current||locked.current||inFlight.current||pending.current||saveRequest.current||JSON.stringify(current.current)!==saved.current)return {ok:false,pending:false,error:'Finish saving the current dish before restoring an earlier save.'};
+  if(preparation.current||!loaded||loadingRef.current||locked.current||inFlight.current||pending.current||saveRequest.current||JSON.stringify(current.current)!==saved.current)return {ok:false,pending:false,error:'Finish saving the current dish before restoring an earlier save.'};
   let recovery:SaveRecovery;try{recovery=saveRecoverySchema.parse(raw);}catch{return {ok:false,pending:false,error:'The earlier save could not be read. Your current list has been kept.'};}
   saveRequest.current={...recovery,uncertain:true,restored:true};setSavePending(true);setSaveRecoveryConflict(false);halted.current=true;return {ok:true,pending:false};
  };
  const retryEarlierSave=async():Promise<BulkResult>=>{if(!await flush())return {ok:false,pending:false,error:errorRef.current};return refreshBulk();};
- const acceptSharedAfterRecovery=():BulkResult=>{if(!saveRequest.current?.conflict||inFlight.current||locked.current)return {ok:false,pending:false,error:'Check the earlier save before choosing the shared version.'};saveRequest.current=null;setSavePending(false);setSaveRecoveryConflict(false);halted.current=false;report('');return {ok:true,pending:false,notebook:current.current};};
+ const acceptSharedAfterRecovery=():BulkResult=>{if(preparation.current||!saveRequest.current?.conflict||inFlight.current||locked.current)return {ok:false,pending:false,error:'Check the earlier save before choosing the shared version.'};saveRequest.current=null;setSavePending(false);setSaveRecoveryConflict(false);halted.current=false;report('');return {ok:true,pending:false,notebook:current.current};};
  const restoreBulkRecovery=(raw:BulkRecovery):BulkResult=>{
-  if(!loaded||loadingRef.current||locked.current||inFlight.current||pending.current||saveRequest.current||JSON.stringify(current.current)!==saved.current)return {ok:false,pending:false,error:'Finish saving the current dish before restoring an unfinished save.'};
+  if(preparation.current||!loaded||loadingRef.current||locked.current||inFlight.current||pending.current||saveRequest.current||JSON.stringify(current.current)!==saved.current)return {ok:false,pending:false,error:'Finish saving the current dish before restoring an unfinished save.'};
   let recovery:BulkRecovery;try{recovery=recoverySchema.parse(raw);}catch{return {ok:false,pending:false,error:'The saved request could not be read. Your current list has been kept.'};}
   pending.current={kind:'bulk',id:recovery.id,revision:recovery.revision,request:structuredClone(recovery.command),uncertain:true};setOperationPending(true);setBulkPending(true);halted.current=true;
   return {ok:true,pending:true};
  };
  const restoreCatalogRecovery=(raw:CatalogRecovery):BulkResult=>{
   if(!isOwner)return {ok:false,pending:false,error:'Only the owner can check this catalog change. Sign in with the account that started it.'};
-  if(!loaded||loadingRef.current||locked.current||inFlight.current||pending.current||saveRequest.current||JSON.stringify(current.current)!==saved.current)return {ok:false,pending:false,error:'Finish saving the current draft before checking a catalog change.'};
+  if(preparation.current||!loaded||loadingRef.current||locked.current||inFlight.current||pending.current||saveRequest.current||JSON.stringify(current.current)!==saved.current)return {ok:false,pending:false,error:'Finish saving the current draft before checking a catalog change.'};
   const parsed=catalogRecoverySchema.safeParse(raw);if(!parsed.success)return {ok:false,pending:false,error:'This catalog recovery request could not be read.'};
   const r=parsed.data;pending.current={kind:'catalog',id:r.id,revision:r.revision,request:r.operation,uncertain:true};setOperationPending(true);setBulkPending(false);halted.current=true;return {ok:true,pending:true};
  };
  const reconcileImported=async():Promise<BulkResult>=>{
+  if(preparation.current)return {ok:false,pending:!!pending.current,error:'Close preparation details before restoring a notebook.'};
   if(pending.current){const result=await execute(pending.current.kind,pending.current.request);if(!result.ok&&!result.conflict)return result;return refreshBulk();}
   if(saveRequest.current){await save();if(saveRequest.current?.conflict){acceptSharedAfterRecovery();return refreshBulk();}if(saveRequest.current)return {ok:false,pending:false,error:errorRef.current};}
   return refreshBulk();
  };
- useEffect(()=>{if(!loaded||!dirty||saving||operating||operationPending||halted.current)return;const timer=setTimeout(()=>void save(),1200);return()=>clearTimeout(timer);},[data,dirty,loaded,saving,operating,operationPending,save]);
+ useEffect(()=>{if(!loaded||!dirty||saving||operating||operationPending||preparationBusy||halted.current)return;const timer=setTimeout(()=>void save(),1200);return()=>clearTimeout(timer);},[data,dirty,loaded,saving,operating,operationPending,preparationBusy,save]);
  useEffect(()=>{if(!dirty&&!operationPending&&!savePending)return;const protect=(e:BeforeUnloadEvent)=>{e.preventDefault();e.returnValue='';};window.addEventListener('beforeunload',protect);return()=>window.removeEventListener('beforeunload',protect);},[dirty,operationPending,savePending]);
  const dismissBulk=()=>{if(!pending.current&&!saveRequest.current&&JSON.stringify(current.current)===saved.current){report('');halted.current=false;}};
  const retry=async()=>{if(pending.current)return (await execute(pending.current.kind,pending.current.request)).ok;if(!loaded)return load();halted.current=false;return flush();};
  const refreshRestore=async():Promise<BulkResult>=>{const ok=await load();return {ok,pending:!!pending.current,error:ok?undefined:errorRef.current,notebook:ok?current.current:undefined};};
  const currentUser=()=>user;
- return {acceptProfileSnapshot:(body:Reply)=>{if(body.user!==currentUser())throw Error('Account changed. Reload before editing.');accept(body);},data,update,loaded,loading,error,unauthorized,dirty,saving,savePending,saveRecoveryConflict,operating,operationPending,bulkPending,isOwner,updatedAt,updatedBy,revision:serverRevision,user,refreshRestore,load,retry,save,flush,getSavedBase,getCatalogRecovery,restoreCatalogRecovery,reconcileImported,runOperation,runBulk,refreshBulk,dismissBulk,getBulkRecovery,restoreBulkRecovery,getSaveRecovery,restoreSaveRecovery,retryEarlierSave,useSharedAfterRecovery:acceptSharedAfterRecovery};
+ return {beginPreparation,preparationBusy,acceptProfileSnapshot:(body:Reply,signal:AbortSignal)=>{
+  if(!preparation.current||preparation.current.signal!==signal||signal.aborted)throw Error('This preparation session has closed. Reopen preparation details to continue.');
+  if(!settled()||locked.current)throw Error('Your recipe changes are still waiting to save. Close preparation details and retry saving; your changes have been kept.');
+  if(body.user!==currentUser())throw Error('Account changed. Reload before editing.');
+  if(!Number.isSafeInteger(body.revision)||body.revision<revision.current)throw Error('A newer notebook is already loaded. Retry loading preparation details.');
+  accept(body);
+ },data,update,loaded,loading,error,unauthorized,dirty,saving,savePending,saveRecoveryConflict,operating,operationPending,bulkPending,isOwner,updatedAt,updatedBy,revision:serverRevision,user,refreshRestore,load,retry,save,flush,getSavedBase,getCatalogRecovery,restoreCatalogRecovery,reconcileImported,runOperation,runBulk,refreshBulk,dismissBulk,getBulkRecovery,restoreBulkRecovery,getSaveRecovery,restoreSaveRecovery,retryEarlierSave,useSharedAfterRecovery:acceptSharedAfterRecovery};
 }

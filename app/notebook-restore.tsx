@@ -10,7 +10,7 @@ import {validationMessage,type Notebook} from '@/lib/notebook';
 import type {PrepDraft} from '@/lib/prep-draft';
 import type {AliasDraft} from '@/lib/catalog-draft';
 import type {useNotebook} from './use-notebook';
-type Props={open:boolean;onOpenChange:(open:boolean)=>void;nb:ReturnType<typeof useNotebook>;hasAliasDrafts:boolean;hasPrepDrafts?:boolean;onRestoreAliases:(drafts:AliasDraft[])=>void;onDownloadCurrent:()=>void;onRestorePrep:(draft:PrepDraft)=>void};
+type Props={open:boolean;onOpenChange:(open:boolean)=>void;nb:ReturnType<typeof useNotebook>;hasAliasDrafts:boolean;hasPrepDrafts?:boolean;onRestoreAliases:(drafts:AliasDraft[])=>void;onDownloadCurrent:()=>void;onRestorePrep:(draft:PrepDraft)=>Promise<boolean>};
 export function NotebookRestore({open,onOpenChange,nb,hasAliasDrafts,hasPrepDrafts=false,onRestoreAliases,onDownloadCurrent,onRestorePrep}:Props){
  const [file,setFile]=useState<NotebookDraft|null>(null),[shared,setShared]=useState<Notebook|null>(null),[decisions,setDecisions]=useState<Record<string,RestoreDecision>>({}),[mappings,setMappings]=useState<Record<string,string>>({}),[newIds,setNewIds]=useState<Record<string,string>>({}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[reviewed,setReviewed]=useState(false),[discard,setDiscard]=useState(false),[applied,setApplied]=useState(false);
  const active=useRef(false),installed=useRef(false),attempt=useRef(0),appliedPayload=useRef('');
@@ -32,13 +32,13 @@ export function NotebookRestore({open,onOpenChange,nb,hasAliasDrafts,hasPrepDraf
   if(!result.ok||!result.notebook)throw Error(result.error??'Could not load the latest shared version.');
   setShared(result.notebook);setDecisions({});setMappings({});setReviewed(false);setApplied(false);
  }catch(e){setError(validationMessage(e));}finally{active.current=false;setBusy(false);}};
- const complete=()=>{if(hasAliasDrafts){setError('Your newer alternative-name edits are still unsaved. Close this review and save or discard those edits first. The imported draft is kept.');return false;}if(file?.prepDraft){if(file.prepDraft.account.toLowerCase()!==nb.user.toLowerCase()){setError('The preparation draft belongs to another account. Sign in with that account to restore it.');return false;}onRestorePrep(file.prepDraft);}
+ const complete=async()=>{if(hasAliasDrafts){setError('Your newer alternative-name edits are still unsaved. Close this review and save or discard those edits first. The imported draft is kept.');return false;}if(file?.prepDraft){if(file.prepDraft.account.toLowerCase()!==nb.user.toLowerCase()){setError('The preparation draft belongs to another account. Sign in with that account to restore it.');return false;}if(!await onRestorePrep(file.prepDraft)){setError('The preparation form did not open. Your imported draft is kept here. Resolve the earlier save, then try again.');return false;}}
   if(file&&nb.isOwner)onRestoreAliases(recoverAliasDrafts(file,plan?.next??nb.data));setFile(null);setShared(null);installed.current=false;onOpenChange(false);return true;};
  const finish=async()=>{if(active.current||!file||!shared||!plan||plan.unresolved||plan.error||!reviewed)return;active.current=true;setBusy(true);setError('');try{
   if(hasAliasDrafts)throw Error('Alternative names were edited while this restore was open. Close this dialog and save or discard those edits first. Your imported draft stays here.');
   if(JSON.stringify(nb.data)!==JSON.stringify(shared))throw Error('The notebook changed since this review. Load the latest version and review again.');
   if(plan.changed){appliedPayload.current=JSON.stringify(plan.next);nb.update(()=>plan.next);setApplied(true);if(!await nb.flush())throw Error('This restore has not been confirmed. Your selected changes are kept. Use Retry saving, or download this draft before reloading.');}
-  complete();
+  await complete();
  }catch(e){setError(validationMessage(e));}finally{active.current=false;setBusy(false);}};
  const clear=()=>{attempt.current++;setFile(null);setShared(null);setDecisions({});setMappings({});setDiscard(false);setError('');installed.current=false;};
  const blocked=busy||nb.saving||nb.operating;
@@ -56,7 +56,7 @@ export function NotebookRestore({open,onOpenChange,nb,hasAliasDrafts,hasPrepDraf
  <label className="actions"><Checkbox checked={reviewed} disabled={blocked||!!plan.unresolved||!!plan.error} onCheckedChange={value=>setReviewed(value===true)}/>I have checked the selected changes.</label>
  <Button variant="outline" disabled={blocked||nb.operationPending||nb.savePending} onClick={()=>void reviewLatest()}>Load latest version & review again</Button></>}
  </>}
- {(error||nb.error)&&<div className="notice" role="alert"><p>{error||nb.error}</p><div className="actions">{(nb.savePending||nb.operationPending||applied)&&<Button disabled={blocked} onClick={async()=>{setError('');if(await nb.retry()){if(applied){complete();}else await reviewLatest();}}}>Retry saving</Button>}{nb.unauthorized&&<a href="/signin-with-chatgpt?return_to=/" target="_blank" rel="noreferrer">Sign in in a new tab, then return here</a>}<Button variant="outline" onClick={onDownloadCurrent}>Download current draft</Button></div></div>}
+ {(error||nb.error)&&<div className="notice" role="alert"><p>{error||nb.error}</p><div className="actions">{(nb.savePending||nb.operationPending||applied)&&<Button disabled={blocked} onClick={async()=>{setError('');if(await nb.retry()){if(applied){await complete();}else await reviewLatest();}}}>Retry saving</Button>}{nb.unauthorized&&<a href="/signin-with-chatgpt?return_to=/" target="_blank" rel="noreferrer">Sign in in a new tab, then return here</a>}<Button variant="outline" onClick={onDownloadCurrent}>Download current draft</Button></div></div>}
  </div><DialogFooter><Button variant="outline" disabled={blocked} onClick={()=>onOpenChange(false)}>{file?'Close — keep this draft':'Close'}</Button>{file&&<Button variant="ghost" disabled={blocked||nb.savePending||nb.operationPending} onClick={()=>setDiscard(true)}>Discard imported draft</Button>}{plan&&<Button disabled={blocked||hasAliasDrafts||!!plan.unresolved||!!plan.error||!reviewed||nb.savePending||nb.operationPending} onClick={()=>void finish()}>Apply selected changes</Button>}</DialogFooter></DialogContent></Dialog>
  <Dialog open={discard} onOpenChange={setDiscard}><DialogContent><DialogHeader><DialogTitle>Discard this imported draft?</DialogTitle><DialogDescription>The shared notebook stays unchanged. Keep your downloaded file if you may need it again.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={()=>setDiscard(false)}>Keep draft</Button><Button onClick={clear}>Discard imported draft</Button></DialogFooter></DialogContent></Dialog></>;
 }
