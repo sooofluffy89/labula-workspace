@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { menu } from './menu';
+import {profileSchema,emptyProfile,validateProfile} from './prep-profile';
 
 const amount = z.number().finite().positive().max(1e9).nullable();
 const nonnegative = z.number().finite().min(0).max(1e9).nullable();
@@ -15,12 +16,12 @@ export const storageSchema = z.object({
 export const itemSchema = z.object({
   id:z.string().min(1).max(100), name:itemNameSchema, aliases:z.array(itemNameSchema).max(30), kind:z.enum(['bought','prep']), unit:z.enum(units),
   specification:text, inputs:z.array(inputSchema).max(150), yieldAmount:amount, activeMinutes:nonnegative, passiveMinutes:nonnegative,
-  frequencyHours:amount, batchMinimum:amount, batchMaximum:amount, method:text, storage:storageSchema,
+  frequencyHours:amount, batchMinimum:amount, batchMaximum:amount, method:text, storage:storageSchema, prepProfile:profileSchema,
 });
 export const recipeSchema = z.object({ id:z.string().min(1).max(100), menuId:z.string().min(1).max(100), variant:z.string().trim().min(1).max(160),
   portions:amount, inputs:z.array(inputSchema).max(150), notes:text, active:z.boolean(), recorded:z.boolean(), weekdayPortions:nonnegative, busyPortions:nonnegative,
 });
-export const notebookSchema = z.object({schemaVersion:z.literal(2), distinctPairs:z.array(z.tuple([z.string(),z.string()])).max(5000), items:z.array(itemSchema).max(1000), recipes:z.array(recipeSchema).max(500), equipment:z.object({blastChiller:z.enum(['unknown','yes','no']),notes:text})});
+export const notebookSchema = z.object({schemaVersion:z.literal(3), distinctPairs:z.array(z.tuple([z.string(),z.string()])).max(5000), items:z.array(itemSchema).max(1000), recipes:z.array(recipeSchema).max(500), equipment:z.object({blastChiller:z.enum(['unknown','yes','no']),notes:text})});
 export type RecipeInput = z.infer<typeof inputSchema>;
 export type Item = z.infer<typeof itemSchema>;
 export type Recipe = z.infer<typeof recipeSchema>;
@@ -29,15 +30,15 @@ export const normalizeName = (s:string) => s.normalize('NFKD').replace(/[\u0300-
 export function validationMessage(error:unknown):string { if(error instanceof z.ZodError)return 'Check the item names and entered values. Names must be 1–160 characters; a recipe can contain up to 150 items and the catalog up to 1,000 items.';return error instanceof Error?error.message:'Please check the recipe details and try again.'; }
 export function newItem(name:string,kind:Item['kind']='bought',unit:Item['unit']='g'):Item { return {
  id:crypto.randomUUID(),name:name.trim(),aliases:[],kind,unit,specification:'',inputs:[],yieldAmount:null,activeMinutes:null,passiveMinutes:null,frequencyHours:null,batchMinimum:null,batchMaximum:null,method:'',
- storage:{condition:'unknown',temperatureC:null,container:'',qualityHours:null,safetyHours:null,evidence:'unknown',reference:'',cooling:'',afterOpeningHours:null,thawing:''},
+ storage:{condition:'unknown',temperatureC:null,container:'',qualityHours:null,safetyHours:null,evidence:'unknown',reference:'',cooling:'',afterOpeningHours:null,thawing:''},prepProfile:emptyProfile(),
 }; }
-export function initialNotebook():Notebook { return {schemaVersion:2,distinctPairs:[],items:[],equipment:{blastChiller:'unknown',notes:''},recipes:menu.flatMap(d=>(d.variants??['Standard']).map((variant,i)=>({id:`${d.id}-v${i+1}`,menuId:d.id,variant,portions:null,inputs:[],notes:'',active:true,recorded:false,weekdayPortions:null,busyPortions:null})))}; }
+export function initialNotebook():Notebook { return {schemaVersion:3,distinctPairs:[],items:[],equipment:{blastChiller:'unknown',notes:''},recipes:menu.flatMap(d=>(d.variants??['Standard']).map((variant,i)=>({id:`${d.id}-v${i+1}`,menuId:d.id,variant,portions:null,inputs:[],notes:'',active:true,recorded:false,weekdayPortions:null,busyPortions:null})))}; }
 export function completeRecipe(r:Recipe):boolean { return r.inputs.length>0; }
 export function hasRecipeQuantities(r:Recipe):boolean { return completeRecipe(r) && r.portions!==null && r.inputs.every(i=>i.amount!==null); }
 export function recipeTitle(r:Recipe):string { const dish=menu.find(m=>m.id===r.menuId);return `${dish?.name??r.menuId}${r.variant==='Standard'?'':` · ${r.variant}`}`; }
 export function validateNotebook(input:unknown):Notebook {
  const n=notebookSchema.parse(input);const ids=new Set<string>();const names=new Set<string>();
- for(const i of n.items){if(ids.has(i.id))throw new Error('Duplicate item ID.');ids.add(i.id);for(const label of [i.name,...i.aliases]){const name=normalizeName(label);if(!name)throw new Error('Enter an item name.');if(names.has(name))throw new Error(`“${label}” already exists as an item name or alternative name. Use the existing item.`);names.add(name);}
+ for(const i of n.items){validateProfile(i.prepProfile);if(ids.has(i.id))throw new Error('Duplicate item ID.');ids.add(i.id);for(const label of [i.name,...i.aliases]){const name=normalizeName(label);if(!name)throw new Error('Enter an item name.');if(names.has(name))throw new Error(`“${label}” already exists as an item name or alternative name. Use the existing item.`);names.add(name);}
   if(i.kind==='bought' && i.inputs.length)throw new Error('Bought ingredients cannot contain a prep recipe.');
   if(i.batchMinimum!==null&&i.batchMaximum!==null&&i.batchMinimum>i.batchMaximum)throw new Error(`Minimum batch exceeds maximum for ${i.name}.`);
   if(i.storage.evidence==='documented' && (i.storage.safetyHours===null||!i.storage.reference.trim()))throw new Error(`Add a safety limit and its document reference for ${i.name}.`);
@@ -91,6 +92,6 @@ export function exportDishIngredientsCsv(n:Notebook):string{
 
 export function migrateNotebook(input:unknown):Notebook {
  const raw=input as Record<string,unknown>;
- if(raw?.schemaVersion===1){return validateNotebook({...raw,schemaVersion:2,distinctPairs:[],items:(raw.items as Record<string,unknown>[]).map(item=>({...item,aliases:[]}))});}
+ if(raw?.schemaVersion===1||raw?.schemaVersion===2){return validateNotebook({...raw,schemaVersion:3,distinctPairs:raw.schemaVersion===1?[]:raw.distinctPairs,items:(raw.items as Record<string,unknown>[]).map(item=>({...item,...(raw.schemaVersion===1?{aliases:[]}:{}),prepProfile:emptyProfile()}))});}
  return validateNotebook(input);
 }

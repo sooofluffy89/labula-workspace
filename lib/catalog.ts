@@ -1,3 +1,4 @@
+import {profileEmpty,equivalentProfiles} from './prep-profile';
 import { z } from 'zod';
 import {directUsage,compareUsage,type DirectUsage} from './direct-usage';
 import {prepareName,preparedScore} from './name-matching';
@@ -35,8 +36,8 @@ export function applyBulk(n:Notebook,recipeId:string,rows:BulkRow[]):Notebook{
 const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
 export function validateOrdinaryEdit(before:Notebook,after:Notebook){
  if(!same(before.distinctPairs,after.distinctPairs))throw new Error('Use the owner catalog tools to manage different-items decisions.');
- for(const item of before.items){const next=after.items.find(i=>i.id===item.id);if(!next)throw new Error('Use the owner merge tool to remove a catalog item.');const {name:_,...protectedBefore}=item,{name:__,...protectedAfter}=next;if(!same(protectedBefore,protectedAfter))throw new Error('Only the item name can be edited here. Use the owner tools to manage alternative names.');}
- for(const item of after.items.filter(i=>!before.items.some(old=>old.id===i.id))){const expected=newItem(item.name,item.kind,item.unit);expected.id=item.id;if(!same(item,expected))throw new Error('New items must start without alternative names or hidden recipe details.');}
+ for(const item of before.items){const next=after.items.find(i=>i.id===item.id);if(!next)throw new Error('Use the owner merge tool to remove a catalog item.');const {name:_,prepProfile:_p,...protectedBefore}=item,{name:__,prepProfile:__p,...protectedAfter}=next;if(!same(protectedBefore,protectedAfter))throw new Error('Only the item name can be edited here. Use the owner tools to manage alternative names.');}
+ for(const item of after.items.filter(i=>!before.items.some(old=>old.id===i.id))){const expected=newItem(item.name,item.kind,item.unit);expected.id=item.id;expected.prepProfile=item.prepProfile;if(!same(item,expected))throw new Error('New items must start without alternative names or hidden recipe details.');}
  if(before.recipes.length!==after.recipes.length)throw new Error('The existing menu recipes must be preserved.');
  for(const recipe of before.recipes){const next=after.recipes.find(r=>r.id===recipe.id);if(!next)throw new Error('The existing menu recipes must be preserved.');const {inputs,active,recorded,...rest}=recipe,{inputs:nextInputs,active:na,recorded:nr,...nextRest}=next;if(!same(rest,nextRest))throw new Error('Only the ingredient list and its status can be edited here.');for(const part of nextInputs){const previous=inputs.find(p=>p.itemId===part.itemId);if(previous?!same(previous,part):part.amount!==null||part.note!=='')throw new Error('Existing quantity and note details must be preserved.');}}
  if(!same(before.equipment,after.equipment))throw new Error('Existing equipment notes must be preserved.');
@@ -47,12 +48,13 @@ export function mergePreview(n:Notebook,sourceId:string,targetId:string){
  if(!source||!target||source===target)return {conflicts:['Choose two different catalog items.'],affected:[],next:null};
  if(source.kind!==target.kind)conflicts.push('Bought ingredients and house-made preparations cannot be merged.');
  if(source.unit!==target.unit)conflicts.push('The saved measurement units differ.');
- const {id:si,name:sn,aliases:sa,...sm}=source,{id:ti,name:tn,aliases:ta,...tm}=target;
+ const {id:si,name:sn,aliases:sa,prepProfile:sp,...sm}=source,{id:ti,name:tn,aliases:ta,prepProfile:tp,...tm}=target;
+ if(!profileEmpty(sp)&&!profileEmpty(tp)&&!equivalentProfiles(sp,tp))conflicts.push('Preparation or storage answers differ. Review both item profiles before merging.');
  if(!same(sm,tm))conflicts.push('Saved preparation, quantity, storage or other details differ. Review these records before merging.');
  if(dependencyIds(n,sourceId).has(targetId)||dependencyIds(n,targetId).has(sourceId))conflicts.push('These preparations depend on each other. Merging would create a recipe cycle.');
  const affected=n.recipes.filter(r=>r.inputs.some(p=>p.itemId===sourceId));
  const rewrite=(inputs:RecipeInput[])=>{const result:RecipeInput[]=[];for(const p of inputs){const mapped=p.itemId===sourceId?{...p,itemId:targetId}:p;const existing=result.find(x=>x.itemId===mapped.itemId);if(existing){if(existing.amount!==null||mapped.amount!==null||existing.note||mapped.note)conflicts.push('Both items occur together with saved quantities or notes. They cannot be combined automatically.');}else result.push(mapped);}return result;};
- const next=structuredClone(n);next.items=next.items.filter(i=>i.id!==sourceId).map(i=>i.id===targetId?{...i,aliases:[...new Set([...i.aliases,source.name,...source.aliases].map(x=>x.trim()))]}:i);
+ const next=structuredClone(n);next.items=next.items.filter(i=>i.id!==sourceId).map(i=>i.id===targetId?{...i,prepProfile:profileEmpty(tp)?sp:tp,aliases:[...new Set([...i.aliases,source.name,...source.aliases].map(x=>x.trim()))]}:i);
  for(const item of next.items)item.inputs=rewrite(item.inputs);for(const r of next.recipes)r.inputs=rewrite(r.inputs);
  const distinct=new Map<string,[string,string]>();
  for(const pair of next.distinctPairs){const mapped=pair.map(id=>id===sourceId?targetId:id).sort() as [string,string];if(mapped[0]!==mapped[1])distinct.set(pairKey(...mapped),mapped);}
@@ -73,7 +75,7 @@ export function reclassifyPreview(n:Notebook,itemId:string,kind:Item['kind']){
  if(!item)return {conflicts:['This item no longer exists.'],affected:[],savedDetails:false};
  const conflicts=kind==='bought'&&item.inputs.length?['This preparation has a saved recipe. Keep it as Made in-house to preserve that recipe. If the dish uses a bought product instead, add that product as a separate Bought item and replace it in the affected dishes.']:[];
  const empty=newItem(item.name,item.kind,item.unit);
- const savedDetails=['specification','yieldAmount','activeMinutes','passiveMinutes','frequencyHours','batchMinimum','batchMaximum','method','storage'].some(key=>!same(item[key as keyof Item],empty[key as keyof Item]));
+ const savedDetails=['specification','yieldAmount','activeMinutes','passiveMinutes','frequencyHours','batchMinimum','batchMaximum','method','storage','prepProfile'].some(key=>!same(item[key as keyof Item],empty[key as keyof Item]));
  return {conflicts,affected:n.recipes.filter(r=>r.inputs.some(p=>p.itemId===itemId)),savedDetails};
 }
 export function applyOperation(n:Notebook,op:Exclude<CatalogOperation,{kind:'undo'}>){const next=structuredClone(n);let summary='';if(op.kind==='aliases'){const item=next.items.find(i=>i.id===op.itemId);if(!item)throw new Error('Item not found.');item.aliases=op.aliases;summary=`Alternative names updated: ${item.name}`;}

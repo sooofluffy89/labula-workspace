@@ -1,6 +1,6 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {initialNotebook,validateNotebook,validationMessage,type Notebook} from '@/lib/notebook';
+import {initialNotebook,migrateNotebook,validateNotebook,validationMessage,type Notebook} from '@/lib/notebook';
 import type {CatalogOperation} from '@/lib/catalog';
 import {catalogRecoverySchema,type CatalogRecovery} from '@/lib/catalog-draft';
 import type {BulkCommand} from '@/lib/bulk';
@@ -32,7 +32,7 @@ export function useNotebook(){
     const latest=await requestJson<Reply>('/api/notebook',{cache:'no-store'});if(!latest.res.ok){setUnauthorized(latest.res.status===401);throw Error(latest.body.error??'Could not load the shared notebook. Retry the earlier save.');}
     const extra=command.localPayload!==command.payload;accept(latest.body);
     if(extra&&latest.body.revision!==body.revision){command.conflict=true;setSaveRecoveryConflict(true);throw Error('The earlier save was confirmed, but the shared notebook changed afterwards. Download this draft to keep your extra local edits, then choose Continue with shared version.');}
-    if(extra){const local=validateNotebook(JSON.parse(command.localPayload!));current.current=local;setData(local);setDirty(JSON.stringify(local)!==saved.current);saveRequest.current={id:crypto.randomUUID(),revision:latest.body.revision,payload:command.localPayload!,localPayload:command.localPayload!,uncertain:false,restored:true};setSavePending(true);halted.current=false;return true;}
+    if(extra){const local=migrateNotebook(JSON.parse(command.localPayload!));current.current=local;setData(local);setDirty(JSON.stringify(local)!==saved.current);saveRequest.current={id:crypto.randomUUID(),revision:latest.body.revision,payload:JSON.stringify(local),localPayload:JSON.stringify(local),uncertain:false,restored:true};setSavePending(true);halted.current=false;return true;}
     saveRequest.current=null;setSavePending(false);setSaveRecoveryConflict(false);halted.current=false;return true;
    }
    revision.current=body.revision;setServerRevision(body.revision);if(body.user)setUser(body.user);saved.current=command.payload;saveRequest.current=null;setSavePending(false);setUpdatedAt(body.updatedAt);setUpdatedBy(body.updatedBy);setDirty(JSON.stringify(current.current)!==command.payload);halted.current=false;return true;
@@ -86,5 +86,6 @@ export function useNotebook(){
  const dismissBulk=()=>{if(!pending.current&&!saveRequest.current&&JSON.stringify(current.current)===saved.current){report('');halted.current=false;}};
  const retry=async()=>{if(pending.current)return (await execute(pending.current.kind,pending.current.request)).ok;if(!loaded)return load();halted.current=false;return flush();};
  const refreshRestore=async():Promise<BulkResult>=>{const ok=await load();return {ok,pending:!!pending.current,error:ok?undefined:errorRef.current,notebook:ok?current.current:undefined};};
- return {data,update,loaded,loading,error,unauthorized,dirty,saving,savePending,saveRecoveryConflict,operating,operationPending,bulkPending,isOwner,updatedAt,updatedBy,revision:serverRevision,user,refreshRestore,load,retry,save,flush,getSavedBase,getCatalogRecovery,restoreCatalogRecovery,reconcileImported,runOperation,runBulk,refreshBulk,dismissBulk,getBulkRecovery,restoreBulkRecovery,getSaveRecovery,restoreSaveRecovery,retryEarlierSave,useSharedAfterRecovery:acceptSharedAfterRecovery};
+ const currentUser=()=>user;
+ return {acceptProfileSnapshot:(body:Reply)=>{if(body.user!==currentUser())throw Error('Account changed. Reload before editing.');accept(body);},data,update,loaded,loading,error,unauthorized,dirty,saving,savePending,saveRecoveryConflict,operating,operationPending,bulkPending,isOwner,updatedAt,updatedBy,revision:serverRevision,user,refreshRestore,load,retry,save,flush,getSavedBase,getCatalogRecovery,restoreCatalogRecovery,reconcileImported,runOperation,runBulk,refreshBulk,dismissBulk,getBulkRecovery,restoreBulkRecovery,getSaveRecovery,restoreSaveRecovery,retryEarlierSave,useSharedAfterRecovery:acceptSharedAfterRecovery};
 }

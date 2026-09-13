@@ -1,4 +1,5 @@
 'use client';
+import {ProfileSummary} from './prep-fields';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,15 +30,15 @@ export function CreateItemDialog({name,items,onClose,onCreate,pending=false,onRe
   <DialogFooter><Button variant="outline" disabled={retrying} onClick={onClose}>Cancel</Button>{duplicate?<Button disabled={blocked} onClick={()=>create(duplicate)}>Use existing item</Button>:<Button disabled={blocked} onClick={()=>{if(blocked)return;const result=itemSchema.safeParse(draft);if(!result.success){const nameResult=itemNameSchema.safeParse(draft.name);setError(nameResult.success?validationMessage(result.error):nameResult.error.issues[0].message);return;}create(result.data);}}>Create item</Button>}</DialogFooter>
  </DialogContent></Dialog>;
 }
-export function ItemEditor({item,onClose,onSave,pending=false,onRetryPending}:{item:Item;onClose:()=>void;onSave:(item:Item)=>string|null}&PendingSaveProps){
+export function ItemEditor({item,onClose,onSave,pending=false,onRetryPending,onProfile,activeDishNames=[]}:{item:Item;onClose:()=>void;onSave:(item:Item)=>string|null;onProfile:()=>void;activeDishNames?:string[]}&PendingSaveProps){
  const [draft,setDraft]=useState<Item>(()=>structuredClone(item)),[error,setError]=useState(''),[retrying,setRetrying]=useState(false);
  const blocked=pending||retrying;
  const save=()=>{if(blocked)return;setError('');const nameResult=itemNameSchema.safeParse(draft.name);if(!nameResult.success){setError(nameResult.error.issues[0].message);return;}try{const result=onSave(draft);if(result)setError(result);else onClose();}catch(e){setError(validationMessage(e));}};
  const retry=async()=>{if(retrying||!onRetryPending)return;setRetrying(true);setError('');try{await onRetryPending();}catch(e){setError(validationMessage(e));}finally{setRetrying(false);}};
  return <Dialog open onOpenChange={v=>{if(!v&&!retrying)onClose();}}><DialogContent onInteractOutside={e=>e.preventDefault()} onEscapeKeyDown={e=>{if(retrying)e.preventDefault();}} showCloseButton={!retrying}>
-  <DialogHeader><DialogTitle>Edit item name</DialogTitle><DialogDescription>This name is shared across all dishes that use the item.</DialogDescription></DialogHeader>
+  <DialogHeader><DialogTitle>Item details</DialogTitle><DialogDescription>This name is shared across all dishes that use the item.</DialogDescription></DialogHeader>
   {pending&&<div className="notice" role="status"><p>{pendingMessage}</p>{onRetryPending&&<Button variant="outline" disabled={retrying} onClick={()=>void retry()}>{retrying?'Checking earlier save…':'Retry earlier save'}</Button>}</div>}
   <div className="dialog-body"><Field label="Item name"><Input autoFocus disabled={blocked} aria-invalid={!!error} aria-describedby={error?'item-name-error':undefined} value={draft.name} onChange={e=>{if(!blocked)setDraft({...draft,name:e.target.value});}}/></Field><span className={'badge '+(item.kind==='prep'?'prep':'')}>{item.kind==='prep'?'House-made preparation':'Bought ingredient'}</span><p className="muted small">To correct this type, the owner can open Ingredients &amp; prep → Review names &amp; duplicates → Correct item type.</p>{error&&<p id="item-name-error" role="alert" className="error">{error}</p>}</div>
-  <DialogFooter><Button variant="outline" disabled={retrying} onClick={onClose}>Cancel</Button><Button disabled={blocked} onClick={save}>Save item</Button></DialogFooter>
+  <section className="prep-item-detail"><details><summary>Used in {activeDishNames.length} active {activeDishNames.length===1?'dish':'dishes'}</summary><ul>{activeDishNames.map(name=><li key={name}>{name}</li>)}</ul><p className="muted small">Direct use only. Dish count is not consumption.</p></details><h2>Preparation & storage</h2><ProfileSummary profile={item.prepProfile}/><Button variant="outline" disabled={blocked||draft.name!==item.name} onClick={onProfile}>Edit preparation & storage</Button>{draft.name!==item.name&&<p className="muted small">Save the item name first to keep your name change.</p>}</section><DialogFooter><Button variant="outline" disabled={retrying} onClick={onClose}>Cancel</Button><Button disabled={blocked} onClick={save}>Save item</Button></DialogFooter>
  </DialogContent></Dialog>;
 }

@@ -1,0 +1,29 @@
+import {z} from 'zod';
+import {profileSchema,timeSchema,storageSetupSchema,validateProfile,sameProfile,type PrepProfile} from './prep-profile';
+import {validateNotebook,type Notebook} from './notebook';
+import {directUsage,compareUsage} from './direct-usage';
+
+export const profileCommandSchema=z.object({itemId:z.string().min(1).max(100),base:profileSchema,next:profileSchema}).strict();
+export type ProfileCommand=z.infer<typeof profileCommandSchema>;
+export const profileReceiptSchema=z.object({id:z.string().uuid(),revision:z.number().int().nonnegative(),command:profileCommandSchema}).strict();
+export type ProfileReceipt=z.infer<typeof profileReceiptSchema>;
+const draftTime=timeSchema.extend({value:z.number().finite().nullable()});
+const draftProfile=profileSchema.extend({storage:z.array(storageSetupSchema.extend({temperature:z.number().finite().nullable(),quality:draftTime,rule:draftTime})).max(12)});
+export const prepDraftSchema=z.object({format:z.literal('labula-preparation-draft'),version:z.literal(1),account:z.string().max(400),queue:z.array(z.string().max(100)).max(1000),cursor:z.number().int().min(0).max(1000),drafts:z.record(z.string().max(100),z.object({base:profileSchema,value:draftProfile,step:z.enum(['preparation','storage'])}).strict()),pending:profileReceiptSchema.nullable()}).strict();
+export type PrepDraft=z.infer<typeof prepDraftSchema>;
+export const prepDraftKey=(account:string)=>'labula-preparation-v1:'+account.toLowerCase();
+export function readPrepDraft(content:string,account:string):PrepDraft{
+ if(content.length>4000000)throw Error('This preparation draft is too large.');
+ const d=prepDraftSchema.parse(JSON.parse(content,(key,value)=>{if(['__proto__','prototype','constructor'].includes(key))throw Error('Unsupported draft field.');return value;}));if(d.account.toLowerCase()!==account.toLowerCase())throw Error('This draft belongs to another account. Sign in with the account that created it.');
+ if(new Set(d.queue).size!==d.queue.length)throw Error('This preparation draft has a repeated item.');
+ return d;
+}
+export function preparationQueue(n:Notebook){const index=directUsage(n);return n.items.filter(i=>(index.itemDishes.get(i.id)?.size??0)>0).sort((a,b)=>compareUsage(index,a.id,b.id)).map(i=>i.id);}
+export function applyProfileCommand(n:Notebook,c:ProfileCommand){
+ const next=structuredClone(n),item=next.items.find(i=>i.id===c.itemId);if(!item)throw Error('This item was removed or merged. Keep your draft and open its current catalog entry.');
+ if(!sameProfile(item.prepProfile,c.base))throw Error('These preparation answers changed. Load the latest answers and compare before saving.');
+ item.prepProfile=validateProfile(c.next);return validateNotebook(next);
+}
+export function makePrepEntry(p:PrepProfile){return {base:structuredClone(p),value:structuredClone(p),step:'preparation' as const};}
+
+export function hasPrepDraftChanges(d:PrepDraft|null){return !!d&&(!!d.pending||Object.values(d.drafts).some(e=>{try{return !sameProfile(validateProfile(e.value),e.base);}catch{return true;}}));}

@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {validateNotebook} from './notebook';
+import {migrateNotebook} from './notebook';
 
 import {MAX_NOTEBOOK_PAYLOAD_BYTES} from './notebook-size';
 export {MAX_NOTEBOOK_PAYLOAD_BYTES} from './notebook-size';
@@ -10,7 +10,7 @@ const notebookPayloadSchema=z.string().superRefine((payload,ctx)=>{
  if(new TextEncoder().encode(payload).length>MAX_NOTEBOOK_PAYLOAD_BYTES){ctx.addIssue({code:z.ZodIssueCode.custom,message:'This saved notebook is too large.'});return;}
  try{
   const notebook=JSON.parse(payload,(key,value)=>{if(key==='__proto__'||key==='prototype'||key==='constructor')throw Error('Unsupported property in saved notebook.');return value;});
-  validateNotebook(notebook);
+  migrateNotebook(notebook);
  }catch{ctx.addIssue({code:z.ZodIssueCode.custom,message:'This saved notebook could not be validated.'});}
 });
 

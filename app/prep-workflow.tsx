@@ -1,0 +1,68 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import {Button} from '@/components/ui/button';
+import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription} from '@/components/ui/dialog';
+import {ProfileSummary,PreparationFields,StorageSetups} from './prep-fields';
+import {cleanProfile,sameProfile,validateProfile,type PrepProfile} from '@/lib/prep-profile';
+import {makePrepEntry,preparationQueue,prepDraftKey,readPrepDraft,type PrepDraft} from '@/lib/prep-draft';
+import {directUsage} from '@/lib/direct-usage';
+import {validateNotebook,validationMessage,type Notebook} from '@/lib/notebook';
+import {downloadJson} from '@/lib/download';
+import {requestJson} from '@/lib/request-json';
+
+type Reply={data:unknown;revision:number;user:string;updatedAt:string;updatedBy:string;error?:string;code?:string;isOwner:boolean};
+type Props={notebook:Notebook;revision:number;account:string;itemId?:string;onClose:()=>void;onSaved:(body:Reply)=>void;onDraftChange?:()=>void};
+export function PrepWorkflow({notebook,revision,account,itemId,onClose,onSaved,onDraftChange}:Props){
+ const [detailId,setDetailId]=useState(itemId);
+ const initial=()=>{
+  let state:PrepDraft={format:'labula-preparation-draft',version:1,account,queue:preparationQueue(notebook),cursor:0,drafts:{},pending:null};
+  try{const raw=localStorage.getItem(prepDraftKey(account));if(raw){const old=readPrepDraft(raw,account),active=new Set(preparationQueue(notebook)),last=old.queue[old.cursor];const queue=old.queue.filter(id=>active.has(id));for(const id of preparationQueue(notebook))if(!queue.includes(id))queue.push(id);state={...old,queue,cursor:Math.max(0,queue.indexOf(last))};}}catch{/* Keep the unreadable original local file until the user downloads or replaces it. */}
+  if(itemId&&state.queue.includes(itemId))state.cursor=state.queue.indexOf(itemId);
+  return state;
+ };
+ const [session,setSession]=useState(initial),[shared,setShared]=useState(notebook),[rev,setRev]=useState(revision),[busy,setBusy]=useState(false),[error,setError]=useState(''),[diskError,setDiskError]=useState(''),[unauthorized,setUnauthorized]=useState(false),[conflict,setConflict]=useState<PrepProfile|null>(null),[done,setDone]=useState(false),[notice,setNotice]=useState('');
+ const ref=useRef(session),lock=useRef(false),bodyRef=useRef<HTMLDivElement>(null),errorRef=useRef<HTMLDivElement>(null);
+ const id=session.pending?.command.itemId??detailId??session.queue[session.cursor];const item=shared.items.find(i=>i.id===id),entry=session.drafts[id]??(item?makePrepEntry(item.prepProfile):null),step=entry?.step??'preparation';
+ const persist=(next:PrepDraft)=>{ref.current=next;setSession(next);try{localStorage.setItem(prepDraftKey(account),JSON.stringify(next));setDiskError('');onDraftChange?.();}catch{setDiskError('This browser could not keep a local copy. Download your preparation draft before closing or reloading.');}};
+ const update=(value:PrepProfile)=>{if(lock.current||ref.current.pending||!entry)return;persist({...ref.current,drafts:{...ref.current.drafts,[id]:{...entry,value}}});setError('');setNotice('');};
+ const resetScroll=()=>{bodyRef.current?.scrollTo(0,0);bodyRef.current?.closest('[role="dialog"]')?.scrollTo(0,0);};
+ const changeStep=(next:'preparation'|'storage')=>{if(!entry)return;persist({...ref.current,drafts:{...ref.current.drafts,[id]:{...entry,step:next}}});resetScroll();};
+ useEffect(()=>{let active=true;void Promise.resolve().then(()=>{if(!active)return;try{localStorage.setItem(prepDraftKey(account),JSON.stringify(ref.current));}catch{setDiskError('This browser cannot keep a local copy. Download your preparation draft before closing.');}});return()=>{active=false;};},[account]);
+ useEffect(()=>{const protect=(e:BeforeUnloadEvent)=>{if(ref.current.pending||Object.keys(ref.current.drafts).length){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',protect);return()=>window.removeEventListener('beforeunload',protect);},[]);
+ useEffect(()=>{if(error)errorRef.current?.focus();},[error]);
+ const nextItem=()=>{if(detailId){onClose();return;}if(ref.current.cursor+1>=ref.current.queue.length){setDone(true);return;}persist({...ref.current,cursor:ref.current.cursor+1});setError('');setConflict(null);setNotice('');resetScroll();};
+ const save=async(after:'next'|'close')=>{
+  if(lock.current||!entry||!item)return;lock.current=true;setBusy(true);setError('');setUnauthorized(false);
+  try{
+   if(!ref.current.pending){
+    const value=validateProfile(cleanProfile(entry.value));
+    if(sameProfile(value,item.prepProfile)){const drafts={...ref.current.drafts};delete drafts[id];persist({...ref.current,drafts});if(after==='close')onClose();else nextItem();return;}
+    if(!sameProfile(entry.base,item.prepProfile)){setConflict(item.prepProfile);throw Error('Someone changed these answers. Compare them below before saving.');}
+    persist({...ref.current,pending:{id:crypto.randomUUID(),revision:rev,command:{itemId:id,base:entry.base,next:value}}});
+   }
+   const p=ref.current.pending!;
+   const {res,body}=await requestJson<Reply>('/api/prep-profile',{method:'POST',headers:{'Content-Type':'application/json','If-Match':String(p.revision)},body:JSON.stringify({commandId:p.id,command:p.command,account})});
+   if(!res.ok){setUnauthorized(res.status===401||body.code==='account_mismatch');if(body.code==='revision_conflict'||res.status===400||res.status===413){persist({...ref.current,pending:null});}throw Error(body.error??'Could not confirm this save. Retry saving to check safely.');}
+   if(body.user.toLowerCase()!==account.toLowerCase())throw Error('The signed-in account changed. Return to the account that started this draft.');
+   const n=validateNotebook(body.data);onSaved(body);setShared(n);setRev(body.revision);
+   const drafts={...ref.current.drafts};delete drafts[p.command.itemId];persist({...ref.current,pending:null,drafts});setConflict(null);
+   if(after==='close')onClose();else nextItem();
+  }catch(e){setError(e instanceof Error&&e.name==='ZodError'?'Check storage values: durations must be greater than zero, and temperature between −100 and 150 °C. Your input is kept.':validationMessage(e));}finally{lock.current=false;setBusy(false);}
+ };
+ const refresh=async()=>{if(lock.current||ref.current.pending)return;lock.current=true;setBusy(true);setError('');try{
+  const {res,body}=await requestJson<Reply>('/api/notebook',{cache:'no-store'});if(!res.ok){setUnauthorized(res.status===401);throw Error(body.error??'Could not load current answers.');}if(body.user.toLowerCase()!==account.toLowerCase())throw Error('Sign in with the account that started this draft.');
+  const n=validateNotebook(body.data);onSaved(body);setShared(n);setRev(body.revision);const latest=n.items.find(i=>i.id===id);if(!latest)throw Error('This item was merged or removed. Download this draft and open the current entry from the catalog.');
+  if(entry&&!sameProfile(entry.base,latest.prepProfile)&&!sameProfile(cleanProfile(entry.value),latest.prepProfile)){setConflict(latest.prepProfile);setNotice('Compare the current shared answers with your draft.');}else{setConflict(null);if(entry)persist({...ref.current,drafts:{...ref.current.drafts,[id]:{...entry,base:latest.prepProfile}}});setNotice('Latest shared answers loaded. You can now save your draft.');}
+ }catch(e){setError(validationMessage(e));}finally{lock.current=false;setBusy(false);}};
+ const restore=async(file:File)=>{if(busy||ref.current.pending)return;try{if(file.size>4000000)throw Error('Choose a preparation draft smaller than 4 MB.');const d=readPrepDraft(await file.text(),account);if(Object.keys(ref.current.drafts).length&&!window.confirm('Replace the local preparation drafts on this device? Download your current draft first to keep both.'))return;persist(d);setDetailId(undefined);setDone(false);setConflict(null);setNotice('Draft restored on this device. Load the latest shared answers before saving.');}catch(e){setError(validationMessage(e));}};
+ const usage=directUsage(shared),count=usage.itemDishes.get(id)?.size??0;
+ return <Dialog open onOpenChange={v=>{if(!v&&!busy)onClose();}}><DialogContent className="prep-dialog" showCloseButton={!busy} onInteractOutside={e=>e.preventDefault()} onEscapeKeyDown={e=>{if(busy)e.preventDefault();}}><DialogHeader><DialogTitle>{done?'End of this list':item?.name??'Preparation & storage'}</DialogTitle><DialogDescription>{done?'Your skipped drafts are kept on this device.':`${item?.kind==='prep'?'House-made preparation':'Bought ingredient'} · ${count} active ${count===1?'dish':'dishes'}`}</DialogDescription></DialogHeader>
+ {!done&&<><div className="prep-orientation">{detailId?'Shared item details':`Item ${session.cursor+1} of ${session.queue.length}`}<details><summary>Show dishes</summary><ul>{usage.dishes.filter(d=>usage.itemDishes.get(id)?.has(d.id)).map(d=><li key={d.id}>{d.name}</li>)}</ul><p className="muted small">Direct use only. Dish count is not consumption.</p></details></div><nav className="prep-steps" aria-label="Item steps"><Button variant={step==='preparation'?'default':'outline'} disabled={busy||!!session.pending} aria-current={step==='preparation'?'step':undefined} onClick={()=>changeStep('preparation')}>1 · Preparation</Button><Button variant={step==='storage'?'default':'outline'} disabled={busy||!!session.pending} aria-current={step==='storage'?'step':undefined} onClick={()=>changeStep('storage')}>2 · Storage</Button></nav></>}
+ <div className="prep-body" ref={bodyRef}><p className="muted small prep-save-hint">Changes in this form are shared only after you save.</p>
+ {diskError&&<p className="notice" role="alert">{diskError}</p>}{notice&&<p className="info" role="status">{notice}</p>}
+ {error&&<div className="notice" role="alert" tabIndex={-1} ref={errorRef}><p>{error}</p><div className="actions">{session.pending?<Button disabled={busy} onClick={()=>void save('next')}>Retry saving</Button>:<Button variant="outline" disabled={busy} onClick={()=>void refresh()}>Load latest shared answers</Button>}{unauthorized&&<a href="/signin-with-chatgpt?return_to=/" target="_blank" rel="noreferrer">Sign in in a new tab, then return to retry</a>}</div></div>}
+ {session.pending&&!error&&<p className="info" role="status">{busy?'Saving…':'An earlier save needs confirmation. Retry saving before editing.'}{!busy&&<Button onClick={()=>void save('next')}>Retry saving</Button>}</p>}
+ {conflict&&entry?<div className="prep-conflict"><h2>Current shared answers</h2><ProfileSummary profile={conflict}/><h2>Your draft</h2><ProfileSummary profile={cleanProfile(entry.value)}/><div className="actions"><Button variant="outline" onClick={()=>{persist({...ref.current,drafts:{...ref.current.drafts,[id]:{base:conflict,value:conflict,step}}});setConflict(null);setError('');}}>Use shared answers</Button><Button onClick={()=>{persist({...ref.current,drafts:{...ref.current.drafts,[id]:{...entry,base:conflict}}});setConflict(null);setError('');setNotice('Your draft is selected. Save to replace the answers you compared.');}}>Keep my draft after comparison</Button></div></div>:!done&&entry?<fieldset disabled={busy||!!session.pending} className="prep-fields">{step==='preparation'?<PreparationFields key={id} value={entry.value} onChange={update}/>:<StorageSetups key={id} value={entry.value} onChange={update}/>}</fieldset>:!done?<p className="notice">This item is no longer available. Your local drafts remain in the download.</p>:<><p>You reached the end of the current list. You can reopen any item from Ingredients & prep.</p><Button variant="outline" onClick={()=>{persist({...ref.current,queue:preparationQueue(shared),cursor:0});setDone(false);}}>Start from the first item</Button></>}
+ <details className="prep-draft-tools"><summary>Draft backup & restore</summary><p className="muted small">Drafts stay on this device, for your signed-in account. They are shared only after a confirmed save.</p><Button variant="outline" onClick={()=>downloadJson('labula-preparation-draft.json',ref.current)}>Download preparation draft</Button><label className="field"><span>Restore preparation draft (.json)</span><input type="file" accept=".json,application/json" disabled={busy||!!session.pending} onChange={e=>{const f=e.target.files?.[0];if(f)void restore(f);e.target.value='';}}/></label></details>
+ </div><footer className="prep-footer">{!done&&entry?<><div className="actions"><Button variant="ghost" disabled={busy||!!session.pending} onClick={()=>step==='storage'?changeStep('preparation'):onClose()}>Back</Button><Button variant="ghost" disabled={busy||!!session.pending} onClick={nextItem}>Skip item for now</Button><Button variant="outline" disabled={busy||!!conflict} onClick={()=>void save('close')}>{session.pending?'Retry save & close':'Save & close'}</Button></div>{step==='preparation'&&!session.pending?<Button disabled={busy||!!conflict} onClick={()=>changeStep('storage')}>Continue to storage</Button>:<Button disabled={busy||!!conflict} onClick={()=>void save('next')}>{busy?'Saving…':session.pending?'Retry saving':detailId?'Save & close':'Save & next item'}</Button>}</>:<Button onClick={onClose}>Close</Button>}</footer></DialogContent></Dialog>;
+}

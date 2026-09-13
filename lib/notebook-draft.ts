@@ -1,3 +1,4 @@
+import {prepDraftSchema,type PrepDraft} from './prep-draft';
 import {z} from 'zod';
 import {migrateNotebook,newItem,recipeTitle,validateNotebook,type Notebook,type Item} from './notebook';
 import {validateOrdinaryEdit,exactItem} from './catalog';
@@ -13,7 +14,7 @@ const pending=z.discriminatedUnion('kind',[
  z.object({kind:z.literal('bulk'),receipt:recoverySchema}).strict(),
  z.object({kind:z.literal('catalog'),receipt:catalogRecoverySchema}).strict(),
 ]);
-const envelope=z.object({format:z.literal('labula-notebook-draft'),version:z.literal(1),exportedAt:z.string().max(100),sourceMenu:z.literal('https://www.labula.cz/menu'),actorEmail:z.string().max(400).optional(),notebook,base:z.object({revision:z.number().int().nonnegative(),notebook}).strict().nullable(),recovery:pending,aliasDrafts:z.array(aliasDraftSchema).max(1000).default([])}).strict();
+const envelope=z.object({format:z.literal('labula-notebook-draft'),version:z.literal(1),exportedAt:z.string().max(100),sourceMenu:z.literal('https://www.labula.cz/menu'),actorEmail:z.string().max(400).optional(),notebook,base:z.object({revision:z.number().int().nonnegative(),notebook}).strict().nullable(),recovery:pending,aliasDrafts:z.array(aliasDraftSchema).max(1000).default([]),profileItemIds:z.array(z.string()).max(1000).optional(),prepDraft:prepDraftSchema.nullable().optional()}).strict();
 export type NotebookDraft=z.infer<typeof envelope>;
 const legacy=z.object({exportedAt:z.string().max(100),sourceMenu:z.string().max(300),notebook,earlierSave:saveRecoverySchema.nullable().optional()}).strict();
 export function readNotebookDraft(content:string):NotebookDraft{
@@ -24,15 +25,16 @@ export function readNotebookDraft(content:string):NotebookDraft{
   let draft:NotebookDraft;
   if(raw&&typeof raw==='object'&&'format' in raw)draft=envelope.parse(raw);
   else{const old=legacy.parse(raw);draft={format:'labula-notebook-draft',version:1,exportedAt:old.exportedAt,sourceMenu:'https://www.labula.cz/menu',notebook:old.notebook,base:null,recovery:old.earlierSave?{kind:'save',receipt:old.earlierSave}:{kind:'none'},aliasDrafts:[]};}
-  if(draft.recovery.kind==='save'){const local=validateNotebook(JSON.parse(draft.recovery.receipt.localPayload));if(draft.base?.revision!==draft.recovery.receipt.revision||JSON.stringify(draft.notebook)!==JSON.stringify(local))draft.base=null;draft.notebook=local;}
+  draft.profileItemIds??=((raw as {notebook?:{schemaVersion?:number;items?:{id:string}[]}}).notebook?.schemaVersion===3?draft.notebook.items.map(i=>i.id):[]);
+  if(draft.recovery.kind==='save'){const local=migrateNotebook(JSON.parse(draft.recovery.receipt.localPayload));if(draft.base?.revision!==draft.recovery.receipt.revision||JSON.stringify(draft.notebook)!==JSON.stringify(local))draft.base=null;draft.notebook=local;}
   if(draft.base)serializeNotebook(draft.base.notebook);
   const aliases=new Set<string>();for(const entry of draft.aliasDrafts){if(aliases.has(entry.itemId))throw Error('Repeated alias draft.');aliases.add(entry.itemId);}
   return draft;
  }catch{throw Error('This notebook draft is unsupported or contains invalid data. Your current work is kept.');}
 }
-export function makeNotebookDraft(data:Notebook,base:NotebookDraft['base'],actorEmail:string,aliasDrafts:AliasDraft[],save:SaveRecovery|null,catalog:CatalogRecovery|null,bulk:BulkRecovery|null):NotebookDraft{
+export function makeNotebookDraft(data:Notebook,base:NotebookDraft['base'],actorEmail:string,aliasDrafts:AliasDraft[],save:SaveRecovery|null,catalog:CatalogRecovery|null,bulk:BulkRecovery|null,prepDraft:PrepDraft|null=null):NotebookDraft{
  if([save,catalog,bulk].filter(Boolean).length>1)throw Error('Finish checking the earlier operation before downloading this draft.');
- const file:NotebookDraft={format:'labula-notebook-draft',version:1,exportedAt:new Date().toISOString(),sourceMenu:'https://www.labula.cz/menu',actorEmail,notebook:data,base,recovery:save?{kind:'save',receipt:save}:catalog?{kind:'catalog',receipt:catalog}:bulk?{kind:'bulk',receipt:bulk}:{kind:'none'},aliasDrafts};
+ const file:NotebookDraft={format:'labula-notebook-draft',version:1,exportedAt:new Date().toISOString(),sourceMenu:'https://www.labula.cz/menu',actorEmail,notebook:data,base,profileItemIds:data.items.map(i=>i.id),prepDraft,recovery:save?{kind:'save',receipt:save}:catalog?{kind:'catalog',receipt:catalog}:bulk?{kind:'bulk',receipt:bulk}:{kind:'none'},aliasDrafts};
  return readNotebookDraft(JSON.stringify(file));
 }
 export type RestoreDecision='shared'|'draft';
@@ -51,14 +53,15 @@ export function planNotebookRestore(file:NotebookDraft,shared:Notebook,decisions
  for(const item of file.notebook.items){
   const existing=sharedById.get(item.id),old=baseById.get(item.id),mapping=mappings[item.id];
   if(existing){mapped.set(item.id,item.id);const dest=next.items.find(i=>i.id===item.id)!;dest.name=choose('name:'+item.id,'Name: '+existing.name,old?.name,item.name,existing.name,v=>v);
+   if(file.profileItemIds?.includes(item.id))dest.prepProfile=choose('profile:'+item.id,'Preparation & storage: '+existing.name,old?.prepProfile,item.prepProfile,existing.prepProfile,v=>JSON.stringify(v));
    if(item.kind!==existing.kind)notices.add(`“${existing.name}” is currently ${existing.kind==='prep'?'Made in-house':'Bought'}. Its current type is retained; use the owner catalog tools to correct it.`);
    if(!same(item.aliases,existing.aliases))notices.add(`Saved alternative names for “${existing.name}” differ. Review them separately in catalog management; they are not overwritten by this restore.`);
    continue;
   }
   const exact=exactItem(shared.items,item.name);
   if(mapping==='skip'){mapped.set(item.id,null);continue;}
-  if(mapping&&sharedById.has(mapping)){mapped.set(item.id,mapping);continue;}
-  if(mapping?.startsWith('new:')&&!old&&!exact){const fresh=newItem(item.name,item.kind,item.unit);fresh.id=mapping.slice(4);next.items.push(fresh);mapped.set(item.id,fresh.id);notices.add(`New item: ${item.name} (${item.kind==='prep'?'Made in-house':'Bought'}). Saved preparation details are kept in the original file; new catalog entries start with a name and type only.`);continue;}
+  if(mapping&&sharedById.has(mapping)){mapped.set(item.id,mapping);if(file.profileItemIds?.includes(item.id)){const dest=next.items.find(i=>i.id===mapping)!;dest.prepProfile=choose('mapped-profile:'+item.id,'Preparation & storage: '+dest.name,undefined,item.prepProfile,dest.prepProfile,v=>JSON.stringify(v),true);}continue;}
+  if(mapping?.startsWith('new:')&&!old&&!exact){const fresh=newItem(item.name,item.kind,item.unit);fresh.id=mapping.slice(4);if(file.profileItemIds?.includes(item.id))fresh.prepProfile=item.prepProfile;next.items.push(fresh);mapped.set(item.id,fresh.id);notices.add(`New item: ${item.name} (${item.kind==='prep'?'Made in-house':'Bought'}). Preparation and storage answers are included when present. Legacy quantity and recipe details stay in the original file.`);continue;}
   unmapped.push({item,reason:old?'This saved item no longer exists. It may have been merged. Choose its current entry.':exact?'This name now matches an existing item. Confirm which item to use.':'This older file does not identify whether the item was new. Choose an existing item, create a new entry, or skip it.',canCreate:!old&&!exact,currentMatch:exact});mapped.set(item.id,null);
  }
  for(const imported of file.notebook.recipes){
