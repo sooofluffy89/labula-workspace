@@ -36,7 +36,6 @@ export function cleanProfile(raw:PrepProfile):PrepProfile{
   if(s.ruleKind!=='duration')s.rule=emptyTime();
   if(s.mode==='immediate'){s.temperature=null;s.temperatureUnknown=false;s.container='';s.quality=emptyTime();s.source=null;s.ruleKind=null;s.rule=emptyTime();s.reference='';s.ruleText='';}
  }
- p.storage=p.storage.filter(s=>{const blank=newStorageSetup();blank.id=s.id;return JSON.stringify(s)!==JSON.stringify(blank);});
  return p;
 }
 export function profileProblems(raw:PrepProfile):string[]{

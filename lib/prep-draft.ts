@@ -2,6 +2,7 @@ import {z} from 'zod';
 import {profileSchema,timeSchema,storageSetupSchema,validateProfile,sameProfile,type PrepProfile} from './prep-profile';
 import {validateNotebook,type Notebook} from './notebook';
 import {directUsage,compareUsage} from './direct-usage';
+import {preparationProgress} from './prep-completion';
 
 export const profileCommandSchema=z.object({itemId:z.string().min(1).max(100),base:profileSchema,next:profileSchema}).strict();
 export type ProfileCommand=z.infer<typeof profileCommandSchema>;
@@ -27,3 +28,32 @@ export function applyProfileCommand(n:Notebook,c:ProfileCommand){
 export function makePrepEntry(p:PrepProfile){return {base:structuredClone(p),value:structuredClone(p),step:'preparation' as const};}
 
 export function hasPrepDraftChanges(d:PrepDraft|null){return !!d&&(!!d.pending||Object.values(d.drafts).some(e=>{try{return !sameProfile(validateProfile(e.value),e.base);}catch{return true;}}));}
+
+export function changedPrepEntry(entry:PrepDraft['drafts'][string]){
+ try{return !sameProfile(validateProfile(entry.value),entry.base);}catch{return true;}
+}
+export function resumePreparation(n:Notebook,d:PrepDraft|null){
+ if(!d)return null;
+ if(d.pending)return {itemId:d.pending.command.itemId,step:d.drafts[d.pending.command.itemId]?.step??'storage' as const,pending:true};
+ const active=new Set(preparationQueue(n));
+ const last=d.queue[d.cursor];
+ const id=[last,...Object.keys(d.drafts).reverse()].find(id=>active.has(id)&&d.drafts[id]&&changedPrepEntry(d.drafts[id]));
+ return id?{itemId:id,step:d.drafts[id].step,pending:false}:null;
+}
+export function initialPreparationSession(n:Notebook,d:PrepDraft|null,account:string,options:{remaining?:boolean;startItemId?:string;itemId?:string}={}){
+ const eligible=options.remaining?preparationProgress(n).remaining.map(i=>i.item.id):preparationQueue(n);
+ const session:PrepDraft=d?structuredClone(d):{format:'labula-preparation-draft',version:1,account,queue:[],cursor:0,drafts:{},pending:null};
+ const resume=resumePreparation(n,session);
+ const target=session.pending?.command.itemId??options.itemId??options.startItemId??(options.remaining?resume?.itemId??eligible[0]:session.queue[session.cursor]??eligible[0]);
+ session.queue=[...session.queue.filter(id=>eligible.includes(id)),...eligible.filter(id=>!session.queue.includes(id))];
+ // A pending request or local draft remains recoverable even after it leaves the active menu.
+ if(target&&!session.queue.includes(target))session.queue.unshift(target);
+ session.cursor=Math.max(0,session.queue.indexOf(target!));
+ return session;
+}
+export function nextPreparationCursor(n:Notebook,s:PrepDraft,remaining:boolean){
+ const needed=new Set((remaining?preparationProgress(n).remaining.map(i=>i.item.id):preparationQueue(n)));
+ const active=new Set(preparationQueue(n));
+ for(let i=s.cursor+1;i<s.queue.length;i++)if(needed.has(s.queue[i])||active.has(s.queue[i])&&s.drafts[s.queue[i]]&&changedPrepEntry(s.drafts[s.queue[i]]))return i;
+ return null;
+}
