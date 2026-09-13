@@ -14,6 +14,8 @@ const short=z.string().max(600),note=z.string().max(2000),duration=z.number().fi
 export const timeSchema=z.object({value:duration,unit:z.enum(['hours','days']),unknown:z.boolean(),start:z.enum(['prepared','opened','thawed','other','unknown']).nullable(),startOther:short}).strict();
 export const storageSetupSchema=z.object({id:z.string().uuid(),states:z.array(z.enum(['whole','cut','washed','raw','cooked','marinated','thawed','other','unknown'])).max(9),stateOther:short,pack:z.enum(['unopened','opened','container','na','unknown']).nullable(),mode:z.enum(['chilled','frozen','dry','immediate','other','unknown']).nullable(),temperature:z.number().finite().min(-100).max(150).nullable(),temperatureUnknown:z.boolean(),container:short,quality:timeSchema,source:z.enum(['manufacturer','procedure','experience','unknown']).nullable(),ruleKind:z.enum(['duration','packdate','text','unknown']).nullable(),rule:timeSchema,reference:short,ruleText:note}).strict();
 export const profileSchema=z.object({version:z.literal(1),workflow:z.enum(['supplied','ahead','order','hybrid','unknown']).nullable(),frequency:z.enum(['several','daily','less','irregular','unknown']).nullable(),effort:z.enum(['quick','moderate','labor','unknown']).nullable(),effortBasis:z.enum(['usual-batch','ahead-batch','one-order']).nullable(),problems:z.enum(['none','yes','unknown']).nullable(),issues:z.array(z.enum(['repeat','setup','minimum','equipment','cook','runout','replenish','waste','quality','space'])).max(10),note,storage:z.array(storageSetupSchema).max(12)}).strict();
+const editableTime=timeSchema.extend({value:z.number().finite().nullable()});
+export const editableProfileSchema=profileSchema.extend({storage:z.array(storageSetupSchema.extend({temperature:z.number().finite().nullable(),quality:editableTime,rule:editableTime})).max(12)});
 export type PrepProfile=z.infer<typeof profileSchema>;
 export type StorageSetup=z.infer<typeof storageSetupSchema>;
 export type PrepTime=z.infer<typeof timeSchema>;
@@ -26,9 +28,10 @@ export const relevantProblems=(w:PrepProfile['workflow'])=>problemOptions.filter
 export const documentedSource=(s:StorageSetup['source'])=>s==='manufacturer'||s==='procedure';
 function cleanTime(t:PrepTime){if(t.unknown)t.value=null;if(t.start!=='other')t.startOther='';}
 export function cleanProfile(raw:PrepProfile):PrepProfile{
- const p=structuredClone(profileSchema.parse(raw));
+ const p=structuredClone(editableProfileSchema.parse(raw));
  if(!prepAhead(p.workflow))p.frequency=null;
- p.effortBasis=effortBasis(p.workflow);if(!p.effortBasis)p.effort=null;
+ const basis=effortBasis(p.workflow);if(p.effortBasis&&p.effortBasis!==basis)p.effort=null;
+ p.effortBasis=basis;if(!p.effortBasis)p.effort=null;
  const allowed=new Set(relevantProblems(p.workflow).map(o=>o[0]));p.issues=p.problems==='yes'?[...new Set(p.issues)].filter(i=>allowed.has(i)).sort():[];
  for(const s of p.storage){s.states=[...new Set(s.states)].sort();if(!s.states.includes('other'))s.stateOther='';if(s.temperatureUnknown)s.temperature=null;
   cleanTime(s.quality);cleanTime(s.rule);
@@ -36,7 +39,16 @@ export function cleanProfile(raw:PrepProfile):PrepProfile{
   if(s.ruleKind!=='duration')s.rule=emptyTime();
   if(s.mode==='immediate'){s.temperature=null;s.temperatureUnknown=false;s.container='';s.quality=emptyTime();s.source=null;s.ruleKind=null;s.rule=emptyTime();s.reference='';s.ruleText='';}
  }
- return p;
+ return profileSchema.parse(p);
+}
+export function prepValidationMessage(error:unknown){
+ if(!(error instanceof z.ZodError))return error instanceof Error?error.message:'Could not save these answers. Your draft is kept.';
+ const issue=error.issues[0],path=issue.path;
+ if(path.length===1&&path[0]==='storage')return 'Use no more than 12 storage setups. Remove a setup before adding or restoring another.';
+ const labels:Record<string,string>={temperature:'Storage temperature',value:'duration',start:'starting event',startOther:'starting event description',quality:'Quality estimate',rule:'Duration in the rule',reference:'Product / document reference',ruleText:'Exact wording and conditions'};
+ const at=path[0]==='storage'&&typeof path[1]==='number'?`Storage setup ${path[1]+1}: `:'';
+ const field=path.slice(at?2:0).map(p=>labels[String(p)]??String(p)).join(' — ');
+ return `${at}${field||'Answer'}: ${issue.message}. Your input is kept.`;
 }
 export function profileProblems(raw:PrepProfile):string[]{
  const p=cleanProfile(raw),errors:string[]=[];

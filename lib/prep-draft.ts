@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {profileSchema,timeSchema,storageSetupSchema,validateProfile,sameProfile,type PrepProfile} from './prep-profile';
+import {profileSchema,editableProfileSchema,validateProfile,sameProfile,effortBasis,type PrepProfile} from './prep-profile';
 import {validateNotebook,type Notebook} from './notebook';
 import {directUsage,compareUsage} from './direct-usage';
 import {preparationProgress} from './prep-completion';
@@ -8,8 +8,7 @@ export const profileCommandSchema=z.object({itemId:z.string().min(1).max(100),ba
 export type ProfileCommand=z.infer<typeof profileCommandSchema>;
 export const profileReceiptSchema=z.object({id:z.string().uuid(),revision:z.number().int().nonnegative(),command:profileCommandSchema}).strict();
 export type ProfileReceipt=z.infer<typeof profileReceiptSchema>;
-const draftTime=timeSchema.extend({value:z.number().finite().nullable()});
-const draftProfile=profileSchema.extend({storage:z.array(storageSetupSchema.extend({temperature:z.number().finite().nullable(),quality:draftTime,rule:draftTime})).max(12)});
+const draftProfile=editableProfileSchema;
 export const prepDraftSchema=z.object({format:z.literal('labula-preparation-draft'),version:z.literal(1),account:z.string().max(400),queue:z.array(z.string().max(100)).max(1000),cursor:z.number().int().min(0).max(1000),drafts:z.record(z.string().max(100),z.object({base:profileSchema,value:draftProfile,step:z.enum(['preparation','storage'])}).strict()),pending:profileReceiptSchema.nullable()}).strict();
 export type PrepDraft=z.infer<typeof prepDraftSchema>;
 export const prepDraftKey=(account:string)=>'labula-preparation-v1:'+account.toLowerCase();
@@ -17,6 +16,9 @@ export function readPrepDraft(content:string,account:string):PrepDraft{
  if(content.length>4000000)throw Error('This preparation draft is too large.');
  const d=prepDraftSchema.parse(JSON.parse(content,(key,value)=>{if(['__proto__','prototype','constructor'].includes(key))throw Error('Unsupported draft field.');return value;}));if(d.account.toLowerCase()!==account.toLowerCase())throw Error('This draft belongs to another account. Sign in with the account that created it.');
  if(new Set(d.queue).size!==d.queue.length)throw Error('This preparation draft has a repeated item.');
+ // Older editors could retain a batch estimate after changing to per-order work.
+ // Only reopen demonstrably mismatched draft answers; never rewrite a frozen receipt.
+ for(const [id,entry] of Object.entries(d.drafts)){if(d.pending?.command.itemId===id)continue;const basis=effortBasis(entry.value.workflow);if(entry.value.effortBasis&&entry.value.effortBasis!==basis){entry.value.effort=null;entry.value.effortBasis=basis;}}
  return d;
 }
 export function preparationQueue(n:Notebook){const index=directUsage(n);return n.items.filter(i=>(index.itemDishes.get(i.id)?.size??0)>0).sort((a,b)=>compareUsage(index,a.id,b.id)).map(i=>i.id);}

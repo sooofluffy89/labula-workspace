@@ -77,3 +77,10 @@
 .prep-remaining{margin-top:20px;border-top:1px solid var(--border);padding-top:18px}.prep-remaining-item{display:flex;align-items:center;gap:20px;justify-content:space-between;border-bottom:1px solid var(--border);padding:16px 0}.prep-remaining-item>div{min-width:0}.prep-remaining-item p{margin:5px 0;overflow-wrap:anywhere}.prep-remaining-item button{flex-shrink:0}.prep-remaining>button{margin-top:16px}
 .prep-draft-reminder{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 0;margin-bottom:16px}.prep-draft-reminder p{margin:0}
 @media(max-width:700px){.prep-completion-banner{padding:18px 16px}.prep-completion-grid{grid-template-columns:1fr;gap:18px}.prep-completion-banner>.actions{align-items:stretch;flex-direction:column;gap:6px}.prep-completion-banner>.actions>button{width:100%;min-height:44px;white-space:normal;height:auto}.prep-remaining-item{align-items:flex-start;flex-direction:column;gap:8px}.prep-remaining-item>button{min-height:44px}.prep-completion-count{font-size:1rem}}
+
+/* Scroll the whole form on low displays and when the dish list is expanded. */
+.prep-dialog:has(.prep-orientation details[open]){overflow-y:auto;display:block}.prep-dialog:has(.prep-orientation details[open]) .prep-body{overflow:visible}
+@media(max-height:700px){.prep-dialog{overflow-y:auto;display:block}.prep-body{overflow:visible}.prep-footer{position:static}}
+
+
+.prep-steps{display:flex;flex-wrap:wrap}.prep-steps>button{flex:1 1 auto;min-width:0;max-width:100%}
