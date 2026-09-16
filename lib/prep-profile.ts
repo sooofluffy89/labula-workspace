@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {batchSchema,editableBatchSchema,cleanBatch} from './batch-profile';
 
 export const workflowOptions=[['supplied','Use as supplied','Straight from the pack, no preparation in our kitchen.'],['ahead','Prep ahead','Prepare before service, use later.'],['order','Prepare to order','Start when an order arrives.'],['hybrid','Prep ahead + finish to order','Some work ahead, finishing during service.'],['unknown','Not sure','']] as const;
 export const frequencyOptions=[['several','Several times a day'],['daily','Once a day'],['less','Less than daily'],['irregular','No regular pattern'],['unknown','Not sure']] as const;
@@ -13,9 +14,9 @@ export const ruleOptions=[['duration','A duration'],['packdate','Follow the date
 const short=z.string().max(600),note=z.string().max(2000),duration=z.number().finite().positive().max(100000).nullable();
 export const timeSchema=z.object({value:duration,unit:z.enum(['hours','days']),unknown:z.boolean(),start:z.enum(['prepared','opened','thawed','other','unknown']).nullable(),startOther:short}).strict();
 export const storageSetupSchema=z.object({id:z.string().uuid(),states:z.array(z.enum(['whole','cut','washed','raw','cooked','marinated','thawed','other','unknown'])).max(9),stateOther:short,pack:z.enum(['unopened','opened','container','na','unknown']).nullable(),mode:z.enum(['chilled','frozen','dry','immediate','other','unknown']).nullable(),temperature:z.number().finite().min(-100).max(150).nullable(),temperatureUnknown:z.boolean(),container:short,quality:timeSchema,source:z.enum(['manufacturer','procedure','experience','unknown']).nullable(),ruleKind:z.enum(['duration','packdate','text','unknown']).nullable(),rule:timeSchema,reference:short,ruleText:note}).strict();
-export const profileSchema=z.object({version:z.literal(1),workflow:z.enum(['supplied','ahead','order','hybrid','unknown']).nullable(),frequency:z.enum(['several','daily','less','irregular','unknown']).nullable(),effort:z.enum(['quick','moderate','labor','unknown']).nullable(),effortBasis:z.enum(['usual-batch','ahead-batch','one-order']).nullable(),problems:z.enum(['none','yes','unknown']).nullable(),issues:z.array(z.enum(['repeat','setup','minimum','equipment','cook','runout','replenish','waste','quality','space'])).max(10),note,storage:z.array(storageSetupSchema).max(12)}).strict();
+export const profileSchema=z.object({version:z.literal(1),workflow:z.enum(['supplied','ahead','order','hybrid','unknown']).nullable(),frequency:z.enum(['several','daily','less','irregular','unknown']).nullable(),effort:z.enum(['quick','moderate','labor','unknown']).nullable(),effortBasis:z.enum(['usual-batch','ahead-batch','one-order']).nullable(),problems:z.enum(['none','yes','unknown']).nullable(),issues:z.array(z.enum(['repeat','setup','minimum','equipment','cook','runout','replenish','waste','quality','space'])).max(10),note,storage:z.array(storageSetupSchema).max(12),batch:batchSchema.optional()}).strict();
 const editableTime=timeSchema.extend({value:z.number().finite().nullable()});
-export const editableProfileSchema=profileSchema.extend({storage:z.array(storageSetupSchema.extend({temperature:z.number().finite().nullable(),quality:editableTime,rule:editableTime})).max(12)});
+export const editableProfileSchema=profileSchema.extend({storage:z.array(storageSetupSchema.extend({temperature:z.number().finite().nullable(),quality:editableTime,rule:editableTime})).max(12),batch:editableBatchSchema.optional()});
 export type PrepProfile=z.infer<typeof profileSchema>;
 export type StorageSetup=z.infer<typeof storageSetupSchema>;
 export type PrepTime=z.infer<typeof timeSchema>;
@@ -29,6 +30,7 @@ export const documentedSource=(s:StorageSetup['source'])=>s==='manufacturer'||s=
 function cleanTime(t:PrepTime){if(t.unknown)t.value=null;if(t.start!=='other')t.startOther='';}
 export function cleanProfile(raw:PrepProfile):PrepProfile{
  const p=structuredClone(editableProfileSchema.parse(raw));
+ if(p.batch)p.batch=cleanBatch(p.batch);
  if(!prepAhead(p.workflow))p.frequency=null;
  const basis=effortBasis(p.workflow);if(p.effortBasis&&p.effortBasis!==basis)p.effort=null;
  p.effortBasis=basis;if(!p.effortBasis)p.effort=null;
@@ -45,7 +47,7 @@ export function prepValidationMessage(error:unknown){
  if(!(error instanceof z.ZodError))return error instanceof Error?error.message:'Could not save these answers. Your draft is kept.';
  const issue=error.issues[0],path=issue.path;
  if(path.length===1&&path[0]==='storage')return 'Use no more than 12 storage setups. Remove a setup before adding or restoring another.';
- const labels:Record<string,string>={temperature:'Storage temperature',value:'duration',start:'starting event',startOther:'starting event description',quality:'Quality estimate',rule:'Duration in the rule',reference:'Product / document reference',ruleText:'Exact wording and conditions'};
+ const labels:Record<string,string>={batch:'Batch details',amount:'batch output',times:'number of batches',minutes:'hands-on minutes',temperature:'Storage temperature',value:'duration',start:'starting event',startOther:'starting event description',quality:'Quality estimate',rule:'Duration in the rule',reference:'Product / document reference',ruleText:'Exact wording and conditions'};
  const at=path[0]==='storage'&&typeof path[1]==='number'?`Storage setup ${path[1]+1}: `:'';
  const field=path.slice(at?2:0).map(p=>labels[String(p)]??String(p)).join(' — ');
  return `${at}${field||'Answer'}: ${issue.message}. Your input is kept.`;

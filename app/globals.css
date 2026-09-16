@@ -84,3 +84,6 @@
 
 
 .prep-steps{display:flex;flex-wrap:wrap}.prep-steps>button{flex:1 1 auto;min-width:0;max-width:100%}
+
+.batch-intro{margin-bottom:24px}.batch-intro p{margin-top:10px}.batch-steps{grid-template-columns:repeat(3,minmax(0,1fr))}.batch-steps button{height:auto;min-height:44px;white-space:normal}.batch-list{margin-top:20px}.batch-list>.prep-columns{margin-bottom:12px}.batch-collection .prep-remaining-item strong{overflow-wrap:anywhere}
+@media(max-width:600px){.batch-steps{grid-template-columns:1fr}.batch-collection .actions{flex-wrap:wrap}}

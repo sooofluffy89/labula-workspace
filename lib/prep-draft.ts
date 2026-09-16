@@ -3,13 +3,14 @@ import {profileSchema,editableProfileSchema,validateProfile,sameProfile,effortBa
 import {validateNotebook,type Notebook} from './notebook';
 import {directUsage,compareUsage} from './direct-usage';
 import {preparationProgress} from './prep-completion';
+import {batchProgress,type BatchScope} from './batch-progress';
 
 export const profileCommandSchema=z.object({itemId:z.string().min(1).max(100),base:profileSchema,next:profileSchema}).strict();
 export type ProfileCommand=z.infer<typeof profileCommandSchema>;
 export const profileReceiptSchema=z.object({id:z.string().uuid(),revision:z.number().int().nonnegative(),command:profileCommandSchema}).strict();
 export type ProfileReceipt=z.infer<typeof profileReceiptSchema>;
 const draftProfile=editableProfileSchema;
-export const prepDraftSchema=z.object({format:z.literal('labula-preparation-draft'),version:z.literal(1),account:z.string().max(400),queue:z.array(z.string().max(100)).max(1000),cursor:z.number().int().min(0).max(1000),drafts:z.record(z.string().max(100),z.object({base:profileSchema,value:draftProfile,step:z.enum(['preparation','storage'])}).strict()),pending:profileReceiptSchema.nullable()}).strict();
+export const prepDraftSchema=z.object({format:z.literal('labula-preparation-draft'),version:z.literal(1),account:z.string().max(400),queue:z.array(z.string().max(100)).max(1000),cursor:z.number().int().min(0).max(1000),drafts:z.record(z.string().max(100),z.object({base:profileSchema,value:draftProfile,step:z.enum(['preparation','storage','batch'])}).strict()),pending:profileReceiptSchema.nullable()}).strict();
 export type PrepDraft=z.infer<typeof prepDraftSchema>;
 export const prepDraftKey=(account:string)=>'labula-preparation-v1:'+account.toLowerCase();
 export function readPrepDraft(content:string,account:string):PrepDraft{
@@ -39,23 +40,28 @@ export function resumePreparation(n:Notebook,d:PrepDraft|null){
  if(d.pending)return {itemId:d.pending.command.itemId,step:d.drafts[d.pending.command.itemId]?.step??'storage' as const,pending:true};
  const active=new Set(preparationQueue(n));
  const last=d.queue[d.cursor];
- const id=[last,...Object.keys(d.drafts).reverse()].find(id=>active.has(id)&&d.drafts[id]&&changedPrepEntry(d.drafts[id]));
+ const id=[last,...Object.keys(d.drafts).reverse()].find(id=>(active.has(id)||d.drafts[id]?.step==='batch'&&n.items.some(i=>i.id===id&&i.kind==='prep'))&&d.drafts[id]&&changedPrepEntry(d.drafts[id]));
  return id?{itemId:id,step:d.drafts[id].step,pending:false}:null;
 }
-export function initialPreparationSession(n:Notebook,d:PrepDraft|null,account:string,options:{remaining?:boolean;startItemId?:string;itemId?:string}={}){
- const eligible=options.remaining?preparationProgress(n).remaining.map(i=>i.item.id):preparationQueue(n);
+export function initialPreparationSession(n:Notebook,d:PrepDraft|null,account:string,options:{remaining?:boolean;startItemId?:string;itemId?:string;batchScope?:BatchScope}={}){
+ const batches=options.batchScope?batchProgress(n,options.batchScope):null;
+ const eligible=batches?(options.remaining?batches.remaining:batches.items).map(i=>i.item.id):options.remaining?preparationProgress(n).remaining.map(i=>i.item.id):preparationQueue(n);
  const session:PrepDraft=d?structuredClone(d):{format:'labula-preparation-draft',version:1,account,queue:[],cursor:0,drafts:{},pending:null};
  const resume=resumePreparation(n,session);
- const target=session.pending?.command.itemId??options.itemId??options.startItemId??(options.remaining?resume?.itemId??eligible[0]:session.queue[session.cursor]??eligible[0]);
+ const resumable=resume&&(!batches||eligible.includes(resume.itemId))?resume:null;
+ const target=session.pending?.command.itemId??options.itemId??options.startItemId??(options.remaining?resumable?.itemId??eligible[0]:batches?resumable?.itemId??eligible[0]:session.queue[session.cursor]??eligible[0]);
  session.queue=[...session.queue.filter(id=>eligible.includes(id)),...eligible.filter(id=>!session.queue.includes(id))];
  // A pending request or local draft remains recoverable even after it leaves the active menu.
  if(target&&!session.queue.includes(target))session.queue.unshift(target);
  session.cursor=Math.max(0,session.queue.indexOf(target!));
+ // Opening batch collection focuses its questions while keeping every earlier draft value.
+ if(batches&&target&&session.drafts[target]&&!session.pending)session.drafts[target].step='batch';
  return session;
 }
-export function nextPreparationCursor(n:Notebook,s:PrepDraft,remaining:boolean){
- const needed=new Set((remaining?preparationProgress(n).remaining.map(i=>i.item.id):preparationQueue(n)));
- const active=new Set(preparationQueue(n));
+export function nextPreparationCursor(n:Notebook,s:PrepDraft,remaining:boolean,batchScope?:BatchScope){
+ const batches=batchScope?batchProgress(n,batchScope):null;
+ const needed=new Set(batches?(remaining?batches.remaining:batches.items).map(i=>i.item.id):(remaining?preparationProgress(n).remaining.map(i=>i.item.id):preparationQueue(n)));
+ const active=new Set(batches?batches.items.map(i=>i.item.id):preparationQueue(n));
  for(let i=s.cursor+1;i<s.queue.length;i++)if(needed.has(s.queue[i])||active.has(s.queue[i])&&s.drafts[s.queue[i]]&&changedPrepEntry(s.drafts[s.queue[i]]))return i;
  return null;
 }
