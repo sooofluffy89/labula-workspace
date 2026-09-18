@@ -5,6 +5,8 @@ import {optionLabel,startOptions,type PrepTime,type StorageSetup} from './prep-p
 
 export type Cadence='service'|'day'|'week'|'order'|'supplied'|'unknown'|'scope';
 export type InsightRow={item:Item;dishes:{id:string;name:string}[];scopeReview:boolean;cadence:Cadence;frequencyConflict:boolean;batch:BatchProfile|undefined};
+export const summaryStorageModes=['frozen','chilled','dry','immediate','unknown'] as const;
+export type SummaryStorageMode=(typeof summaryStorageModes)[number];
 const positive=(n:number|null|undefined):n is number=>typeof n==='number'&&Number.isFinite(n)&&n>0;
 export const numberText=(n:number)=>new Intl.NumberFormat('en-GB',{maximumFractionDigits:2}).format(n);
 
@@ -22,6 +24,17 @@ export function kitchenInsights(n:Notebook):InsightRow[]{
  }).sort((a,b)=>b.dishes.length-a.dishes.length||a.item.name.localeCompare(b.item.name,'en')||a.item.id.localeCompare(b.item.id));
 }
 export function matchesInsight(row:InsightRow,query:string,kind:string){return (kind==='all'||row.item.kind===kind)&&normalizeName([row.item.name,...row.item.aliases,...row.dishes.map(d=>d.name)].join(' ')).includes(normalizeName(query));}
+/** A preparation can have more than one setup, but only contributes once to a selected storage group. */
+export function matchesStorageMode(row:InsightRow,mode:SummaryStorageMode|'all'){
+ if(mode==='all')return true;
+ const setups=row.item.prepProfile.storage;
+ if(mode==='unknown')return !setups.length||setups.some(s=>!s.mode||s.mode==='unknown'||s.mode==='other');
+ return setups.some(s=>s.mode===mode);
+}
+/** Stable direct-menu-use ordering used by both summary previews and detailed lists. */
+export function compareInsightRows(a:InsightRow,b:InsightRow){return b.dishes.length-a.dishes.length||a.item.name.localeCompare(b.item.name,'en')||a.item.id.localeCompare(b.item.id);}
+export function storageRows(rows:InsightRow[],mode:SummaryStorageMode|'all'){return rows.filter(r=>matchesStorageMode(r,mode)).sort(compareInsightRows);}
+export function repeatedWorkRows(rows:InsightRow[]){return rows.filter(r=>r.item.prepProfile.issues.includes('repeat')).sort(compareInsightRows);}
 export function outputText(r:InsightRow){
  if(r.scopeReview)return 'Labula amount not separated';
  if(!batchCompletion(r.item.prepProfile).applicable)return 'No advance batch';
