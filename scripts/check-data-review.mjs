@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {mkdtemp,readFile,writeFile,rm,readdir} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {DatabaseSync} from 'node:sqlite';
+const dir=await mkdtemp(path.join(tmpdir(),'labula-review-test-'));
+try{
+ const bundle=async(entry,name,extra={})=>{const outfile=path.join(dir,name+'.mjs');await build({entryPoints:[entry],bundle:true,platform:'node',format:'esm',outfile,logLevel:'silent',...extra});return import(outfile);};
+ const m=await bundle('lib/notebook.ts','notebook'),r=await bundle('lib/data-review.ts','review'),f=await bundle('lib/data-review-fields.ts','fields'),q=await bundle('lib/data-review-save.ts','queue');
+ const notebook=m.initialNotebook();notebook.items=[m.newItem('Test broth','prep'),m.newItem('Water'),...r.EXCLUDED_NAMES.map(n=>m.newItem(n,'prep'))];notebook.recipes[0].inputs=[{itemId:notebook.items[0].id,amount:null,note:''}];
+ const source={notebook,revision:317,capturedAt:new Date().toISOString()},data=r.emptyReview();
+ assert.equal(f.decimal('2,5'),2.5);assert.equal(f.decimal('2.5'),2.5);for(const v of ['1,2.3','3 bags','NaN','Infinity','','1e4'])assert.equal(f.decimal(v),null);assert.equal(f.decimal('-3'),-3);
+ assert.equal(r.cards(source,data).filter(c=>c.excluded&&c.section==='Items').length,4);
+ for(const c of r.cards(source,data).filter(c=>c.excluded&&c.section==='Items'))assert.deepEqual(c.fields.find(f=>f.key==='productionMode').options,['Outside production review']);
+ const first=r.cards(source,data)[0];assert.equal(r.stateFor(first,source,data),'Draft');data.answers.session={values:{},confirmed:true};assert.equal(r.stateFor(first,source,data),'Draft');
+ const missing=r.cardIssues(first,source,data);data.answers.session.followup={owner:'Test chef',due:'2026-10-01',method:'Observe and document the reference period',reason:'No record yet',fields:missing.map(i=>i.path)};assert.equal(r.stateFor(first,source,data),'Needs checking');
+ data.answers.session.values={end:'2030-01-01'};assert.equal(r.stateFor(first,source,data),'Draft','hard date errors cannot be waived');assert.throws(()=>r.validateReview(source,{...data,submitted:true}));
+ const pid=crypto.randomUUID(),p={id:pid,name:'Broth cooking'};data.productions=[p];data.answers[`production:${pid}`]={confirmed:false,values:{scope:'Only products within this review',inputs:[{item:notebook.items[0].id,origin:'New input'}],outputs:[{item:notebook.items[0].id,scope:'Within review',amount:'2.5',unit:'kg',phase:'Cooked'}],capacity:'Known',minimum:'4',maximum:'2',packages:[{item:notebook.items[0].id,type:'bags',count:'3',content:'1',unit:'kg',phase:'Cooked'}]}};
+ let pc=r.cards(source,data).find(c=>c.id===`production:${pid}`),issues=r.cardIssues(pc,source,data);assert(issues.some(i=>i.path==='minimum'&&i.hard));assert(issues.some(i=>i.path==='packages'&&i.hard));assert(r.integrityIssues(source,data).some(x=>x.includes('cycle')));
+ data.answers[pc.id].values.inputs[0].origin='Earlier batch';data.answers[pc.id].values.inputs[0].lot='Batch A';assert(!r.integrityIssues(source,data).some(x=>x.includes('cycle')));
+ data.answers[pc.id].values.outputs.push({item:notebook.items[2].id,scope:'Within review'});assert(r.cardIssues(pc,source,data).some(i=>i.message.includes('outside the agreed')));
+ const storage=r.cards(source,data).find(c=>c.section==='Storage');data.answers[storage.id]={confirmed:true,values:{states:[{state:'Thawed',mode:'Frozen',temperature:'-3',rule:'Approved kitchen procedure',reference:'Procedure v1'}]}};issues=r.cardIssues(storage,source,data);assert(issues.some(i=>i.hard&&i.message.includes('Frozen')));assert(issues.some(i=>i.message.includes('verify applicability')));
+ // Queue: A is captured, B and C are accepted while separate writes are in flight.
+ const initial=r.emptyReview(),record={source,data:initial,revision:0,updatedAt:'now',updatedBy:'test'};let persisted=0;const queue=new q.ReviewSaveQueue(record,()=>persisted++,()=>{});
+ const edit=letter=>queue.edit({...queue.current,answers:{session:{confirmed:false,values:{name:letter}}}});
+ edit('A');let resolve;const firstWrite=queue.save(p=>new Promise(res=>{resolve=()=>res({operationId:p.operationId,revision:p.revision+1});}));edit('B');await queue.save(()=>{throw Error('duplicate call');});resolve();await firstWrite;assert.equal(queue.current.answers.session.values.name,'B');assert(queue.dirty);
+ const secondWrite=queue.save(p=>new Promise(res=>{resolve=()=>res({operationId:p.operationId,revision:p.revision+1});}));edit('C');resolve();await secondWrite;assert(queue.dirty);assert.equal(queue.current.answers.session.values.name,'C');
+ await queue.save(async p=>({operationId:p.operationId,revision:p.revision+1}));assert(!queue.dirty);assert.equal(queue.revision,3);
+ edit('D');let original;await assert.rejects(queue.save(async p=>{original=structuredClone(p);throw Error('timeout after commit');}));edit('E');await queue.save(async p=>{assert.deepEqual(p,original);return {operationId:p.operationId,revision:p.revision+1};});assert(queue.dirty);assert.equal(queue.current.answers.session.values.name,'E');assert(persisted>=8);
+ // Real route + transactional SQLite, with a dispatch identity stub only.
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.__reviewDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.__reviewUser;');
+ const api=await bundle('app/api/data-review/route.ts','route',{alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'}});
+ const db=new DatabaseSync(':memory:');for(const name of (await readdir('drizzle')).filter(n=>n.endsWith('.sql')).sort())db.exec(await readFile('drizzle/'+name,'utf8'));
+ db.prepare('INSERT INTO notebooks VALUES(?,?,?,?,?)').run('kitchen',JSON.stringify(notebook),317,'2026-09-18','chef');const originalNotebook=db.prepare('SELECT * FROM notebooks').all();
+ const statement=(sql,args=[])=>({bind(...a){return statement(sql,a);},async first(){return db.prepare(sql).get(...args)??null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){return this.runSync();},runSync(){return {meta:{changes:Number(db.prepare(sql).run(...args).changes)}};}});
+ let failBatch=false;globalThis.__reviewDb={prepare:statement,async batch(stmts){db.exec('BEGIN');try{const result=stmts.map((s,i)=>{if(failBatch&&i===1){failBatch=false;throw Error('Injected rollback');}return s.runSync();});db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}};globalThis.__reviewUser={userId:'chef',email:'chef@test.local'};
+ const req=(body,revision=0,origin='https://test.local')=>new Request('https://test.local/api/data-review',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','If-Match':String(revision)},body:JSON.stringify(body)});
+ const start={action:'start',operationId:crypto.randomUUID()};assert.equal((await api.GET()).status,200);assert.equal(db.prepare('SELECT count(*) c FROM data_reviews').get().c,0,'GET is read-only');
+ assert.equal((await api.POST(req(start,0,'https://evil.local'))).status,403);globalThis.__reviewUser=null;assert.equal((await api.POST(req(start))).status,401);globalThis.__reviewUser={userId:'chef',email:'chef@test.local'};
+ assert.equal((await api.POST(req(start))).status,200);assert.equal((await api.POST(req(start))).status,200);assert.equal(db.prepare('SELECT count(*) c FROM data_reviews').get().c,1);
+ let payload=r.emptyReview();payload.answers.session={values:{name:'Chef A'},confirmed:false};const command={action:'save',operationId:crypto.randomUUID(),data:payload};assert.equal((await api.POST(req(command))).status,200);
+ const replay=await (await api.POST(req(command))).json();assert(replay.replayed);assert.equal(replay.revision,1);assert.equal(db.prepare('SELECT count(*) c FROM data_review_commands').get().c,1);
+ const stale={...command,operationId:crypto.randomUUID()};assert.equal((await api.POST(req(stale))).status,409);assert.equal((await api.POST(req({...command,data:{...payload,submitted:true}}))).status,409,'receipt cannot be reused with different data');
+ const invalid={...command,operationId:crypto.randomUUID(),data:{...payload,submitted:true}};assert.equal((await api.POST(req(invalid,1))).status,422,'server checks final submission');
+ failBatch=true;const rollback={...command,operationId:crypto.randomUUID()};const savedConsole=console.error;console.error=()=>{};assert.equal((await api.POST(req(rollback,1))).status,503);console.error=savedConsole;assert.equal(db.prepare('SELECT revision FROM data_reviews').get().revision,1);assert.equal((await api.POST(req(rollback,1))).status,200,'identical retry after rollback succeeds');
+ assert.deepEqual(db.prepare('SELECT * FROM notebooks').all(),originalNotebook,'review never mutates original notebook');assert.equal(JSON.parse(db.prepare('SELECT source FROM data_reviews').get().source).revision,317);
+ db.close();delete globalThis.__reviewDb;delete globalThis.__reviewUser;
+ console.log('Passed review: scope, decimal units, missing/unknown facts, hard conflicts, shared outputs/cycles, immutable source, auth/origin, concurrent revision protection, atomic history, exact retries, and edits during consecutive saves.');
+}finally{await rm(dir,{recursive:true,force:true});}

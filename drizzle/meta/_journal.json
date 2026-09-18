@@ -22,6 +22,13 @@
       "when": 1789236277174,
       "tag": "0002_round_tyger_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1789740773406,
+      "tag": "0003_shiny_snowbird",
+      "breakpoints": true
     }
   ]
 }

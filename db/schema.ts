@@ -13,3 +13,12 @@ export const notebookCommands = sqliteTable('notebook_commands', {
  id:text('id').primaryKey(), kind:text('kind').notNull(), actorId:text('actor_id').notNull(), fingerprint:text('fingerprint').notNull(),
  beforeRevision:integer('before_revision').notNull(), afterRevision:integer('after_revision').notNull().unique(), createdAt:text('created_at').notNull(),
 });
+export const dataReviews = sqliteTable('data_reviews', {
+ id:text('id').primaryKey(), source:text('source').notNull(), payload:text('payload').notNull(), revision:integer('revision').notNull(),
+ updatedAt:text('updated_at').notNull(), updatedBy:text('updated_by').notNull(),
+});
+export const dataReviewCommands = sqliteTable('data_review_commands', {
+ id:text('id').primaryKey(), reviewId:text('review_id').notNull(), actorId:text('actor_id').notNull(), actorEmail:text('actor_email').notNull(),
+ request:text('request').notNull(), beforeRevision:integer('before_revision').notNull(), afterRevision:integer('after_revision').notNull(),
+ beforePayload:text('before_payload').notNull(), afterPayload:text('after_payload').notNull(), createdAt:text('created_at').notNull(),
+});
