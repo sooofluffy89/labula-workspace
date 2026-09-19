@@ -1,5 +1,8 @@
+import {recipeTitle} from '../notebook';
 import type {Draft,Entity} from './model';
 import {excluded} from './model';
+import type {ReviewSource} from '../data-review';
+import {contextItems} from './prefill';
 export type TargetCard={id:string;names:string[];question:string;options:string[];groups:string[];help:string};
 const card=(id:string,names:string[],question:string,options:string[],groups:string[],help:string):TargetCard=>({id,names,question,options:[...options,'I need to check'],groups,help});
 export const targetCards:TargetCard[]=[
@@ -29,4 +32,4 @@ export const targetCards:TargetCard[]=[
  card('T24',['beef skewer','yellow sauce','brown sauce','mustard','chicken broth','mushroom sauce','tofu sauce'],'Is this current practice, a past issue or a future proposal?',['Already changed','Still current','Future proposal','Resolved problem','Happened once'],['SET-02','MENU-01','OPS-01','OPS-03','OPS-06'],'Clarify unplanned as unwritten routine, visual stock check, numeric threshold or emergency shortage. Record the actual event and owner. Do not activate a future menu change or collect excluded production metrics.'),
  card('T25',['universal sauce','fermented chili','minced garlic','ginger garlic water','fermented noodles','seasonal veggies','chicken broth','mushroom'],'Do the two labour answers describe the same output, batch size and tasks?',['Yes, one answer is incorrect','Different batch sizes','Different included tasks','Different cooks or equipment','Process changed'],['RUN-01','RUN-06','RUN-07','RUN-09'],'Explain the difference with separate samples and exact evidence. Do not average contradictory answers. Fried peanuts and chili mayo manufacturing comparisons are excluded.'),
 ];
-export function targetsFor(d:Draft,e:Entity){const name=e.name.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return targetCards.filter(t=>t.names.some(n=>name.includes(n.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()))&&!(t.id==='T25'&&excluded(d,e.id)));}
+export function targetsFor(d:Draft,e:Entity,source?:ReviewSource){const originals=source?contextItems(d,e,source).flatMap(i=>[i.name,...i.aliases]):[];const recipe=source?.notebook.recipes.find(r=>r.id===e.sourceId);const name=[e.name,...originals,recipe?recipeTitle(recipe):''].join(' ').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return targetCards.filter(t=>t.names.some(n=>name.includes(n.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()))&&!(t.id==='T25'&&excluded(d,e.id)));}
