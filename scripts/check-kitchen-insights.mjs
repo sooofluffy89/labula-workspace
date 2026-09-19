@@ -23,6 +23,15 @@ try{
  a.prepProfile.batch.work.unknown=true;assert.equal(m.workMinutes(row(a.id),'day'),null);a.prepProfile.batch.work.unknown=false;
  const s=m.newStorageSetup();s.mode='frozen';s.temperature=-4;s.states=['thawed'];s.source='experience';assert.ok(m.storageChecks(s).length>=2);s.quality={value:5,unit:'days',unknown:false,start:'opened',startOther:''};assert.match(m.timeText(s.quality),/5 days.*pack opened/);s.quality.unknown=true;assert.equal(m.timeText(s.quality),'Not known');
  assert.equal(JSON.stringify(n),before,'projection and calculations never mutate source data');
+ // Stable production exclusions survive edited names/notes and do not become missing routines.
+ const heldNotebook=structuredClone(n),protectedPrep=m.newItem('braised beef shank','prep');
+ protectedPrep.prepProfile=structuredClone(a.prepProfile);protectedPrep.prepProfile.note='';protectedPrep.prepProfile.batch.note='';protectedPrep.prepProfile.issues=['repeat','runout'];
+ heldNotebook.items.push(protectedPrep);heldNotebook.recipes[0].inputs.push({itemId:protectedPrep.id,amount:null,note:''});
+ const heldRows=m.kitchenInsights(heldNotebook),protectedRow=heldRows.find(r=>r.item.id===protectedPrep.id),dashboardRows=heldRows.filter(r=>!r.scopeReview);
+ assert.equal(protectedRow.productionHeld,true);assert.equal(protectedRow.scopeReview,true);assert.equal(protectedRow.cadence,'scope');assert.equal(protectedRow.batch,undefined);
+ assert.equal(dashboardRows.length,rows.filter(r=>!r.scopeReview).length,'adding an excluded preparation never inflates production summary denominator');
+ assert.equal(dashboardRows.some(r=>r.item.id===protectedPrep.id),false);assert.equal(m.repeatedWorkRows(dashboardRows).some(r=>r.item.id===protectedPrep.id),false);
+ assert.equal(m.workMinutes(protectedRow,'day'),null);assert.equal(m.storageRows([protectedRow],'frozen').length,1,'held item retains recorded storage in its detail');assert.equal(protectedRow.dishes.length,1,'held item retains its recipe links');
  if(process.env.LABULA_INSIGHTS_SNAPSHOT){const raw=JSON.parse(await readFile(process.env.LABULA_INSIGHTS_SNAPSHOT,'utf8')),real=m.validateNotebook(raw.notebook),saved=JSON.stringify(real),r=m.kitchenInsights(real);assert.equal(r.filter(x=>x.item.kind==='prep').length,40);assert.equal(r.filter(x=>x.scopeReview).length,4);const cubes=r.find(x=>x.item.name==='beef shank cubes');assert.equal(m.workMinutes(cubes,'day'),120);assert.equal(JSON.stringify(real),saved);console.log('PASS private snapshot: 40 active house-made items, 4 scope-review items, daily cubes 120 person-min; no mutation.');}
  console.log('PASS insight calculations: active direct use, distinct dishes, unknowns, no period conversion, scope exclusions, frequency conflict, storage clock and source preservation.');
 }finally{await rm(dir,{recursive:true,force:true});}

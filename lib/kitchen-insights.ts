@@ -17,10 +17,10 @@ export function kitchenInsights(n:Notebook,reviewed:AppliedRecord[]=[]) :Insight
  return n.items.filter(i=>usage.itemDishes.has(i.id)).map(item=>{
   const p=item.prepProfile,productionHeld=productionExcluded(n,item.id),wasReviewed=replaced.has(item.id),batch=productionHeld||wasReviewed?undefined:p.batch;
   // A mention is a conservative review flag, not proof that an item belongs to one location.
-  const scopeReview=/\bmanifesto\b/i.test([p.note,batch?.note,item.method,item.specification].join(' '));
+  const scopeReview=productionHeld||/\bmanifesto\b/i.test([p.note,p.batch?.note,item.method,item.specification].join(' '));
   const fortnight=/once\s+(?:(?:in|every|per)\s+)?(?:2|two)\s+weeks|every\s+(?:2|two)\s+weeks|fortnight/i.test(batch?.note??'');
   const frequencyConflict=!!batch&&!batch.frequency.unknown&&batch.frequency.period==='week'&&fortnight&&batch.frequency.times!==0.5;
-  const cadence:Cadence=productionHeld||wasReviewed?'unknown':p.workflow==='supplied'?'supplied':p.workflow==='order'?'order':scopeReview?'scope':frequencyConflict?'unknown':batch&&!batch.frequency.unknown&&positive(batch.frequency.times)&&batch.frequency.period?batch.frequency.period:p.frequency==='daily'||p.frequency==='several'?'day':'unknown';
+  const cadence:Cadence=productionHeld?'scope':wasReviewed?'unknown':p.workflow==='supplied'?'supplied':p.workflow==='order'?'order':scopeReview?'scope':frequencyConflict?'unknown':batch&&!batch.frequency.unknown&&positive(batch.frequency.times)&&batch.frequency.period?batch.frequency.period:p.frequency==='daily'||p.frequency==='several'?'day':'unknown';
   return {item,batch,productionHeld,reviewed:wasReviewed,scopeReview,frequencyConflict,cadence,dishes:usage.dishes.filter(d=>usage.itemDishes.get(item.id)!.has(d.id)).map(d=>({id:d.id,name:d.name}))};
  }).sort((a,b)=>b.dishes.length-a.dishes.length||a.item.name.localeCompare(b.item.name,'en')||a.item.id.localeCompare(b.item.id));
 }

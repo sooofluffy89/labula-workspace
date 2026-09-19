@@ -67,3 +67,7 @@ Při návratu verze nikdy neobnovovat starý notebook přes novější práci. N
 ## Známé hranice
 
 Nebyl proveden pilot se skutečným kuchařem. Aplikace neodvozuje dobu bezpečného skladování ani optimální dávku z dojmu; chybějící podklad musí být doplněn a odpovědná osoba musí ověřit použitelný zdroj. Důkazy jsou přesné dostupné reference dokumentu; nejde o nové veřejné úložiště příloh. Velikost importu je omezená 6.5MB transportu, běžný požadavek 800KB a historie má konzervativní limit pod D1 maximem. Nadlimitní obsah zůstává obnovitelný a dostane konkrétní odmítnutí, ne nekonečný retry.
+
+## Závěrečná kontrola výrobního rozsahu
+
+Kontrola nasazení odhalila ztrátu příznaku odděleného výrobního rozsahu při skrytí staré dávky. Opraveno: vyřazené přípravy jsou určovány stabilní identitou i původními poznámkami, patří do samostatné skupiny a nezvyšují neznámé rutiny, opakovanou práci ani jmenovatele souhrnu. Složení a skladování zůstává v detailu. Regrese používá syntetickou chráněnou přípravu bez poznámky Manifesto; kontrola soukromé kopie potvrzuje 40 aktivních příprav celkem, 4 stranou, tedy 36 v souhrnu. Zdrojová data se nemění.
