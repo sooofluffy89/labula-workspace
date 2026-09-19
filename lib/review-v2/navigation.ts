@@ -3,7 +3,7 @@ import {groups,type Kind,type Field,type Values} from './fields';
 import {entity,values,list,str,options,activeGroups,makeEntity,targetActive,fieldValue,processFor,type Draft,type Entity,type Target} from './model';
 import {upgradeUX} from './confirmation';
 import {answerGroups,recordProgress,topicProgress,type Role} from './progress';
-export const fieldAnchor=(t:Target)=>'review-field-'+encodeURIComponent(JSON.stringify(t));
+export {fieldAnchor} from './field-location';
 export function fieldAt(d:Draft,t:Target){const e=entity(d,t.entityId),g=e&&activeGroups(d,e).find(g=>g.id===t.group);if(!e||!g)return;let fs=g.fields,v=values(e,t.group);for(let i=0;i<t.path.length;i++){const f:Field|undefined=fs.find(f=>f.key===t.path[i]);if(!f)return;if(i===t.path.length-1)return {field:f,row:v,record:e};if(f.type!=='rows')return;const rowId=t.path[++i],row=list(v,f.key).find(x=>x.id===rowId);if(!row)return;v=row;fs=f.fields??[];}}
 export function setAnswer(d:Draft,t:Target,value:Values[string]):Draft{
  const next=structuredClone(d),e=entity(next,t.entityId);if(!e)throw Error('The original record is no longer available.');let v=e.answers[t.group]??={};
