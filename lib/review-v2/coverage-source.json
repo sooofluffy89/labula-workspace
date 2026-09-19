@@ -1,0 +1,594 @@
+{
+  "sourceRevision": 317,
+  "sourceFile": "ocisteni-dat-2026-09-18/audit-data.json",
+  "createdAt": "2026-09-19",
+  "sourceCount": 57,
+  "coveredCount": 57,
+  "unmapped": [],
+  "targetCardIds": [
+    "T01",
+    "T02",
+    "T03",
+    "T04",
+    "T05",
+    "T06",
+    "T07",
+    "T08",
+    "T09",
+    "T10",
+    "T11",
+    "T12",
+    "T13",
+    "T14",
+    "T15",
+    "T16",
+    "T17",
+    "T18",
+    "T19",
+    "T20",
+    "T21",
+    "T22",
+    "T23",
+    "T24",
+    "T25"
+  ],
+  "productionMetricsExcluded": [
+    "fried peanuts",
+    "braised beef shank",
+    "chili mayo",
+    "beef skewer"
+  ],
+  "coverage": [
+    {
+      "sourceId": "A01",
+      "targets": [
+        "SET",
+        "MENU"
+      ],
+      "disposition": "covered",
+      "rationale": "Potvrdit současné varianty a datum; plánované změny držet odděleně."
+    },
+    {
+      "sourceId": "A02",
+      "targets": [
+        "SET"
+      ],
+      "disposition": "excluded",
+      "rationale": "Na výslovný pokyn uživatele neřešit rozdělování Vinohrady/Manifesto. U čtyř pojmenovaných položek vyloučit dávky, frekvence a čas; složení a místní skladování zůstává v jiných blocích."
+    },
+    {
+      "sourceId": "A03",
+      "targets": [
+        "MENU",
+        "T24"
+      ],
+      "disposition": "covered",
+      "rationale": "Aktuální stav, účinnost vyřazení/náhrady, návazné receptury. Beef skewer bez výrobních metrik."
+    },
+    {
+      "sourceId": "A04",
+      "targets": [
+        "T19",
+        "APPROVE"
+      ],
+      "disposition": "covered",
+      "rationale": "Kids/Children: identita, pickles, následně skutečné POS mapování."
+    },
+    {
+      "sourceId": "A05",
+      "targets": [
+        "T23",
+        "MENU",
+        "DISH"
+      ],
+      "disposition": "covered",
+      "rationale": "Konkrétní aktuální rotující receptura; placeholder se nepočítá jako ingredience."
+    },
+    {
+      "sourceId": "A06",
+      "targets": [
+        "ITEM",
+        "DISH",
+        "APPROVE"
+      ],
+      "disposition": "covered",
+      "rationale": "Jiné místní odběry: přílohy, personál, další prodej; žádné rozdělování do jiného provozu. Cold Xiao Mian a Dragon Mom nepotvrzovat automaticky jako aktivní."
+    },
+    {
+      "sourceId": "A07",
+      "targets": [
+        "ITEM",
+        "T02",
+        "T11",
+        "T12"
+      ],
+      "disposition": "covered",
+      "rationale": "Přejmenování a aliasy podle identity/fáze, bez sloučení pouze podle podobného názvu."
+    },
+    {
+      "sourceId": "B01",
+      "targets": [
+        "PROC",
+        "ITEM"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Všech 41 zdrojových house-made položek vyjasnit podle skutečného původu. U čtyř vyloučených zachovat názvy vstupů a vztahy, bez výrobních množství."
+    },
+    {
+      "sourceId": "B02",
+      "targets": [
+        "PROC",
+        "RUN",
+        "T08"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Všechny výstupy jedné operace; společná práce jednou. Při neoddělitelné vazbě na vyloučenou výrobu nesbírat společné metriky a neprezentovat úplný součet."
+    },
+    {
+      "sourceId": "B03",
+      "targets": [
+        "T02",
+        "PROC",
+        "RUN"
+      ],
+      "disposition": "covered",
+      "rationale": "Sada versus směs versus samostatná ingredience, složení boxů, vlastník 30 minut, původ boxu 4."
+    },
+    {
+      "sourceId": "B04",
+      "targets": [
+        "T07",
+        "T08",
+        "PROC"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Potvrdit mapu a opakované médium; braised beef shank výrobní metriky a neoddělitelnou společnou práci vynechat."
+    },
+    {
+      "sourceId": "B05",
+      "targets": [
+        "T11",
+        "PROC",
+        "DISH"
+      ],
+      "disposition": "covered",
+      "rationale": "Woodear: společná příprava, skutečné složení a kroky jen jednou."
+    },
+    {
+      "sourceId": "B06",
+      "targets": [
+        "T03",
+        "T14",
+        "ITEM"
+      ],
+      "disposition": "covered",
+      "rationale": "Zdroj a stav převzetí, místní práce; budoucí nákup minced pork není současnost."
+    },
+    {
+      "sourceId": "B07",
+      "targets": [
+        "T15",
+        "ITEM",
+        "PROC",
+        "RUN"
+      ],
+      "disposition": "covered",
+      "rationale": "Všech 11 koupených položek s reálnou místní prací; nevytvářet profil výroby hotovým nakoupeným položkám bez práce."
+    },
+    {
+      "sourceId": "C01",
+      "targets": [
+        "T01",
+        "RUN",
+        "DISH"
+      ],
+      "disposition": "covered",
+      "rationale": "48 porcí: přesná událost, převod, čistý výstup a odběry. Společná výroba respektuje rozsah."
+    },
+    {
+      "sourceId": "C02",
+      "targets": [
+        "T02",
+        "RUN"
+      ],
+      "disposition": "covered",
+      "rationale": "Význam 4/16 a různé typy boxů bez dvojího násobení."
+    },
+    {
+      "sourceId": "C03",
+      "targets": [
+        "T03",
+        "T04",
+        "RUN"
+      ],
+      "disposition": "covered",
+      "rationale": "3/3 bags a 2/2 cubes: celkový počet, čistý obsah a fáze."
+    },
+    {
+      "sourceId": "C04",
+      "targets": [
+        "RUN",
+        "T02",
+        "T03",
+        "T04",
+        "T09",
+        "T10"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Převody konkrétních obalů; fried peanuts výrobní balení a dávku vynechat. Místní obal ve STORE není počet vyrobených obalů."
+    },
+    {
+      "sourceId": "C05",
+      "targets": [
+        "T05",
+        "T09",
+        "T10",
+        "RUN"
+      ],
+      "disposition": "covered",
+      "rationale": "Čistý výstup po odpovídající fázi; kapacita/počet zařízení odděleně."
+    },
+    {
+      "sourceId": "C06",
+      "targets": [
+        "T06",
+        "RUN",
+        "DISH"
+      ],
+      "disposition": "covered",
+      "rationale": "Nudlová operace a fáze, kusy vajec versus zlomky na porci, ztráty."
+    },
+    {
+      "sourceId": "C07",
+      "targets": [
+        "T13",
+        "PROC",
+        "RUN"
+      ],
+      "disposition": "covered",
+      "rationale": "Nejdříve původ a vazba, poté chybějící množství; nula není nevím."
+    },
+    {
+      "sourceId": "C08",
+      "targets": [
+        "RUN",
+        "T03",
+        "T08",
+        "T12"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Fáze vstup/hotové/odkapané/rozmražené. Braised beef shank a beef skewer výrobní množství vynechat; cooked oil určit účel."
+    },
+    {
+      "sourceId": "D01",
+      "targets": [
+        "T07",
+        "OPS",
+        "RUN"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Poslední dvě data feet a význam intervalu; 40 minut nesčítat se společným vyloučeným shank."
+    },
+    {
+      "sourceId": "D02",
+      "targets": [
+        "T13",
+        "OPS"
+      ],
+      "disposition": "covered",
+      "rationale": "Poslední skutečná výroba, spouštěč a režim; neznámá data zůstávají konkrétním úkolem."
+    },
+    {
+      "sourceId": "D03",
+      "targets": [
+        "RUN",
+        "PROC"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Lidé, aktivní čas, čekání, kompletní rozsah úkonů, souběh; čtyři výjimky bez pracovních časů."
+    },
+    {
+      "sourceId": "D04",
+      "targets": [
+        "T01",
+        "T05",
+        "T08",
+        "T09",
+        "T10",
+        "RUN",
+        "OPS"
+      ],
+      "disposition": "covered",
+      "rationale": "Dávka versus den, plná výroba versus dodělávka/ohřev; skutečné servisy."
+    },
+    {
+      "sourceId": "D05",
+      "targets": [
+        "T25",
+        "RUN",
+        "CHECK"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Rozdílné velikosti, úkony, kuchaři nebo změna procesu; fried peanuts a chili mayo ze srovnání pracovních časů vynechat."
+    },
+    {
+      "sourceId": "D06",
+      "targets": [
+        "T12",
+        "OPS"
+      ],
+      "disposition": "covered",
+      "rationale": "Dnešní pondělní rutina versus návrh, datum platnosti a doložené události."
+    },
+    {
+      "sourceId": "D07",
+      "targets": [
+        "T24",
+        "OPS"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Nenapsaná rutina, práh nebo nouze; odpovědnost. Chili mayo výrobní četnost/čas neobnovovat tímto dotazem."
+    },
+    {
+      "sourceId": "D08",
+      "targets": [
+        "T13",
+        "PROC",
+        "RUN"
+      ],
+      "disposition": "covered",
+      "rationale": "Neznámý čas versus již zahrnutý v jiné výrobě; datum ukončení, pokud vyřazeno."
+    },
+    {
+      "sourceId": "E01",
+      "targets": [
+        "T05",
+        "STORE"
+      ],
+      "disposition": "covered",
+      "rationale": "Suchá syrová, horké držení a chlazená rýže jako různé reálné fáze."
+    },
+    {
+      "sourceId": "E02",
+      "targets": [
+        "T16",
+        "STORE"
+      ],
+      "disposition": "covered",
+      "rationale": "Teplotní zdroj a oddělené zmrazené/rozmražené fáze; u shank pouze místní skladování."
+    },
+    {
+      "sourceId": "E03",
+      "targets": [
+        "T18",
+        "STORE"
+      ],
+      "disposition": "covered",
+      "rationale": "Konkrétní otevřený obal a počátek pravidla; nepočítat novou bezpečnou lhůtu od každého přebalení."
+    },
+    {
+      "sourceId": "E04",
+      "targets": [
+        "T17",
+        "STORE",
+        "OPS"
+      ],
+      "disposition": "covered",
+      "rationale": "Šest hodin konkrétního stavu koriandru, oddělené mytí/krájení a osud zbytku."
+    },
+    {
+      "sourceId": "E05",
+      "targets": [
+        "STORE",
+        "CHECK"
+      ],
+      "disposition": "covered",
+      "rationale": "Neznámá kvalita má přesný stav a ověření; není automatický bezpečnostní limit."
+    },
+    {
+      "sourceId": "E06",
+      "targets": [
+        "STORE",
+        "CHECK",
+        "APPROVE"
+      ],
+      "disposition": "covered",
+      "rationale": "Zkušenost versus doložené pravidlo, dokument, podmínky a odpovědné schválení."
+    },
+    {
+      "sourceId": "E07",
+      "targets": [
+        "T18",
+        "STORE",
+        "CHECK"
+      ],
+      "disposition": "covered",
+      "rationale": "Přesný produkt/etiketa; zda pravidlo opravdu platí po otevření."
+    },
+    {
+      "sourceId": "E08",
+      "targets": [
+        "STORE"
+      ],
+      "disposition": "covered",
+      "rationale": "Obal, místní umístění, rezervní zásoba a otevřený výdej jako různé fáze."
+    },
+    {
+      "sourceId": "E09",
+      "targets": [
+        "STORE",
+        "RUN",
+        "T05",
+        "T10"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Tok po vaření a ověřená kapacita, nikoli hypotetický souhlas s větší dávkou. U shank bez velikosti výrobní dávky a pracovních časů; místní skladování zachovat."
+    },
+    {
+      "sourceId": "E10",
+      "targets": [
+        "ITEM",
+        "STORE"
+      ],
+      "disposition": "covered",
+      "rationale": "Konkrétní produkt a fáze u prášků/olejů/směsí; všechny neznámé stavy zodpovědět či adresně ověřit."
+    },
+    {
+      "sourceId": "F01",
+      "targets": [
+        "T20",
+        "DISH",
+        "APPROVE"
+      ],
+      "disposition": "covered",
+      "rationale": "Reálné varianty a složky; dietní tvrzení neodvozovat z názvu tofu."
+    },
+    {
+      "sourceId": "F02",
+      "targets": [
+        "T21",
+        "DISH"
+      ],
+      "disposition": "covered",
+      "rationale": "Skutečný rozdíl Standard/MAX včetně cooked oil; shank pouze složení/porce."
+    },
+    {
+      "sourceId": "F03",
+      "targets": [
+        "T22",
+        "DISH"
+      ],
+      "disposition": "covered",
+      "rationale": "Pevné složky, alternativní skupiny a kombinovatelnost; žádné součty všech voleb najednou."
+    },
+    {
+      "sourceId": "F04",
+      "targets": [
+        "T23",
+        "T14",
+        "DISH"
+      ],
+      "disposition": "covered",
+      "rationale": "Obě nudlové a feet varianty, původ ingrediencí i společné/rozdílné kroky."
+    },
+    {
+      "sourceId": "F05",
+      "targets": [
+        "DISH",
+        "RUN"
+      ],
+      "disposition": "covered",
+      "rationale": "Množství na vydanou porci a fáze s podkladem; není výrobní množství. Neznámé hodnoty mají měřicí úkol."
+    },
+    {
+      "sourceId": "F06",
+      "targets": [
+        "DISH"
+      ],
+      "disposition": "covered",
+      "rationale": "Výdej po objednávce, porce, práce a čekání odděleně; přípravu základu neopakovat. U výjimek neznovu sbírat jejich výrobní čas."
+    },
+    {
+      "sourceId": "F07",
+      "targets": [
+        "DISH",
+        "PROC",
+        "APPROVE"
+      ],
+      "disposition": "covered",
+      "rationale": "Kontrola skutečného talíře a skrytých složek; nezdvojit hotový celek a jeho již obsažené části."
+    },
+    {
+      "sourceId": "G01",
+      "targets": [
+        "OPS",
+        "CHECK"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Konkrétní datum/událost a dopad; u shank a skewer bez jejich výrobních minut, dávek a frekvencí."
+    },
+    {
+      "sourceId": "G02",
+      "targets": [
+        "T24",
+        "OPS",
+        "CHECK"
+      ],
+      "disposition": "covered",
+      "rationale": "Problémy v poznámce versus none; současnost a zastupitelnost/SOP, nikoli automatická značka problému."
+    },
+    {
+      "sourceId": "G03",
+      "targets": [
+        "OPS"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Zůstatek, odpad, personál, přesun a technologická ztráta odděleně. Čtyři výjimky nevyvolají otázky na výrobní množství; místní spotřebu/odpis lze samostatně evidovat, je-li známý."
+    },
+    {
+      "sourceId": "G04",
+      "targets": [
+        "RUN",
+        "STORE"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Praktická kapacita/podklad, žádná lineární úspora; shank a skewer výrobní min/max a časy vynechat."
+    },
+    {
+      "sourceId": "G05",
+      "targets": [
+        "OPS"
+      ],
+      "disposition": "partly_scoped",
+      "rationale": "Večerní zásoba, stáří, rozmrazení, poptávka, vlastník a převzetí; bez dopočítávání dávek/frekvencí čtyř výjimek."
+    },
+    {
+      "sourceId": "H01",
+      "targets": [
+        "APPROVE",
+        "MENU",
+        "T19"
+      ],
+      "disposition": "manager",
+      "rationale": "Vedoucí mapuje POS včetně Stir-fry Pork/Sour & Spicy a Kids/Children; dodá stejné aktuální období a výpadky. Bez nového exportu nenahradit odhadem kuchaře."
+    },
+    {
+      "sourceId": "H02",
+      "targets": [
+        "RUN",
+        "OPS",
+        "CHECK"
+      ],
+      "disposition": "measurement",
+      "rationale": "Pět prioritních příprav: konkrétní měření plné dávky i dodělávky, výkon, zůstatek, spouštěč. Pokud měření neexistuje, naplánovat; nezadávat zpětně vymyšlený deník."
+    },
+    {
+      "sourceId": "H03",
+      "targets": [
+        "APPROVE",
+        "CHECK"
+      ],
+      "disposition": "manager_partly_scoped",
+      "rationale": "Náklady dodá vedoucí z dokladů. Brown sauce a minced pork lze porovnat při stejném podkladu; výrobní ekonomiku beef skewer nelze uzavřít bez vyřazených metrik a nyní ji nedopočítávat."
+    },
+    {
+      "sourceId": "H04",
+      "targets": [
+        "SET",
+        "CHECK",
+        "APPROVE"
+      ],
+      "disposition": "covered",
+      "rationale": "Dohledatelná změna, důkaz, autor, účinnost a řízené promítnutí proti aktuálnímu notebooku."
+    },
+    {
+      "sourceId": "H05",
+      "targets": [
+        "RUN",
+        "CHECK"
+      ],
+      "disposition": "measurement_partly_scoped",
+      "rationale": "Druhý kuchař nezávisle pro stejnou velikost a úkony; rozdíly vysvětlit, neprůměrovat. Čtyři výjimky bez sběru výrobních metrik."
+    }
+  ]
+}

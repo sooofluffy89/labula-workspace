@@ -23,6 +23,7 @@ export async function POST(req:Request){try{
  }
  if(body.action!=='save')throw new RequestError('Unknown review action.');
  const row=await read();if(!row)throw new RequestError('Start the review first.',409);
+ if(JSON.parse(row.payload).schemaVersion!==1)throw new RequestError('This review has moved to a newer form. Your old draft is kept. Reload to compare and import it.',426,'review_upgrade_required');
  if(row.revision!==revision){const receipt=await replay();if(receipt)return respond(receipt);throw new RequestError('Another tab or cook saved a newer review. Your draft is kept. Download it before loading the shared version.',409,'revision_conflict');}
  let data;try{data=validateReview(JSON.parse(row.source),body.data);}catch(e){throw new RequestError(e instanceof Error?e.message:'Check the answers.',422);}
  const payload=JSON.stringify(data);

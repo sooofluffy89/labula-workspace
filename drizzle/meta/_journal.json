@@ -29,6 +29,20 @@
       "when": 1789740773406,
       "tag": "0003_shiny_snowbird",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789844901531,
+      "tag": "0004_gigantic_psylocke",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789848760688,
+      "tag": "0005_futuristic_firestar",
+      "breakpoints": true
     }
   ]
 }

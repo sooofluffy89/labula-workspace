@@ -13,6 +13,11 @@ export class ReviewSaveQueue {
    const request=this.pending,result=await send(request);
    if(result.operationId!==request.operationId||result.revision!==request.revision+1)throw Error('Could not verify this save. Retry the same request.');
    this.revision=result.revision;this.acknowledged=request.data;this.pending=null;this.persist();
+  }catch(error){
+   // A definitive rejection did not write anything. A corrected draft must get a new ID.
+   // Network failures and ambiguous responses retain the exact original operation.
+   if([400,401,403,413,415,422].includes((error as {status?:number})?.status??0)){this.pending=null;this.persist();}
+   throw error;
   }finally{this.running=false;this.changed();}
  }
 }

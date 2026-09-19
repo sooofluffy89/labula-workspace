@@ -1,0 +1,1637 @@
+{
+  "questionCount": 49,
+  "targetCount": 25,
+  "sourcePointCount": 57,
+  "groups": [
+    {
+      "id": "SET-01",
+      "title": "Who is answering, and whose work are you describing?",
+      "kind": "session",
+      "ui": "/review",
+      "structure": "entities[].answers.SET-01",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-readiness / check-review-ui"
+    },
+    {
+      "id": "SET-02",
+      "title": "Is this what you do now?",
+      "kind": "session",
+      "ui": "/review",
+      "structure": "entities[].answers.SET-02",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-readiness / check-review-ui"
+    },
+    {
+      "id": "SET-03",
+      "title": "When is this kitchen open, and when can preparation take place?",
+      "kind": "session",
+      "ui": "/review",
+      "structure": "entities[].answers.SET-03",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-readiness / check-review-ui"
+    },
+    {
+      "id": "SET-04",
+      "title": "Which period can you describe from records?",
+      "kind": "session",
+      "ui": "/review",
+      "structure": "entities[].answers.SET-04",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-readiness / check-review-ui"
+    },
+    {
+      "id": "MENU-01",
+      "title": "Is this exact dish and variant currently served here?",
+      "kind": "dish",
+      "ui": "/review",
+      "structure": "entities[].answers.MENU-01",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-boundaries / check-review-readiness"
+    },
+    {
+      "id": "MENU-02",
+      "title": "What changes between these variants?",
+      "kind": "dish",
+      "ui": "/review",
+      "structure": "entities[].answers.MENU-02",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-boundaries / check-review-readiness"
+    },
+    {
+      "id": "ITEM-01",
+      "title": "What exactly is this item?",
+      "kind": "item",
+      "ui": "/review",
+      "structure": "entities[].answers.ITEM-01",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-boundaries / check-review-workflow"
+    },
+    {
+      "id": "ITEM-02",
+      "title": "How do you receive this item?",
+      "kind": "item",
+      "ui": "/review",
+      "structure": "entities[].answers.ITEM-02",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-boundaries / check-review-workflow"
+    },
+    {
+      "id": "ITEM-03",
+      "title": "What do you actually do to it here?",
+      "kind": "item",
+      "ui": "/review",
+      "structure": "entities[].answers.ITEM-03",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-boundaries / check-review-workflow"
+    },
+    {
+      "id": "ITEM-04",
+      "title": "Is the item before this step the same as the item used on the plate?",
+      "kind": "item",
+      "ui": "/review",
+      "structure": "entities[].answers.ITEM-04",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-boundaries / check-review-workflow"
+    },
+    {
+      "id": "ITEM-05",
+      "title": "Where is this product used?",
+      "kind": "item",
+      "ui": "/review",
+      "structure": "entities[].answers.ITEM-05",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-boundaries / check-review-workflow"
+    },
+    {
+      "id": "PROC-01",
+      "title": "Which single process produces or changes this product?",
+      "kind": "process",
+      "ui": "/review",
+      "structure": "entities[].answers.PROC-01",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "PROC-02",
+      "title": "What goes into this process?",
+      "kind": "process",
+      "ui": "/review",
+      "structure": "entities[].answers.PROC-02",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "PROC-03",
+      "title": "What comes out of this same process?",
+      "kind": "process",
+      "ui": "/review",
+      "structure": "entities[].answers.PROC-03",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "PROC-04",
+      "title": "Are these products made by one shared process, or just at the same time?",
+      "kind": "process",
+      "ui": "/review",
+      "structure": "entities[].answers.PROC-04",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "PROC-05",
+      "title": "What part is within this review?",
+      "kind": "process",
+      "ui": "/review",
+      "structure": "entities[].answers.PROC-05",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "RUN-01",
+      "title": "Which one production run are you describing?",
+      "kind": "run",
+      "ui": "/review",
+      "structure": "entities[].answers.RUN-01",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-boundaries"
+    },
+    {
+      "id": "RUN-02",
+      "title": "How much of each input did you use in this run?",
+      "kind": "run",
+      "ui": "/review",
+      "structure": "entities[].answers.RUN-02",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-boundaries"
+    },
+    {
+      "id": "RUN-03",
+      "title": "What usable amount came out of this run?",
+      "kind": "run",
+      "ui": "/review",
+      "structure": "entities[].answers.RUN-03",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-boundaries"
+    },
+    {
+      "id": "RUN-04",
+      "title": "How is this output packed or counted?",
+      "kind": "run",
+      "ui": "/review",
+      "structure": "entities[].answers.RUN-04",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-boundaries"
+    },
+    {
+      "id": "RUN-05",
+      "title": "Have we captured everything from this run?",
+      "kind": "run",
+      "ui": "/review",
+      "structure": "entities[].answers.RUN-05",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-boundaries"
+    },
+    {
+      "id": "RUN-06",
+      "title": "Which hands-on steps are included?",
+      "kind": "run",
+      "ui": "/review",
+      "structure": "entities[].answers.RUN-06",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-boundaries"
+    },
+    {
+      "id": "RUN-07",
+      "title": "How much active work did this step take?",
+      "kind": "run",
+      "ui": "/review",
+      "structure": "entities[].answers.RUN-07",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-boundaries"
+    },
+    {
+      "id": "RUN-08",
+      "title": "When is the product ready, and what happens while it waits?",
+      "kind": "run",
+      "ui": "/review",
+      "structure": "entities[].answers.RUN-08",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-boundaries"
+    },
+    {
+      "id": "RUN-09",
+      "title": "What changes when you make a small top-up?",
+      "kind": "run",
+      "ui": "/review",
+      "structure": "entities[].answers.RUN-09",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-boundaries"
+    },
+    {
+      "id": "RUN-10",
+      "title": "What batch range have you actually managed with the current setup?",
+      "kind": "run",
+      "ui": "/review",
+      "structure": "entities[].answers.RUN-10",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-boundaries"
+    },
+    {
+      "id": "STORE-01",
+      "title": "In which state do you actually keep this product?",
+      "kind": "storage",
+      "ui": "/review",
+      "structure": "entities[].answers.STORE-01",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "STORE-02",
+      "title": "Where and how is this state kept?",
+      "kind": "storage",
+      "ui": "/review",
+      "structure": "entities[].answers.STORE-02",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "STORE-03",
+      "title": "For how long does this state meet your required quality?",
+      "kind": "storage",
+      "ui": "/review",
+      "structure": "entities[].answers.STORE-03",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "STORE-04",
+      "title": "Which documented use-by rule applies to this exact state?",
+      "kind": "storage",
+      "ui": "/review",
+      "structure": "entities[].answers.STORE-04",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "STORE-05",
+      "title": "What happens at opening, cooling, freezing, thawing or repacking?",
+      "kind": "storage",
+      "ui": "/review",
+      "structure": "entities[].answers.STORE-05",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "STORE-06",
+      "title": "Has the responsible person checked that this rule applies here?",
+      "kind": "storage",
+      "ui": "/review",
+      "structure": "entities[].answers.STORE-06",
+      "validation": "owner action / fieldIssues / readiness",
+      "test": "check-review-workflow / check-review-boundaries"
+    },
+    {
+      "id": "DISH-01",
+      "title": "What is on one served plate of this exact variant?",
+      "kind": "dish",
+      "ui": "/review",
+      "structure": "entities[].answers.DISH-01",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness"
+    },
+    {
+      "id": "DISH-02",
+      "title": "How do the choices work?",
+      "kind": "dish",
+      "ui": "/review",
+      "structure": "entities[].answers.DISH-02",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness"
+    },
+    {
+      "id": "DISH-03",
+      "title": "How much of this component goes into one served portion?",
+      "kind": "dish",
+      "ui": "/review",
+      "structure": "entities[].answers.DISH-03",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness"
+    },
+    {
+      "id": "DISH-04",
+      "title": "What work happens after the order arrives?",
+      "kind": "dish",
+      "ui": "/review",
+      "structure": "entities[].answers.DISH-04",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness"
+    },
+    {
+      "id": "DISH-05",
+      "title": "Does this match the plate you actually serve?",
+      "kind": "dish",
+      "ui": "/review",
+      "structure": "entities[].answers.DISH-05",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness"
+    },
+    {
+      "id": "OPS-01",
+      "title": "What actually triggers the next run of this process?",
+      "kind": "operations",
+      "ui": "/review",
+      "structure": "entities[].answers.OPS-01",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-readiness / independent closure retest"
+    },
+    {
+      "id": "OPS-02",
+      "title": "How often did each kind of event actually happen?",
+      "kind": "operations",
+      "ui": "/review",
+      "structure": "entities[].answers.OPS-02",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-readiness / independent closure retest"
+    },
+    {
+      "id": "OPS-03",
+      "title": "Which of these recorded problems still happens?",
+      "kind": "operations",
+      "ui": "/review",
+      "structure": "entities[].answers.OPS-03",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-readiness / independent closure retest"
+    },
+    {
+      "id": "OPS-04",
+      "title": "What extra work or service delay did that event cause?",
+      "kind": "operations",
+      "ui": "/review",
+      "structure": "entities[].answers.OPS-04",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-readiness / independent closure retest"
+    },
+    {
+      "id": "OPS-05",
+      "title": "What happened to unused product?",
+      "kind": "operations",
+      "ui": "/review",
+      "structure": "entities[].answers.OPS-05",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-readiness / independent closure retest"
+    },
+    {
+      "id": "OPS-06",
+      "title": "Could another cook repeat this actual method?",
+      "kind": "operations",
+      "ui": "/review",
+      "structure": "entities[].answers.OPS-06",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-readiness / independent closure retest"
+    },
+    {
+      "id": "CHECK-01",
+      "title": "How will we obtain this missing fact?",
+      "kind": "manager",
+      "ui": "/review",
+      "structure": "entities[].answers.CHECK-01",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-ui / check-review-boundaries"
+    },
+    {
+      "id": "CHECK-02",
+      "title": "What was the result of this check?",
+      "kind": "manager",
+      "ui": "/review",
+      "structure": "entities[].answers.CHECK-02",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-ui / check-review-boundaries"
+    },
+    {
+      "id": "APPROVE-01",
+      "title": "Which source data support the analysis?",
+      "kind": "manager",
+      "ui": "/review",
+      "structure": "entities[].answers.APPROVE-01",
+      "validation": "owner action / fieldIssues / readiness",
+      "test": "check-review-workflow / check-review-readiness / check-review-ui"
+    },
+    {
+      "id": "APPROVE-02",
+      "title": "What can we already conclude from these answers?",
+      "kind": "manager",
+      "ui": "/review",
+      "structure": "entities[].answers.APPROVE-02",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-ui"
+    },
+    {
+      "id": "APPROVE-03",
+      "title": "Which corrections should become the current notebook?",
+      "kind": "manager",
+      "ui": "/review",
+      "structure": "entities[].answers.APPROVE-03",
+      "validation": "owner action / fieldIssues / readiness",
+      "test": "check-review-workflow / check-review-readiness / check-review-ui"
+    },
+    {
+      "id": "APPROVE-04",
+      "title": "What is finished, and what remains to be measured?",
+      "kind": "manager",
+      "ui": "/review",
+      "structure": "entities[].answers.APPROVE-04",
+      "validation": "fieldIssues / issues / save2 confirmation",
+      "test": "check-review-workflow / check-review-readiness / check-review-ui"
+    }
+  ],
+  "targets": [
+    {
+      "id": "T01",
+      "names": [
+        "labula beef broth"
+      ],
+      "question": "What did the recorded 48 portions refer to?",
+      "options": [
+        "One new cooked batch",
+        "Total of several batches that day",
+        "Portioning existing stock",
+        "Container capacity",
+        "The entry was incorrect",
+        "I need to check"
+      ],
+      "groups": [
+        "RUN-01",
+        "RUN-03",
+        "RUN-04",
+        "ITEM-05",
+        "DISH-03"
+      ],
+      "help": "Link the actual run(s), net output and portion conversion. Forty-eight broth portions do not establish forty-eight Mapo sales. Check whether 40 minutes and daily describe the same event."
+    },
+    {
+      "id": "T02",
+      "names": [
+        "labula beef base",
+        "sauce box"
+      ],
+      "question": "Is this a mixed product, a kit of separate boxes, or a separate ingredient?",
+      "options": [
+        "Mixed product",
+        "Kit of separate boxes",
+        "Separate ingredient",
+        "Alias",
+        "I need to check"
+      ],
+      "groups": [
+        "ITEM-01",
+        "PROC-02",
+        "RUN-04",
+        "RUN-07",
+        "DISH-01"
+      ],
+      "help": "Clarify 4 boxes total, 16 total, 4 sets of 16, another exact structure or an incorrect entry. Record the actual boxes and counts in the kit/pack fields. Identify which single operation owns the 30 minutes; check box 4’s source."
+    },
+    {
+      "id": "T03",
+      "names": [
+        "minced pork"
+      ],
+      "question": "Do you buy minced pork today or mince meat here?",
+      "options": [
+        "Bought already minced",
+        "Minced here",
+        "Both, depending on situation",
+        "I need to check"
+      ],
+      "groups": [
+        "ITEM-02",
+        "PROC-02",
+        "RUN-04",
+        "RUN-07"
+      ],
+      "help": "Resolve whether 3 / 3 medium vacuum bags means three or nine bags in total, and weigh net contents at a named stage. Both sources need separate conditions. A future buying proposal is not current practice."
+    },
+    {
+      "id": "T04",
+      "names": [
+        "ginger garlic water"
+      ],
+      "question": "What does 2 / 2 frozen plastic cubes count?",
+      "options": [
+        "Two filled containers total",
+        "Four filled containers total",
+        "Incorrect old entry",
+        "I need to check"
+      ],
+      "groups": [
+        "RUN-03",
+        "RUN-04",
+        "STORE-01"
+      ],
+      "help": "Record actual filled-container count and net g/ml, distinguishing liquid before freezing, frozen block and thawed usable product. Empty-container capacity is not net yield."
+    },
+    {
+      "id": "T05",
+      "names": [
+        "rice"
+      ],
+      "question": "What does 2 rice cookers count?",
+      "options": [
+        "Two cookers working once",
+        "Two runs of one cooker",
+        "Two filled inner pots",
+        "Another exact meaning",
+        "I need to check"
+      ],
+      "groups": [
+        "RUN-01",
+        "RUN-02",
+        "RUN-03",
+        "RUN-10",
+        "STORE-01",
+        "OPS-02"
+      ],
+      "help": "Separate raw dry rice, hot holding and chilled leftovers. Check 10 minutes and 2× per service against actual full runs/top-ups and services. The form does not prescribe a storage period."
+    },
+    {
+      "id": "T06",
+      "names": [
+        "fermented noodles",
+        "marinated egg"
+      ],
+      "question": "Which operation does the recorded portion or piece count describe?",
+      "options": [
+        "Making noodles",
+        "Fermenting",
+        "Cooking bought noodles",
+        "Portioning existing stock",
+        "Day total",
+        "Whole eggs prepared",
+        "I need to check"
+      ],
+      "groups": [
+        "RUN-01",
+        "RUN-03",
+        "RUN-04",
+        "DISH-03"
+      ],
+      "help": "Clarify 86 noodle portions and 90 eggs as production outputs, with actual phase and conversions. Record whole, half or other egg fraction on each exact plate; do not treat egg count as plates sold."
+    },
+    {
+      "id": "T07",
+      "names": [
+        "braised chicken feet"
+      ],
+      "question": "What exactly is shared with braised beef shank?",
+      "options": [
+        "Same cooking liquid and batch",
+        "Sequential reuse of liquid",
+        "Separate pots at the same time",
+        "Separate cooking",
+        "I need to check"
+      ],
+      "groups": [
+        "PROC-02",
+        "PROC-04",
+        "PROC-05",
+        "OPS-02"
+      ],
+      "help": "Record the last two actual dates, or assign a dated-record check. Two dates show one interval, not a permanent weekly routine. Shared shank production metrics remain outside review; only clearly separate finishing can be measured."
+    },
+    {
+      "id": "T08",
+      "names": [
+        "braised beef shank",
+        "beef shank cubes",
+        "labula beef broth"
+      ],
+      "question": "Which outputs come from the same cook, and which are made later?",
+      "options": [
+        "Same batch",
+        "Later processing",
+        "Separate production",
+        "Previous-batch carry-over",
+        "Not related",
+        "I need to check"
+      ],
+      "groups": [
+        "PROC-02",
+        "PROC-03",
+        "PROC-04",
+        "PROC-05"
+      ],
+      "help": "Link product and stage → process → output and stage. For cubes, clarify whether 60 minutes twice daily describes cooking, cutting, reheating, a day total or an incorrect entry. Do not collect shank manufacturing metrics."
+    },
+    {
+      "id": "T09",
+      "names": [
+        "minced garlic"
+      ],
+      "question": "Does the recorded 15 minutes cover a full batch, top-up or whole day?",
+      "options": [
+        "One full batch",
+        "One top-up",
+        "Whole day",
+        "Incorrect old entry",
+        "I need to check"
+      ],
+      "groups": [
+        "RUN-03",
+        "RUN-04",
+        "RUN-06",
+        "RUN-07",
+        "RUN-09"
+      ],
+      "help": "Weigh a filled gastro container. Clarify peeling here, bought peeled, or peeling in a named other process. Keep full batch and top-up samples separate; explain the earlier quick-work label."
+    },
+    {
+      "id": "T10",
+      "names": [
+        "chicken broth",
+        "seasonal veggies",
+        "mushroom"
+      ],
+      "question": "At which step was the net usable output measured?",
+      "options": [
+        "After straining",
+        "After cleaning and trimming",
+        "After washing",
+        "After cutting",
+        "After cooking",
+        "Not yet measured",
+        "I need to check"
+      ],
+      "groups": [
+        "ITEM-01",
+        "RUN-03",
+        "RUN-04",
+        "RUN-10",
+        "STORE-01"
+      ],
+      "help": "Clay pot, gastro and 2×6-l boxes describe containers, not measured yield. Name the actual vegetable/mushroom. For chicken broth identify direct use versus cooling and the real burner limit."
+    },
+    {
+      "id": "T11",
+      "names": [
+        "woodear"
+      ],
+      "question": "Are these the same prepared mushrooms and sauce used in the starter?",
+      "options": [
+        "Exactly the same components",
+        "Same mushrooms, different sauce",
+        "Same sauce, different mushroom preparation",
+        "Different recipe",
+        "I need to check"
+      ],
+      "groups": [
+        "ITEM-01",
+        "PROC-02",
+        "PROC-04",
+        "RUN-06",
+        "DISH-01"
+      ],
+      "help": "Assign soaking, washing, cooking, marinating and packing once. Keep the sauce identity when correcting its name. Count the whole prep and its component separately only if extra is actually added."
+    },
+    {
+      "id": "T12",
+      "names": [
+        "xiao mian base",
+        "universal sauce",
+        "century egg sauce",
+        "cooked oil",
+        "stir fried pork topping"
+      ],
+      "question": "How does this relate to the other base, and is the routine current?",
+      "options": [
+        "Same product at the same stage",
+        "Ingredient of another product",
+        "Made from another product",
+        "Different product",
+        "No longer used",
+        "I need to check"
+      ],
+      "groups": [
+        "ITEM-01",
+        "PROC-02",
+        "PROC-04",
+        "RUN-01",
+        "OPS-01"
+      ],
+      "help": "Compare Xiao Mian base and Universal sauce 2 by composition and phase. Monday production may be current, historical or a proposal. For cooked oil, clarify whether 20 kg is input, flavoured output or operational stock refill."
+    },
+    {
+      "id": "T13",
+      "names": [
+        "mushroom sauce",
+        "fermented chili",
+        "chili lime sauce",
+        "woodear maination sauce",
+        "sauce box 1",
+        "sauce box 2",
+        "sauce box 3",
+        "mustard",
+        "sesame paste",
+        "yellow sauce"
+      ],
+      "question": "Is this a separate production, part of another production or supplied?",
+      "options": [
+        "Separate production",
+        "Output or part of an existing production",
+        "Supplied ready-made",
+        "No longer used",
+        "I need to check"
+      ],
+      "groups": [
+        "ITEM-02",
+        "PROC-01",
+        "PROC-03",
+        "RUN-01",
+        "OPS-01"
+      ],
+      "help": "Only an actual separate local production needs its own sample and minutes. Linked work is not zero; preserve the named reference. Removed products need an effective date."
+    },
+    {
+      "id": "T14",
+      "names": [
+        "marinated tofu",
+        "stir fried pork topping",
+        "braised pork feet - bought"
+      ],
+      "question": "Who provides this product, in which state, and what is still done here?",
+      "options": [
+        "Commercial supplier",
+        "Named cook outside this kitchen",
+        "Made here",
+        "Multiple routes",
+        "I need to check"
+      ],
+      "groups": [
+        "ITEM-02",
+        "ITEM-03",
+        "PROC-01"
+      ],
+      "help": "Keep source specifications and local steps separate. House-made in the catalog does not prove local production; bought does not prove zero local work."
+    },
+    {
+      "id": "T15",
+      "names": [
+        "coriander",
+        "spring onion",
+        "eggpant",
+        "cucumber",
+        "chicken thigh with bones",
+        "paprika",
+        "fried dough",
+        "woodear",
+        "bamboo",
+        "sauce box 4",
+        "chili paste"
+      ],
+      "question": "What is actually done to this bought item before service?",
+      "options": [
+        "Local preparation is performed",
+        "No local preparation",
+        "Already included in a named production",
+        "I need to check"
+      ],
+      "groups": [
+        "ITEM-03",
+        "ITEM-04",
+        "PROC-01",
+        "RUN-06"
+      ],
+      "help": "Select all actual local actions and link each once. Keep received and processed stages distinct. Ready-to-use bought items without work skip production and reproducibility questions."
+    },
+    {
+      "id": "T16",
+      "names": [
+        "braised beef shank",
+        "ginger garlic water",
+        "beef shank cubes",
+        "minced pork",
+        "yellow pea",
+        "braised pork feet - bought"
+      ],
+      "question": "What does the recorded temperature represent?",
+      "options": [
+        "Measured product temperature",
+        "Measured storage air",
+        "Equipment setting",
+        "Estimate",
+        "Typing mistake",
+        "Need to measure",
+        "I need to check"
+      ],
+      "groups": [
+        "STORE-01",
+        "STORE-02",
+        "STORE-04",
+        "STORE-06"
+      ],
+      "help": "Clarify the −2 to −6 °C entries with instrument, place and date. Separate frozen reserve, thawing, thawed reserve and service. A corrected negative value alone does not establish a safe rule."
+    },
+    {
+      "id": "T17",
+      "names": [
+        "coriander"
+      ],
+      "question": "Which state does the six-hour quality period describe?",
+      "options": [
+        "Washed whole coriander",
+        "Cut coriander in reserve",
+        "Service container",
+        "Incorrect old entry",
+        "I need to check"
+      ],
+      "groups": [
+        "ITEM-04",
+        "STORE-01",
+        "STORE-03",
+        "OPS-05"
+      ],
+      "help": "Separate washing and cutting. Record the destination of evening remainder. Quality experience is not a safe use-by rule; do not infer a two-day batch from this answer."
+    },
+    {
+      "id": "T18",
+      "names": [
+        "pickles",
+        "chili oil",
+        "sichuan pepper powder"
+      ],
+      "question": "Which exact package is opened when this clock starts?",
+      "options": [
+        "Original supplier package",
+        "Sealed package of our preparation",
+        "Thawed package",
+        "Service container",
+        "Incorrect old entry",
+        "I need to check"
+      ],
+      "groups": [
+        "STORE-01",
+        "STORE-04",
+        "STORE-05",
+        "STORE-06"
+      ],
+      "help": "Check exact label, product and whether the rule covers unopened or opened use. Dry goods is not a document. Do not transfer chili oil’s 360 days to an opened pack without a matching source."
+    },
+    {
+      "id": "T19",
+      "names": [
+        "kids",
+        "children"
+      ],
+      "question": "Are these two listings the same dish, different dishes or historical duplicates?",
+      "options": [
+        "Same dish today",
+        "Different dishes today",
+        "One is historical",
+        "I need to check"
+      ],
+      "groups": [
+        "MENU-01",
+        "DISH-01",
+        "APPROVE-01"
+      ],
+      "help": "Choose the retained identity only after comparing actual plates. Pickles can be always, optional, rotating or absent. Owner maps real POS codes and effective dates; no guessed sales merge."
+    },
+    {
+      "id": "T20",
+      "names": [
+        "xiao mian"
+      ],
+      "question": "Which tofu and meat variants can a guest order today?",
+      "options": [
+        "The listed variants are current",
+        "Some listed variants need correction",
+        "A current variant is missing",
+        "I need to check"
+      ],
+      "groups": [
+        "MENU-01",
+        "MENU-02",
+        "DISH-01",
+        "DISH-02"
+      ],
+      "help": "Compare chicken broth, marinated tofu, minced pork and all other components per variant. Tofu does not prove a meat-free plate. Confirm the real composition rather than inferring dietary claims."
+    },
+    {
+      "id": "T21",
+      "names": [
+        "lá bù lá beef",
+        "labula beef",
+        "beef max"
+      ],
+      "question": "Are these the real differences between Standard and MAX, including cooked oil?",
+      "options": [
+        "Used in both",
+        "Only Standard",
+        "Only MAX",
+        "In neither",
+        "I need to check"
+      ],
+      "groups": [
+        "MENU-02",
+        "DISH-01",
+        "DISH-03"
+      ],
+      "help": "Record the matrix for cooked oil, shank, egg and vegetables. Missing old entries are not proof of absence. Base/boxes must agree with their kit or mixture definition."
+    },
+    {
+      "id": "T22",
+      "names": [
+        "taste of hometown"
+      ],
+      "question": "Does every serving contain all listed components, or does the guest choose?",
+      "options": [
+        "All listed components",
+        "Guest chooses within groups",
+        "Named combinations",
+        "Components rotate by date",
+        "I need to check"
+      ],
+      "groups": [
+        "DISH-01",
+        "DISH-02",
+        "DISH-03"
+      ],
+      "help": "Define fixed base, always-present topping, optional extra, choice group and rotating version. Actual modifier sales are still needed for aggregate demand; choices are not evenly split by default."
+    },
+    {
+      "id": "T23",
+      "names": [
+        "today green market",
+        "secret hidden",
+        "sweet-potato",
+        "chicken/pork feet"
+      ],
+      "question": "Which exact version is served now, and what is its effective date?",
+      "options": [
+        "Current named version",
+        "Different current version",
+        "Outside today’s menu",
+        "I need to check"
+      ],
+      "groups": [
+        "MENU-01",
+        "MENU-02",
+        "ITEM-01",
+        "DISH-01"
+      ],
+      "help": "Replace seasonal placeholders with named current products or preserve them as historical. Compare noodle/tofu and chicken/pork feet variants without merging distinct sources or service steps."
+    },
+    {
+      "id": "T24",
+      "names": [
+        "beef skewer",
+        "yellow sauce",
+        "brown sauce",
+        "mustard",
+        "chicken broth",
+        "mushroom sauce",
+        "tofu sauce"
+      ],
+      "question": "Is this current practice, a past issue or a future proposal?",
+      "options": [
+        "Already changed",
+        "Still current",
+        "Future proposal",
+        "Resolved problem",
+        "Happened once",
+        "I need to check"
+      ],
+      "groups": [
+        "SET-02",
+        "MENU-01",
+        "OPS-01",
+        "OPS-03",
+        "OPS-06"
+      ],
+      "help": "Clarify unplanned as unwritten routine, visual stock check, numeric threshold or emergency shortage. Record the actual event and owner. Do not activate a future menu change or collect excluded production metrics."
+    },
+    {
+      "id": "T25",
+      "names": [
+        "universal sauce",
+        "fermented chili",
+        "minced garlic",
+        "ginger garlic water",
+        "fermented noodles",
+        "seasonal veggies",
+        "chicken broth",
+        "mushroom"
+      ],
+      "question": "Do the two labour answers describe the same output, batch size and tasks?",
+      "options": [
+        "Yes, one answer is incorrect",
+        "Different batch sizes",
+        "Different included tasks",
+        "Different cooks or equipment",
+        "Process changed",
+        "I need to check"
+      ],
+      "groups": [
+        "RUN-01",
+        "RUN-06",
+        "RUN-07",
+        "RUN-09"
+      ],
+      "help": "Explain the difference with separate samples and exact evidence. Do not average contradictory answers. Fried peanuts and chili mayo manufacturing comparisons are excluded."
+    }
+  ],
+  "source": {
+    "sourceRevision": 317,
+    "sourceFile": "ocisteni-dat-2026-09-18/audit-data.json",
+    "createdAt": "2026-09-19",
+    "sourceCount": 57,
+    "coveredCount": 57,
+    "unmapped": [],
+    "targetCardIds": [
+      "T01",
+      "T02",
+      "T03",
+      "T04",
+      "T05",
+      "T06",
+      "T07",
+      "T08",
+      "T09",
+      "T10",
+      "T11",
+      "T12",
+      "T13",
+      "T14",
+      "T15",
+      "T16",
+      "T17",
+      "T18",
+      "T19",
+      "T20",
+      "T21",
+      "T22",
+      "T23",
+      "T24",
+      "T25"
+    ],
+    "productionMetricsExcluded": [
+      "fried peanuts",
+      "braised beef shank",
+      "chili mayo",
+      "beef skewer"
+    ],
+    "coverage": [
+      {
+        "sourceId": "A01",
+        "targets": [
+          "SET",
+          "MENU"
+        ],
+        "disposition": "covered",
+        "rationale": "Potvrdit současné varianty a datum; plánované změny držet odděleně."
+      },
+      {
+        "sourceId": "A02",
+        "targets": [
+          "SET"
+        ],
+        "disposition": "excluded",
+        "rationale": "Na výslovný pokyn uživatele neřešit rozdělování Vinohrady/Manifesto. U čtyř pojmenovaných položek vyloučit dávky, frekvence a čas; složení a místní skladování zůstává v jiných blocích."
+      },
+      {
+        "sourceId": "A03",
+        "targets": [
+          "MENU",
+          "T24"
+        ],
+        "disposition": "covered",
+        "rationale": "Aktuální stav, účinnost vyřazení/náhrady, návazné receptury. Beef skewer bez výrobních metrik."
+      },
+      {
+        "sourceId": "A04",
+        "targets": [
+          "T19",
+          "APPROVE"
+        ],
+        "disposition": "covered",
+        "rationale": "Kids/Children: identita, pickles, následně skutečné POS mapování."
+      },
+      {
+        "sourceId": "A05",
+        "targets": [
+          "T23",
+          "MENU",
+          "DISH"
+        ],
+        "disposition": "covered",
+        "rationale": "Konkrétní aktuální rotující receptura; placeholder se nepočítá jako ingredience."
+      },
+      {
+        "sourceId": "A06",
+        "targets": [
+          "ITEM",
+          "DISH",
+          "APPROVE"
+        ],
+        "disposition": "covered",
+        "rationale": "Jiné místní odběry: přílohy, personál, další prodej; žádné rozdělování do jiného provozu. Cold Xiao Mian a Dragon Mom nepotvrzovat automaticky jako aktivní."
+      },
+      {
+        "sourceId": "A07",
+        "targets": [
+          "ITEM",
+          "T02",
+          "T11",
+          "T12"
+        ],
+        "disposition": "covered",
+        "rationale": "Přejmenování a aliasy podle identity/fáze, bez sloučení pouze podle podobného názvu."
+      },
+      {
+        "sourceId": "B01",
+        "targets": [
+          "PROC",
+          "ITEM"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Všech 41 zdrojových house-made položek vyjasnit podle skutečného původu. U čtyř vyloučených zachovat názvy vstupů a vztahy, bez výrobních množství."
+      },
+      {
+        "sourceId": "B02",
+        "targets": [
+          "PROC",
+          "RUN",
+          "T08"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Všechny výstupy jedné operace; společná práce jednou. Při neoddělitelné vazbě na vyloučenou výrobu nesbírat společné metriky a neprezentovat úplný součet."
+      },
+      {
+        "sourceId": "B03",
+        "targets": [
+          "T02",
+          "PROC",
+          "RUN"
+        ],
+        "disposition": "covered",
+        "rationale": "Sada versus směs versus samostatná ingredience, složení boxů, vlastník 30 minut, původ boxu 4."
+      },
+      {
+        "sourceId": "B04",
+        "targets": [
+          "T07",
+          "T08",
+          "PROC"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Potvrdit mapu a opakované médium; braised beef shank výrobní metriky a neoddělitelnou společnou práci vynechat."
+      },
+      {
+        "sourceId": "B05",
+        "targets": [
+          "T11",
+          "PROC",
+          "DISH"
+        ],
+        "disposition": "covered",
+        "rationale": "Woodear: společná příprava, skutečné složení a kroky jen jednou."
+      },
+      {
+        "sourceId": "B06",
+        "targets": [
+          "T03",
+          "T14",
+          "ITEM"
+        ],
+        "disposition": "covered",
+        "rationale": "Zdroj a stav převzetí, místní práce; budoucí nákup minced pork není současnost."
+      },
+      {
+        "sourceId": "B07",
+        "targets": [
+          "T15",
+          "ITEM",
+          "PROC",
+          "RUN"
+        ],
+        "disposition": "covered",
+        "rationale": "Všech 11 koupených položek s reálnou místní prací; nevytvářet profil výroby hotovým nakoupeným položkám bez práce."
+      },
+      {
+        "sourceId": "C01",
+        "targets": [
+          "T01",
+          "RUN",
+          "DISH"
+        ],
+        "disposition": "covered",
+        "rationale": "48 porcí: přesná událost, převod, čistý výstup a odběry. Společná výroba respektuje rozsah."
+      },
+      {
+        "sourceId": "C02",
+        "targets": [
+          "T02",
+          "RUN"
+        ],
+        "disposition": "covered",
+        "rationale": "Význam 4/16 a různé typy boxů bez dvojího násobení."
+      },
+      {
+        "sourceId": "C03",
+        "targets": [
+          "T03",
+          "T04",
+          "RUN"
+        ],
+        "disposition": "covered",
+        "rationale": "3/3 bags a 2/2 cubes: celkový počet, čistý obsah a fáze."
+      },
+      {
+        "sourceId": "C04",
+        "targets": [
+          "RUN",
+          "T02",
+          "T03",
+          "T04",
+          "T09",
+          "T10"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Převody konkrétních obalů; fried peanuts výrobní balení a dávku vynechat. Místní obal ve STORE není počet vyrobených obalů."
+      },
+      {
+        "sourceId": "C05",
+        "targets": [
+          "T05",
+          "T09",
+          "T10",
+          "RUN"
+        ],
+        "disposition": "covered",
+        "rationale": "Čistý výstup po odpovídající fázi; kapacita/počet zařízení odděleně."
+      },
+      {
+        "sourceId": "C06",
+        "targets": [
+          "T06",
+          "RUN",
+          "DISH"
+        ],
+        "disposition": "covered",
+        "rationale": "Nudlová operace a fáze, kusy vajec versus zlomky na porci, ztráty."
+      },
+      {
+        "sourceId": "C07",
+        "targets": [
+          "T13",
+          "PROC",
+          "RUN"
+        ],
+        "disposition": "covered",
+        "rationale": "Nejdříve původ a vazba, poté chybějící množství; nula není nevím."
+      },
+      {
+        "sourceId": "C08",
+        "targets": [
+          "RUN",
+          "T03",
+          "T08",
+          "T12"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Fáze vstup/hotové/odkapané/rozmražené. Braised beef shank a beef skewer výrobní množství vynechat; cooked oil určit účel."
+      },
+      {
+        "sourceId": "D01",
+        "targets": [
+          "T07",
+          "OPS",
+          "RUN"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Poslední dvě data feet a význam intervalu; 40 minut nesčítat se společným vyloučeným shank."
+      },
+      {
+        "sourceId": "D02",
+        "targets": [
+          "T13",
+          "OPS"
+        ],
+        "disposition": "covered",
+        "rationale": "Poslední skutečná výroba, spouštěč a režim; neznámá data zůstávají konkrétním úkolem."
+      },
+      {
+        "sourceId": "D03",
+        "targets": [
+          "RUN",
+          "PROC"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Lidé, aktivní čas, čekání, kompletní rozsah úkonů, souběh; čtyři výjimky bez pracovních časů."
+      },
+      {
+        "sourceId": "D04",
+        "targets": [
+          "T01",
+          "T05",
+          "T08",
+          "T09",
+          "T10",
+          "RUN",
+          "OPS"
+        ],
+        "disposition": "covered",
+        "rationale": "Dávka versus den, plná výroba versus dodělávka/ohřev; skutečné servisy."
+      },
+      {
+        "sourceId": "D05",
+        "targets": [
+          "T25",
+          "RUN",
+          "CHECK"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Rozdílné velikosti, úkony, kuchaři nebo změna procesu; fried peanuts a chili mayo ze srovnání pracovních časů vynechat."
+      },
+      {
+        "sourceId": "D06",
+        "targets": [
+          "T12",
+          "OPS"
+        ],
+        "disposition": "covered",
+        "rationale": "Dnešní pondělní rutina versus návrh, datum platnosti a doložené události."
+      },
+      {
+        "sourceId": "D07",
+        "targets": [
+          "T24",
+          "OPS"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Nenapsaná rutina, práh nebo nouze; odpovědnost. Chili mayo výrobní četnost/čas neobnovovat tímto dotazem."
+      },
+      {
+        "sourceId": "D08",
+        "targets": [
+          "T13",
+          "PROC",
+          "RUN"
+        ],
+        "disposition": "covered",
+        "rationale": "Neznámý čas versus již zahrnutý v jiné výrobě; datum ukončení, pokud vyřazeno."
+      },
+      {
+        "sourceId": "E01",
+        "targets": [
+          "T05",
+          "STORE"
+        ],
+        "disposition": "covered",
+        "rationale": "Suchá syrová, horké držení a chlazená rýže jako různé reálné fáze."
+      },
+      {
+        "sourceId": "E02",
+        "targets": [
+          "T16",
+          "STORE"
+        ],
+        "disposition": "covered",
+        "rationale": "Teplotní zdroj a oddělené zmrazené/rozmražené fáze; u shank pouze místní skladování."
+      },
+      {
+        "sourceId": "E03",
+        "targets": [
+          "T18",
+          "STORE"
+        ],
+        "disposition": "covered",
+        "rationale": "Konkrétní otevřený obal a počátek pravidla; nepočítat novou bezpečnou lhůtu od každého přebalení."
+      },
+      {
+        "sourceId": "E04",
+        "targets": [
+          "T17",
+          "STORE",
+          "OPS"
+        ],
+        "disposition": "covered",
+        "rationale": "Šest hodin konkrétního stavu koriandru, oddělené mytí/krájení a osud zbytku."
+      },
+      {
+        "sourceId": "E05",
+        "targets": [
+          "STORE",
+          "CHECK"
+        ],
+        "disposition": "covered",
+        "rationale": "Neznámá kvalita má přesný stav a ověření; není automatický bezpečnostní limit."
+      },
+      {
+        "sourceId": "E06",
+        "targets": [
+          "STORE",
+          "CHECK",
+          "APPROVE"
+        ],
+        "disposition": "covered",
+        "rationale": "Zkušenost versus doložené pravidlo, dokument, podmínky a odpovědné schválení."
+      },
+      {
+        "sourceId": "E07",
+        "targets": [
+          "T18",
+          "STORE",
+          "CHECK"
+        ],
+        "disposition": "covered",
+        "rationale": "Přesný produkt/etiketa; zda pravidlo opravdu platí po otevření."
+      },
+      {
+        "sourceId": "E08",
+        "targets": [
+          "STORE"
+        ],
+        "disposition": "covered",
+        "rationale": "Obal, místní umístění, rezervní zásoba a otevřený výdej jako různé fáze."
+      },
+      {
+        "sourceId": "E09",
+        "targets": [
+          "STORE",
+          "RUN",
+          "T05",
+          "T10"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Tok po vaření a ověřená kapacita, nikoli hypotetický souhlas s větší dávkou. U shank bez velikosti výrobní dávky a pracovních časů; místní skladování zachovat."
+      },
+      {
+        "sourceId": "E10",
+        "targets": [
+          "ITEM",
+          "STORE"
+        ],
+        "disposition": "covered",
+        "rationale": "Konkrétní produkt a fáze u prášků/olejů/směsí; všechny neznámé stavy zodpovědět či adresně ověřit."
+      },
+      {
+        "sourceId": "F01",
+        "targets": [
+          "T20",
+          "DISH",
+          "APPROVE"
+        ],
+        "disposition": "covered",
+        "rationale": "Reálné varianty a složky; dietní tvrzení neodvozovat z názvu tofu."
+      },
+      {
+        "sourceId": "F02",
+        "targets": [
+          "T21",
+          "DISH"
+        ],
+        "disposition": "covered",
+        "rationale": "Skutečný rozdíl Standard/MAX včetně cooked oil; shank pouze složení/porce."
+      },
+      {
+        "sourceId": "F03",
+        "targets": [
+          "T22",
+          "DISH"
+        ],
+        "disposition": "covered",
+        "rationale": "Pevné složky, alternativní skupiny a kombinovatelnost; žádné součty všech voleb najednou."
+      },
+      {
+        "sourceId": "F04",
+        "targets": [
+          "T23",
+          "T14",
+          "DISH"
+        ],
+        "disposition": "covered",
+        "rationale": "Obě nudlové a feet varianty, původ ingrediencí i společné/rozdílné kroky."
+      },
+      {
+        "sourceId": "F05",
+        "targets": [
+          "DISH",
+          "RUN"
+        ],
+        "disposition": "covered",
+        "rationale": "Množství na vydanou porci a fáze s podkladem; není výrobní množství. Neznámé hodnoty mají měřicí úkol."
+      },
+      {
+        "sourceId": "F06",
+        "targets": [
+          "DISH"
+        ],
+        "disposition": "covered",
+        "rationale": "Výdej po objednávce, porce, práce a čekání odděleně; přípravu základu neopakovat. U výjimek neznovu sbírat jejich výrobní čas."
+      },
+      {
+        "sourceId": "F07",
+        "targets": [
+          "DISH",
+          "PROC",
+          "APPROVE"
+        ],
+        "disposition": "covered",
+        "rationale": "Kontrola skutečného talíře a skrytých složek; nezdvojit hotový celek a jeho již obsažené části."
+      },
+      {
+        "sourceId": "G01",
+        "targets": [
+          "OPS",
+          "CHECK"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Konkrétní datum/událost a dopad; u shank a skewer bez jejich výrobních minut, dávek a frekvencí."
+      },
+      {
+        "sourceId": "G02",
+        "targets": [
+          "T24",
+          "OPS",
+          "CHECK"
+        ],
+        "disposition": "covered",
+        "rationale": "Problémy v poznámce versus none; současnost a zastupitelnost/SOP, nikoli automatická značka problému."
+      },
+      {
+        "sourceId": "G03",
+        "targets": [
+          "OPS"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Zůstatek, odpad, personál, přesun a technologická ztráta odděleně. Čtyři výjimky nevyvolají otázky na výrobní množství; místní spotřebu/odpis lze samostatně evidovat, je-li známý."
+      },
+      {
+        "sourceId": "G04",
+        "targets": [
+          "RUN",
+          "STORE"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Praktická kapacita/podklad, žádná lineární úspora; shank a skewer výrobní min/max a časy vynechat."
+      },
+      {
+        "sourceId": "G05",
+        "targets": [
+          "OPS"
+        ],
+        "disposition": "partly_scoped",
+        "rationale": "Večerní zásoba, stáří, rozmrazení, poptávka, vlastník a převzetí; bez dopočítávání dávek/frekvencí čtyř výjimek."
+      },
+      {
+        "sourceId": "H01",
+        "targets": [
+          "APPROVE",
+          "MENU",
+          "T19"
+        ],
+        "disposition": "manager",
+        "rationale": "Vedoucí mapuje POS včetně Stir-fry Pork/Sour & Spicy a Kids/Children; dodá stejné aktuální období a výpadky. Bez nového exportu nenahradit odhadem kuchaře."
+      },
+      {
+        "sourceId": "H02",
+        "targets": [
+          "RUN",
+          "OPS",
+          "CHECK"
+        ],
+        "disposition": "measurement",
+        "rationale": "Pět prioritních příprav: konkrétní měření plné dávky i dodělávky, výkon, zůstatek, spouštěč. Pokud měření neexistuje, naplánovat; nezadávat zpětně vymyšlený deník."
+      },
+      {
+        "sourceId": "H03",
+        "targets": [
+          "APPROVE",
+          "CHECK"
+        ],
+        "disposition": "manager_partly_scoped",
+        "rationale": "Náklady dodá vedoucí z dokladů. Brown sauce a minced pork lze porovnat při stejném podkladu; výrobní ekonomiku beef skewer nelze uzavřít bez vyřazených metrik a nyní ji nedopočítávat."
+      },
+      {
+        "sourceId": "H04",
+        "targets": [
+          "SET",
+          "CHECK",
+          "APPROVE"
+        ],
+        "disposition": "covered",
+        "rationale": "Dohledatelná změna, důkaz, autor, účinnost a řízené promítnutí proti aktuálnímu notebooku."
+      },
+      {
+        "sourceId": "H05",
+        "targets": [
+          "RUN",
+          "CHECK"
+        ],
+        "disposition": "measurement_partly_scoped",
+        "rationale": "Druhý kuchař nezávisle pro stejnou velikost a úkony; rozdíly vysvětlit, neprůměrovat. Čtyři výjimky bez sběru výrobních metrik."
+      }
+    ]
+  }
+}
