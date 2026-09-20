@@ -11,6 +11,17 @@ export function setAnswer(d:Draft,t:Target,value:Values[string]):Draft{
  v[t.path.at(-1)!]=value;return next;
 }
 export function go(d:Draft,e:Entity,group:string,source:ReviewSource,focus?:Target):Draft{const upgraded=upgradeUX(d,source),position={entityId:e.id,group};return {...upgraded,position,ux:{...upgraded.ux!,workPosition:position,focus}};}
+// Inspection is a visit, never a reference selection. Return frames contain no draft snapshots.
+export function visitRelated(d:Draft,target:Target,source:ReviewSource,role:Role='cook'):Draft{
+ const record=entity(d,target.entityId),origin=entity(d,d.position.entityId);
+ if(!record||record.archived||!origin||!answerGroups(d,record,source,role).some(g=>g.id===target.group))throw Error('This question is no longer available. Your current answers are kept.');
+ if(d.position.entityId===target.entityId&&d.position.group===target.group)return go(d,record,target.group,source,target);
+ const next=upgradeUX(d,source);if(next.ux!.returns.length>=20)throw Error('Return to an earlier question before opening another related detail.');
+ const focus=d.ux?.focus,from=focus&&focus.entityId===d.position.entityId&&focus.group===d.position.group?focus:{...d.position,path:[]};
+ const destination={entityId:target.entityId,group:target.group};
+ const frame={id:crypto.randomUUID(),origin:from,expected:'null',destination,label:origin.name+' · '+groups.find(g=>g.id===d.position.group)?.title};
+ return {...next,position:destination,ux:{...next.ux!,workPosition:destination,returns:[...next.ux!.returns,frame],focus:target}};
+}
 export function recommendedNext(d:Draft,source:ReviewSource,role:Role,excludeId?:string){
  const from=entity(d,excludeId),references=JSON.stringify(from?.answers??{});const ordered=d.entities.filter(e=>!e.archived&&e.id!==excludeId);if(from)ordered.sort((a,b)=>Number(b.parentId===from.id||references.includes(b.id))-Number(a.parentId===from.id||references.includes(a.id)));
  for(const e of ordered){const p=recordProgress(d,e,source,role);if(['answers-complete','waiting-for-check','owner-only'].includes(p.state))continue;const topic=p.topics.find(t=>t.state!=='confirmed'&&!t.waiting);if(topic)return {...topic.position,label:(from&&(e.parentId===from.id||references.includes(e.id))?'Related: ':'')+e.name+' · '+groups.find(g=>g.id===topic.position.group)?.title};}return null;
@@ -35,7 +46,7 @@ export function beginReference(d:Draft,t:Target,source:ReviewSource,mode:'create
 export function relatedRecord(d:Draft,from:Entity,kind:Kind,source:ReviewSource){const open=d.ux?.returns.at(-1);if(open?.origin.entityId===from.id&&entity(d,open.destination.entityId)?.kind===kind)return d;let next=upgradeUX(d,source);const e=makeEntity(kind,'New '+kind,from.id);if(kind==='run'||kind==='operations')e.answers[kind==='run'?'RUN-01':'OPS-01']={process:from.id};if(kind==='storage')e.answers['STORE-01']={item:from.id};const destination={entityId:e.id,group:groups.find(g=>g.kind===kind)!.id};const frame={id:crypto.randomUUID(),origin:{...d.position,path:[]},expected:'null',destination,label:from.name};next={...next,entities:[...next.entities,e],position:destination,ux:{...next.ux!,workPosition:destination,returns:[...next.ux!.returns,frame]}};return next;}
 export function finishRelated(d:Draft,source:ReviewSource,link=true):Draft{
  const frame=d.ux?.returns.at(-1);if(!frame)return d;let next=d;const origin=entity(d,frame.origin.entityId);
- if(!origin||!activeGroups(d,origin,source).some(g=>g.id===frame.origin.group)){if(link)throw Error('The original topic is no longer active. Your related record is kept. Return without linking to leave this step.');const fallback=origin??entity(d,frame.destination.entityId)??d.entities.find(e=>!e.archived)!;const position={entityId:fallback.id,group:activeGroups(d,fallback,source)[0]?.id??''};return {...d,position,ux:{...d.ux!,returns:d.ux!.returns.slice(0,-1),workPosition:position,focus:undefined}};}
+ if(!origin||origin.archived||!activeGroups(d,origin,source).some(g=>g.id===frame.origin.group)){if(link&&frame.ref)throw Error('The original topic is no longer active. Your related record is kept. Return without linking to leave this step.');const fallback=[origin,entity(d,frame.destination.entityId),...d.entities].find(e=>e&&!e.archived&&activeGroups(d,e,source).length)!;const position={entityId:fallback.id,group:activeGroups(d,fallback,source)[0]?.id??''};return {...d,position,ux:{...d.ux!,returns:d.ux!.returns.slice(0,-1),workPosition:position,focus:undefined}};}
  if(link&&frame.ref){const found=fieldAt(d,frame.origin);if(!found||!targetActive(d,frame.origin,source)||JSON.stringify(fieldValue(d,frame.origin)??null)!==frame.expected)throw Error('The original field changed while you were away. Nothing was replaced. Return without linking and choose the value again.');if(!options(d,found.record,found.field,found.row).some(o=>o.id===frame.selection))throw Error('This reference does not yet belong to the selected product or process. Complete its identity, or return without linking.');next=setAnswer(d,frame.origin,frame.selection!);}
  return {...next,position:{entityId:origin.id,group:frame.origin.group},ux:{...next.ux!,workPosition:{entityId:origin.id,group:frame.origin.group},returns:next.ux!.returns.slice(0,-1),focus:frame.origin}};
 }

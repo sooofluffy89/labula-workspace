@@ -2,6 +2,7 @@ import {activeGroups,values,list,str,entity,options,same,taskHash,type Draft,typ
 import {groups,visible,type Field,type Values} from './fields';
 import type {ReviewSource} from '../data-review';
 import {emptyUX} from './ux-schema';
+import {changeField,changeValue} from './change-presentation';
 
 // Only dependencies of this topic are stamped. Navigation and unrelated answers never invalidate it.
 export function topicDependencies(d:Draft,e:Entity,id:string,source?:ReviewSource):string {
@@ -47,20 +48,14 @@ export type ConfirmationChange={
  exact:boolean;
 };
 
-function readable(d:Draft,value:unknown):string{
- if(value===undefined||value===null||value==='')return 'Not recorded';
- if(typeof value==='string'){const linked=entity(d,value);return (linked?.name??value).slice(0,120);}
- if(typeof value==='number'||typeof value==='boolean')return String(value);
- if(Array.isArray(value))return value.length===0?'No entries':`${value.length} ${value.length===1?'entry':'entries'}`;
- return 'Details updated';
-}
 function leafChanges(before:unknown,after:unknown,path:string[]=[],result:{path:string[];before:unknown;after:unknown}[]=[]){
- if(same(before,after)||result.length>=6)return result;
+ if(same(before,after))return result;
  if(Array.isArray(before)&&Array.isArray(after)){
   const stable=(rows:unknown[])=>rows.every(row=>row&&typeof row==='object'&&!Array.isArray(row)&&typeof (row as Record<string,unknown>).id==='string');
   if(stable(before)&&stable(after)){
    const oldRows=new Map(before.map(row=>[String((row as Record<string,unknown>).id),row])),newRows=new Map(after.map(row=>[String((row as Record<string,unknown>).id),row]));
    for(const rowId of new Set([...oldRows.keys(),...newRows.keys()]))leafChanges(oldRows.get(rowId),newRows.get(rowId),[...path,rowId],result);
+   if(same([...oldRows.keys()].sort(),[...newRows.keys()].sort())&&!same([...oldRows.keys()],[...newRows.keys()]))result.push({path,before:'Recorded rows in their previous order',after:'Same rows in a different order'});
    return result;
   }
  }
@@ -85,28 +80,28 @@ function dependencyTarget(d:Draft,current:Entity,currentGroup:string,key:string,
  }
  return undefined;
 }
-function changeTitle(d:Draft,target:ConfirmationChange['target'],fallback:string){if(!target)return fallback;const record=entity(d,target.entityId),group=groups.find(g=>g.id===target.group);return [record?.name,group?.title].filter(Boolean).join(' · ')||fallback;}
+function changeTitle(d:Draft,target:ConfirmationChange['target'],fallback:string){if(!target)return fallback;const record=entity(d,target.entityId),group=groups.find(g=>g.id===target.group);return [record?.name,group?.title,...changeField(target).labels].filter(Boolean).join(' · ')||fallback;}
 
 // Explanations are presentation-only. They never update confirmation baselines.
 export function confirmationChanges(d:Draft,e:Entity,id:string,source?:ReviewSource):ConfirmationChange[]{
  const stored=e.confirmations[id],stamp=d.ux?.confirmations[e.id]?.[id];
- if(stored===undefined)return [];
+ if(stored===undefined||confirmationStatus(d,e,id,source).valid)return [];
  if(!stamp)return [{title:'Confirmation context is unavailable',detail:'The saved answer is kept, but its confirmation context is missing. Review this topic again.',target:{entityId:e.id,group:id,path:[]},exact:false}];
  if(stamp.at==='legacy-context')return [{title:'Earlier confirmation needs a fresh review',detail:'This context was captured when the review was upgraded. It is not proof of the exact state when the earlier confirmation was made.',target:{entityId:e.id,group:id,path:[]},exact:false}];
- const changes:ConfirmationChange[]=[];
+ const changes:ConfirmationChange[]=[],before=dependencyMap(stamp.dependencies),after=dependencyMap(topicDependencies(d,e,id,source));
+ const describe=(change:{path:string[];before:unknown;after:unknown},target:ConfirmationChange['target'],detail:string)=>{const old=changeValue(d,change.before,target,true,before),now=changeValue(d,change.after,target,false,after);const record=target&&entity(d,target.entityId);let safe=record&&!record.archived&&activeGroups(d,record,source).some(g=>g.id===target!.group)?target:undefined;if(safe&&safe.path.length&&!changeField(safe).field)safe={...safe,path:[]};return {title:changeTitle(d,target,'Linked information changed'),detail,before:old.text,after:now.text,target:safe,exact:!!target&&old.exact&&now.exact};};
  if(stored!==JSON.stringify(values(e,id))){
-  try{for(const change of leafChanges(JSON.parse(stored),values(e,id)))changes.push({title:changeTitle(d,{entityId:e.id,group:id,path:change.path},'Answer changed'),detail:'This answer changed after it was confirmed.',before:readable(d,change.before),after:readable(d,change.after),target:{entityId:e.id,group:id,path:change.path},exact:true});}
+  try{for(const change of leafChanges(JSON.parse(stored),values(e,id)))changes.push(describe(change,{entityId:e.id,group:id,path:change.path},'This answer changed after it was confirmed.'));}
   catch{changes.push({title:'Answer changed',detail:'The current answer no longer matches the confirmed value. Review this topic again.',target:{entityId:e.id,group:id,path:[]},exact:false});}
  }
- const before=dependencyMap(stamp.dependencies),after=dependencyMap(topicDependencies(d,e,id,source));
  if(stamp.dependencies!==topicDependencies(d,e,id,source)){
   if(before&&after){
    const keys=new Set([...Object.keys(before),...Object.keys(after)]);
-   for(const key of keys){if(same(before[key],after[key]))continue;for(const change of leafChanges(before[key],after[key])){const target=dependencyTarget(d,e,id,key,change.path);changes.push({title:changeTitle(d,target,'Linked information changed'),detail:target?'A linked fact used by this answer changed. Review the current record before confirming again.':'The linked context changed, but the earlier detail cannot be mapped safely. Review this topic again.',before:readable(d,change.before),after:readable(d,change.after),target,exact:!!target});}}
+   for(const key of keys){if(same(before[key],after[key]))continue;for(const change of leafChanges(before[key],after[key])){const target=dependencyTarget(d,e,id,key,change.path);changes.push(describe(change,target,target?'A linked fact used by this answer changed. Review the current record before confirming again.':'The linked context changed, but the earlier detail cannot be mapped safely. Review this topic again.'));}}
   }else changes.push({title:'Linked information changed',detail:'The saved dependency context cannot be read safely. The earlier answer is kept; review this topic again.',target:{entityId:e.id,group:id,path:[]},exact:false});
  }
  if(stamp.value!==stored)changes.push({title:'Confirmation record does not match',detail:'The stored confirmation and its context disagree. No earlier value is being guessed; confirm the current topic again.',target:{entityId:e.id,group:id,path:[]},exact:false});
- const unique=new Map<string,ConfirmationChange>();for(const change of changes)unique.set(JSON.stringify([change.title,change.detail,change.before,change.after,change.target]),change);return [...unique.values()].slice(0,8);
+ const unique=new Map<string,ConfirmationChange>();for(const change of changes)unique.set(JSON.stringify([change.title,change.detail,change.before,change.after,change.target]),change);const all=[...unique.values()];return all.length<=8?all:[...all.slice(0,8),{title:`${all.length-8} more changes`,detail:'This is a shortened list. Review all answers in the affected topic before confirming.',target:{entityId:e.id,group:id,path:[]},exact:false}];
 }
 export function confirmTopic(d:Draft,eid:string,gid:string,source:ReviewSource):Draft{
  const e=entity(d,eid);if(!e)return d;const value=JSON.stringify(values(e,gid)),ux=d.ux??emptyUX();

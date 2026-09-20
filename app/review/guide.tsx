@@ -3,10 +3,10 @@
 import {useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogClose,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle,DialogTrigger} from '@/components/ui/dialog';
-import {guideExamples,guideIntroduction,readGuidePreference,topicGuide,writeGuidePreference,type GuideEntry,type GuideExample,type GuidePreference} from '@/lib/review-v2/guidance';
+import {guideExamples,guideIntroduction,guideStorage,readGuidePreference,topicGuide,writeGuidePreference,type GuideEntry,type GuideExample,type GuidePreference} from '@/lib/review-v2/guidance';
 
-const localGuidePreference=(userId:string)=>readGuidePreference(userId,typeof window==='undefined'?undefined:window.localStorage);
-const saveLocalGuidePreference=(userId:string,value:GuidePreference)=>writeGuidePreference(userId,value,typeof window==='undefined'?undefined:window.localStorage);
+const localGuidePreference=(userId:string)=>readGuidePreference(userId,guideStorage());
+const saveLocalGuidePreference=(userId:string,value:GuidePreference)=>writeGuidePreference(userId,value,guideStorage());
 
 function Example({id}:{id:GuideExample}){const example=guideExamples[id];return <section className="guide-example"><p className="guide-example-label">Illustrative example — not your recorded answer</p><h3>{example.title}</h3><ol>{example.steps.map(step=><li key={step}>{step}</li>)}</ol><p>{example.note}</p></section>;}
 

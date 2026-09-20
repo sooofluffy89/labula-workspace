@@ -1,3 +1,4 @@
+import {groups,type Field} from './fields';
 export const GUIDE_VERSION = '2026-09-self-guided-v1';
 export type GuidePreference='seen'|'skipped';
 type GuideStorage={getItem:(key:string)=>string|null;setItem:(key:string,value:string)=>void};
@@ -6,6 +7,7 @@ export function readGuidePreference(userId:string,storage?:Pick<GuideStorage,'ge
 export function writeGuidePreference(userId:string,value:GuidePreference,storage?:Pick<GuideStorage,'setItem'>){try{storage?.setItem(guidePreferenceKey(userId),value);}catch{/* A personal preference cannot block review work. */}}
 
 export type GuideExample = 'coriander' | 'shared-output' | 'evidence' | 'checks' | 'status';
+export function guideStorage(): GuideStorage | undefined {try{return typeof window==='undefined'?undefined:window.localStorage;}catch{return undefined;}}
 export type GuideEntry = {
   summary: string;
   detail: string;
@@ -33,36 +35,45 @@ const topic: Record<string, GuideEntry> = {
   'RUN-01': {summary: 'This screen describes one specific run sample.', detail: 'A measured run, a written standard and an estimate of a typical run are different evidence. A full batch and a small top-up are separate samples.', example: 'evidence', production: true},
   'RUN-02': {summary: 'Record what went into this particular run.', detail: 'Use the quantity and physical stage that were actually used in this run. Do not copy an old estimate into a measured run.', example: 'evidence', production: true},
   'RUN-03': {summary: 'Record the total output before assigning it to uses.', detail: 'A bag or container count is not a known weight unless the content of one container and the total fill are known.', example: 'evidence', production: true},
-  'RUN-05': {summary: 'Waiting time and active work are different.', detail: 'Record unattended cooking, cooling or resting as elapsed time. Do not count it as active labour unless a person is actually working.', example: 'shared-output', production: true},
-  'RUN-06': {summary: 'Duration and person-minutes answer different questions.', detail: 'If the number of people changes during the run, record separate intervals. Ten minutes with two people is twenty person-minutes.', example: 'shared-output', production: true},
+  'RUN-08': {summary: 'Waiting time and active work are different.', detail: 'Record unattended cooking, cooling or resting as elapsed time. Do not count it as active labour unless a person is actually working.', example: 'shared-output', production: true},
+  'RUN-04': {summary: 'Record what each pack contains and how much output it represents.', detail: 'Give the net content and unit for one pack, the number filled and any unpacked remainder. A sample of packs is not the full output; a bag count alone is not a weight.', example: 'evidence', production: true},
+  'RUN-05': {summary: 'Check that inputs, outputs and quantities describe the same complete run.', detail: 'Say whether every input and usable output is listed. If some quantities come from a standard or estimate, say so; a partial output is not a measured total.', example: 'evidence', production: true},
+  'RUN-06': {summary: 'Account for every hands-on step in the recorded work.', detail: 'Include setup, preparing ingredients, attended cooking, portioning, packing and cleanup. Distinguish work recorded here, work linked elsewhere, work not performed and work not measured. Unmeasured work is not zero.', production: true},
   'RUN-07': {summary: 'Record shared work once and link it to the right outputs.', detail: 'Work that benefits several outputs belongs to the shared process once. Later cutting or packing for only one output is linked only to that output.', example: 'shared-output', production: true},
   'RUN-09': {summary: 'A full run and a top-up need separate evidence.', detail: 'Describe each actual sample. Never calculate top-up time by scaling the weight of a full batch.', example: 'evidence', production: true},
   'STORE-01': {summary: 'Storage belongs to an exact product and physical state.', detail: 'Name the state, packaging and location precisely. Raw, cooked, frozen, thawed and opened states can need separate records.'},
   'STORE-02': {summary: 'Describe the exact packaging and local location.', detail: 'Identify the container, whether it is open or sealed, and where it is kept. Repacking does not automatically restart a safe storage period.'},
   'STORE-03': {summary: 'Observed quality is not an approved storage rule.', detail: 'Record what has actually been observed and its conditions. Keep safety or policy limits separate until an authorised person verifies a documented rule.', example: 'evidence'},
   'STORE-04': {summary: 'Unknown storage facts need a concrete check.', detail: 'Keep the value unknown and create a check that says what will be inspected, who will do it, how and by when.', example: 'checks'},
-  'STORE-05': {summary: 'Capacity must refer to the exact stored state.', detail: 'Describe the real container and usable space. Storage capacity alone does not prove that a larger production batch is safe or practical.'},
+  'STORE-05': {summary: 'Link the actual storage states before and after each transition.', detail: 'For opening, cooling, freezing, thawing or repacking, identify the original lot, the procedure, the responsible person and the original limits that still apply. Repacking does not automatically restart a storage period.'},
   'CHECK-01': {summary: 'An assigned check is a task, not a result.', detail: 'Name the missing fact, responsible person, exact method, reason and due date. Add the result and evidence only after the check is performed.', example: 'checks'},
   'CHECK-02': {summary: 'Close a check only with a usable result.', detail: 'Record the result, evidence, performer and date. An inconclusive result needs a concrete next step.', example: 'checks'},
 };
 
+const personMinutes:GuideEntry={summary:'Duration and person-minutes answer different questions.',detail:'Record active minutes with the constant number of people for each interval. Ten minutes with two people is twenty person-minutes. Unattended waiting belongs in the waiting topic.',production:true};
 const field: Record<string, GuideEntry> = {
   'SET-01.interviewer': {summary: 'If you are filling this in yourself, enter your own name.', detail: 'This identifies who recorded the answers. It does not change your access or role.'},
   'SET-01.whose': {summary: 'Say whose method these answers describe.', detail: 'Choose your own usual method, an agreed kitchen method, or another cook’s work that you personally observed.'},
   'ITEM-01.identity': topic['ITEM-01'],
   'ITEM-01.stages': topic['ITEM-01'],
-  'ITEM-02.route': topic['ITEM-02'],
-  'ITEM-02.phase': topic['ITEM-02'],
-  'ITEM-02.process': topic['ITEM-02'],
+  'ITEM-02.sources.*.route': topic['ITEM-02'],
+  'ITEM-02.sources.*.phase': topic['ITEM-02'],
+  'ITEM-02.sources.*.process': topic['ITEM-02'],
   'ITEM-03.actions': topic['ITEM-03'],
   'PROC-03.outputs': topic['PROC-03'],
   'RUN-01.basis': topic['RUN-01'],
   'RUN-01.size': topic['RUN-01'],
   'RUN-03.outputs': topic['RUN-03'],
+  'RUN-04.packages': topic['RUN-04'],
+  'RUN-04.remainders': topic['RUN-04'],
+  'RUN-05.outputs': topic['RUN-05'],
+  'RUN-08.waits': topic['RUN-08'],
+  'RUN-08.readyBasis': topic['RUN-08'],
+  'STORE-05.steps': topic['STORE-05'],
   'RUN-07.steps': topic['RUN-07'],
-  'RUN-07.intervals': topic['RUN-06'],
-  'RUN-07.mode': topic['RUN-06'],
-  'RUN-07.people': topic['RUN-06'],
+  'RUN-07.steps.*.intervals': personMinutes,
+  'RUN-07.steps.*.mode': personMinutes,
+  'RUN-07.steps.*.intervals.*.people': personMinutes,
   'RUN-09.topups': topic['RUN-09'],
   'STORE-01.phase': topic['STORE-01'],
   'STORE-02.container': topic['STORE-02'],
@@ -76,9 +87,10 @@ export function topicGuide(groupId: string, productionOutsideReview = false): Gu
 }
 
 export function fieldGuide(groupId: string, path: string[], productionOutsideReview = false): GuideEntry | undefined {
-  const last = path.at(-1);
-  if (!last) return undefined;
-  const entry = field[`${groupId}.${last}`];
+  let fields=groups.find(g=>g.id===groupId)?.fields??[];
+  const stable:string[]=[];
+  for(let i=0;i<path.length;i++){const definition:Field|undefined=fields.find(f=>f.key===path[i]);if(!definition)return undefined;stable.push(definition.key);if(i<path.length-1){if(definition.type!=='rows'||!path[++i])return undefined;stable.push('*');fields=definition.fields??[];}}
+  const entry = field[`${groupId}.${stable.join('.')}`];
   return entry?.production && productionOutsideReview ? undefined : entry;
 }
 
