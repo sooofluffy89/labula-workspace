@@ -18,3 +18,15 @@
 .question-topic,.review-row-group,.review-repeat,.review-checks{scroll-margin-block:24px}
 .question-topic:focus,.review-row-group:focus,.review-repeat:focus,.review-checks:focus{outline:3px solid #2d7651;outline-offset:4px}
 @media(max-width:800px){.review-overview>summary>strong,.review-overview>summary>span{display:block}.overview-disclosure{margin-left:0;margin-top:4px}.review-overview>.review-hub{padding:0 12px 12px}.review-confirm-actions>button:first-child{width:100%}}
+
+.review-guide-dialog{max-height:min(88vh,760px);overflow:auto;line-height:1.55}
+.guide-intro{display:grid;gap:10px;margin:4px 0 12px;padding-left:24px}
+.guide-example{border:1px solid #cbd9d0;border-radius:10px;background:#f5f8f6;padding:18px;overflow-wrap:anywhere}
+.guide-example h3{margin:4px 0 10px}.guide-example ol{display:grid;gap:7px;padding-left:24px}.guide-example-label{font-size:13px;font-weight:700;letter-spacing:.025em;text-transform:uppercase;color:#315d43}
+.guide-example-list{display:grid;gap:9px}.guide-example-list button{display:grid;gap:3px;text-align:left;border:1px solid #d5ddd8;border-radius:8px;background:#fff;padding:13px 15px;color:#1b2d22}.guide-example-list button:hover{background:#f2f6f3}.guide-example-list span{font-size:14px;color:#58665e}
+.welcome-guidance{max-width:790px;margin:22px 0;padding:20px;border:1px solid #d7e3db;border-radius:10px;background:#f5f8f6}.welcome-guidance h2{margin-top:0}
+.topic-guidance{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:-8px 0 18px;padding:12px 14px;border:1px solid #dbe4de;border-radius:8px;background:#fafcfb}.topic-guidance p{margin:0;line-height:1.5}
+.review-help-link{min-height:36px!important;border:0;background:transparent;color:#315d43;text-decoration:underline;text-underline-offset:3px;padding:4px 2px;white-space:nowrap}
+.field-guidance{display:flex;align-items:flex-start;gap:10px;justify-content:space-between;font-weight:400;font-size:14px;line-height:1.45;color:#52625a;margin:6px 0 10px}.field-guidance .review-help-link{font-size:14px!important}
+.reconfirmation-detail{margin-top:10px}.reconfirmation-detail>summary{font-weight:650}.reconfirmation-detail article{padding:12px 0;border-top:1px solid #d8e0db}.reconfirmation-detail article:first-of-type{margin-top:8px}.reconfirmation-detail article p{font-size:14px}.reconfirmation-detail article details{margin:6px 0}
+@media(max-width:600px){.topic-guidance,.field-guidance{display:block}.review-help-link{white-space:normal;text-align:left}.review-guide-dialog{max-height:92vh;padding:20px}.welcome-guidance{padding:15px}}
