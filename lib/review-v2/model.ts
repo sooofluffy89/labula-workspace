@@ -1,3 +1,4 @@
+import {quickSchema} from '../quick-review/schema';
 import {uxSchema} from './ux-schema';
 import {confirmationStatus} from './confirmation';
 import {migrateLegacy} from './migration';
@@ -16,7 +17,7 @@ export const targetSchema=z.object({entityId:safeKey,group:safeKey,path:z.array(
 export type Target=z.infer<typeof targetSchema>;
 export const taskSchema=z.object({id:safeKey,createdInUX:z.literal(3).optional(),targets:z.array(targetSchema).max(100),owner:z.string().max(500),due:z.string().max(30),method:z.string().max(6000),reason:z.string().max(6000),result:z.string().max(100),evidence:z.string().max(6000),performedBy:z.string().max(500),performedOn:z.string().max(30),nextStep:z.string().max(6000),closedHash:z.string().optional()}).strict();
 export type CheckTask=z.infer<typeof taskSchema>;
-export const draftSchema=z.object({schemaVersion:z.literal(2),ux:uxSchema.optional(),entities:z.array(entitySchema).max(1500),tasks:z.array(taskSchema).max(1000),targeted:z.record(safeKey,json).default({}),legacy:json.optional(),migration:z.object({from:z.literal(1),unresolved:z.array(z.string()).max(1500)}).optional(),interviewClosed:z.boolean(),position:z.object({entityId:z.string().max(150),group:z.string().max(100)}),imports:z.array(z.object({id:safeKey,at:z.string(),sourceRevision:z.number(),label:z.string().max(500),recovery:json.optional()})).max(100)}).strict();
+export const draftSchema=z.object({schemaVersion:z.literal(2),quick:quickSchema.optional(),ux:uxSchema.optional(),entities:z.array(entitySchema).max(1500),tasks:z.array(taskSchema).max(1000),targeted:z.record(safeKey,json).default({}),legacy:json.optional(),migration:z.object({from:z.literal(1),unresolved:z.array(z.string()).max(1500)}).optional(),interviewClosed:z.boolean(),position:z.object({entityId:z.string().max(150),group:z.string().max(100)}),imports:z.array(z.object({id:safeKey,at:z.string(),sourceRevision:z.number(),label:z.string().max(500),recovery:json.optional()})).max(100)}).strict();
 export type Draft=Omit<z.infer<typeof draftSchema>,'entities'|'targeted'>&{entities:Entity[];targeted:Record<string,Values>};
 export type Review2Record={source:ReviewSource;data:Draft;revision:number;updatedAt:string;updatedBy:string};
 export type Issue={entityId:string;group:string;path:string[];message:string;hard:boolean};

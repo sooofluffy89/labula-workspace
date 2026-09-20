@@ -1,13 +1,13 @@
 import {emptyUX} from './ux-schema';
 import {same,parseDraft,migrate,type Draft,type Review2Record} from './model';
 import type {ReviewSource} from '../data-review';
-export type Pending={clientVersion?:3;operationId:string;revision:number;action:'save2';data:Draft};
+export type Pending={clientVersion?:3|4;operationId:string;revision:number;action:'save2';data:Draft};
 export class SaveQueue{
  current:Draft;acknowledged:Draft;revision:number;pending:Pending|null=null;running=false;
  constructor(record:Review2Record,private persist:()=>void,private notify:()=>void){this.current=record.data;this.acknowledged=record.data;this.revision=record.revision;}
  get dirty(){return !same(this.current,this.acknowledged)||!!this.pending;}
  edit(data:Draft){this.current=data;this.persist();this.notify();}
- async save(send:(p:Pending)=>Promise<{operationId:string;revision:number}>){if(this.running||!this.dirty)return;this.running=true;this.notify();try{this.pending??={operationId:crypto.randomUUID(),revision:this.revision,action:'save2',clientVersion:3,data:structuredClone(this.current)};this.persist();const p=this.pending,r=await send(p);if(r.operationId!==p.operationId||r.revision!==p.revision+1)throw Error('Save acknowledgement could not be verified. Retry safely.');this.revision=r.revision;this.acknowledged=p.data;this.pending=null;this.persist();}catch(e){const code=(e as {status?:number}).status;if([400,401,403,413,415,422,426].includes(code??0)){this.pending=null;this.persist();}throw e;}finally{this.running=false;this.notify();}}
+ async save(send:(p:Pending)=>Promise<{operationId:string;revision:number}>){if(this.running||!this.dirty)return;this.running=true;this.notify();try{this.pending??={operationId:crypto.randomUUID(),revision:this.revision,action:'save2',clientVersion:this.current.quick?4:3,data:structuredClone(this.current)};this.persist();const p=this.pending,r=await send(p);if(r.operationId!==p.operationId||r.revision!==p.revision+1)throw Error('Save acknowledgement could not be verified. Retry safely.');this.revision=r.revision;this.acknowledged=p.data;this.pending=null;this.persist();}catch(e){const code=(e as {status?:number}).status;if([400,401,403,413,415,422,426].includes(code??0)){this.pending=null;this.persist();}throw e;}finally{this.running=false;this.notify();}}
 }
 export type Recovery={format:'Labula review recovery v2';campaign:string;userId:string;user:string;record:Review2Record;current:Draft;acknowledged:Draft;pending:Pending|null;pendingAction?:{body:Record<string,unknown>;revision:number}|null;revision:number;savedAt:string};
 export type ImportCandidate={source:ReviewSource;current:Draft;acknowledged:Draft;raw:unknown;pending:unknown;revision:number;campaign:string;user:string;userId?:string;pendingAction?:{body:Record<string,unknown>;revision:number}};
