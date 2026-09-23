@@ -7,8 +7,9 @@ export type StockCommand=z.infer<typeof stockCommandSchema>;
 export type StockItem={itemId:string;name:string;aliases:string[];kind:'bought'|'prep';included:boolean;track:boolean;revision:number;updatedAt:string;updatedBy:string};
 export type StockSnapshot={accountId:string;account:string;scope:'kitchen';items:StockItem[];notebookRevision:number};
 export type StockFilter='all'|'tracked'|'untracked';
-export function stockRows(items:StockItem[],search:string,filter:StockFilter='all',included=true){
+export type StockTypeFilter='all'|StockItem['kind'];
+export function stockRows(items:StockItem[],search:string,filter:StockFilter='all',included=true,kind:StockTypeFilter='all'){
  const query=normalizeName(search);
- return items.filter(i=>i.included===included&&(filter==='all'||(filter==='tracked'?i.track:!i.track))&&[i.name,...i.aliases].some(n=>normalizeName(n).includes(query))).sort((a,b)=>a.name.localeCompare(b.name,'en')||a.itemId.localeCompare(b.itemId));
+ return items.filter(i=>i.included===included&&(kind==='all'||i.kind===kind)&&(filter==='all'||(filter==='tracked'?i.track:!i.track))&&[i.name,...i.aliases].some(n=>normalizeName(n).includes(query))).sort((a,b)=>a.name.localeCompare(b.name,'en')||a.itemId.localeCompare(b.itemId));
 }
 export function stockCounts(items:StockItem[]){const included=items.filter(i=>i.included);const tracked=included.filter(i=>i.track).length;return {total:included.length,tracked,untracked:included.length-tracked};}

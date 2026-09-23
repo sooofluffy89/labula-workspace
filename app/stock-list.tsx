@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {StockController,type StockState} from '@/lib/stock-client';
-import {stockRows,stockCounts,type StockFilter} from '@/lib/stock';
+import {stockRows,stockCounts,type StockFilter,type StockTypeFilter} from '@/lib/stock';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter} from '@/components/ui/dialog';
@@ -9,7 +9,7 @@ import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFo
 export function StockList({account,active}:{account:string;active:boolean}){
  const controller=useRef<StockController|null>(null);
  const [state,setState]=useState<StockState>({snapshot:null,loading:false,saving:false,error:'',unauthorized:false,pending:null,notice:''});
- const [search,setSearch]=useState(''),[filter,setFilter]=useState<StockFilter>('all'),[addOpen,setAddOpen]=useState(false),[addSearch,setAddSearch]=useState(''),[selected,setSelected]=useState<string[]>([]);
+ const [search,setSearch]=useState(''),[filter,setFilter]=useState<StockFilter>('all'),[typeFilter,setTypeFilter]=useState<StockTypeFilter>('all'),[addOpen,setAddOpen]=useState(false),[addSearch,setAddSearch]=useState(''),[selected,setSelected]=useState<string[]>([]);
  const summary=useRef<HTMLParagraphElement>(null),actionFocus=useRef<HTMLElement|null>(null);
  useEffect(()=>{
   const storage={get length(){return window.localStorage.length;},key:(index:number)=>window.localStorage.key(index),getItem:(key:string)=>window.localStorage.getItem(key),setItem:(key:string,value:string)=>window.localStorage.setItem(key,value),removeItem:(key:string)=>window.localStorage.removeItem(key)};
@@ -18,7 +18,7 @@ export function StockList({account,active}:{account:string;active:boolean}){
  },[account]);
  useEffect(()=>{if(!active)return;void controller.current?.refresh();const refresh=()=>{if(document.visibilityState==='visible')void controller.current?.refresh();};window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);return()=>{window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};},[active,account]);
  useEffect(()=>{const protect=(e:BeforeUnloadEvent)=>{if(controller.current?.state.pending){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',protect);return()=>window.removeEventListener('beforeunload',protect);},[]);
- const items=state.snapshot?.items??[],counts=stockCounts(items),rows=stockRows(items,search,filter),available=stockRows(items,addSearch,'all',false);
+ const items=state.snapshot?.items??[],counts=stockCounts(items),rows=stockRows(items,search,filter,true,typeFilter),available=stockRows(items,addSearch,'all',false);
  useEffect(()=>{if(state.loading||state.saving||state.pending)return;const source=actionFocus.current;if(!source)return;actionFocus.current=null;if(active&&document.activeElement===document.body){if(source.isConnected)source.focus();else summary.current?.focus();}},[state.snapshot,state.loading,state.saving,state.pending,active]);
  const blocked=state.loading||state.saving||!!state.pending||!!state.error||!state.snapshot;
  const refresh=()=>void controller.current?.refresh();
@@ -44,14 +44,15 @@ export function StockList({account,active}:{account:string;active:boolean}){
   </div>
  </div>;
  return <section className="stock-view" aria-labelledby="stock-heading">
-  <div className="view-heading"><h1 id="stock-heading">Aktuální zásoby</h1><p className="muted">Choose which ingredients and preparations to include in future stock checks. Stock quantities are not recorded here yet.</p></div>
+  <div className="view-heading"><h1 id="stock-heading">Current stock</h1><p className="muted">Choose which ingredients and preparations to include in future stock checks. Stock quantities are not recorded here yet.</p></div>
   {!addOpen&&status}
   {state.snapshot&&<>
    <p ref={summary} tabIndex={-1} className="stock-counts">{counts.total} items in list <span>·</span> {counts.tracked} tracked <span>·</span> {counts.untracked} not tracked</p>
    <div className="toolbar"><Input aria-label="Search stock items" placeholder="Search names or alternative names…" value={search} onChange={e=>setSearch(e.target.value)}/><div className="actions"><Button variant="outline" disabled={state.loading||state.saving} onClick={refresh}>Refresh</Button><Button disabled={blocked} onClick={()=>{setSelected([]);setAddSearch('');setAddOpen(true);}}>Add items</Button></div></div>
-   <div className="actions stock-filters" aria-label="Filter stock items">{(['all','tracked','untracked'] as const).map(f=><Button key={f} variant={filter===f?'default':'outline'} aria-pressed={filter===f} onClick={()=>setFilter(f)}>{f==='all'?'All':f==='tracked'?'Tracked':'Not tracked'}</Button>)}</div>
+   <div className="actions stock-filters" role="group" aria-label="Ingredient type"><span className="muted small">Type</span>{([['all','All types'],['bought','Bought ingredients'],['prep','House-made prep']] as const).map(([value,label])=><Button key={value} variant={typeFilter===value?'default':'outline'} aria-pressed={typeFilter===value} onClick={()=>setTypeFilter(value)}>{label}</Button>)}</div>
+   <div className="actions stock-filters" role="group" aria-label="Tracking status"><span className="muted small">Tracking</span>{(['all','tracked','untracked'] as const).map(f=><Button key={f} variant={filter===f?'default':'outline'} aria-pressed={filter===f} onClick={()=>setFilter(f)}>{f==='all'?'All':f==='tracked'?'Tracked':'Not tracked'}</Button>)}</div>
    <p className="muted small stock-result" aria-live="polite">Showing {rows.length} of {counts.total} items in list</p>
-   {!rows.length?<div className="empty-panel">{counts.total===0?(items.length===0?'The saved ingredient catalog is empty. Create an item in Ingredients & prep first.':'Your stock list is empty. Use Add items to bring catalog items back.') :search?'No items match this search.':filter==='tracked'?'No tracked items yet. Choose All and turn Track on for the items you want checked.':'No untracked items.'}</div>:<ul className="stock-rows">{rows.map(i=><li key={i.itemId} className="stock-row"><div><strong className="overflow-name">{i.name}</strong><div><span className={'badge '+(i.kind==='prep'?'prep':'')}>{i.kind==='prep'?'House-made prep':'Bought ingredient'}</span></div></div><div className="stock-row-actions"><Button role="switch" aria-checked={i.track} aria-label={`Track ${i.name}`} variant={i.track?'default':'outline'} disabled={blocked} onClick={()=>void change(i.itemId,true,!i.track)}>Track {i.track?'On':'Off'}</Button><Button variant="ghost" disabled={blocked} aria-label={`Remove ${i.name} from stock list`} onClick={()=>void change(i.itemId,false,false)}>Remove from stock list</Button></div></li>)}</ul>}
+   {!rows.length?<div className="empty-panel">{counts.total===0?(items.length===0?'The saved ingredient catalog is empty. Create an item in Ingredients & prep first.':'Your stock list is empty. Use Add items to bring catalog items back.') :search?'No items match this search and filters.':typeFilter!=='all'?'No items match these filters. Try All types or All.':filter==='tracked'?'No tracked items yet. Choose All and turn Track on for the items you want checked.':'No untracked items.'}</div>:<ul className="stock-rows">{rows.map(i=><li key={i.itemId} className="stock-row"><div><strong className="overflow-name">{i.name}</strong><div><span className={'badge '+(i.kind==='prep'?'prep':'')}>{i.kind==='prep'?'House-made prep':'Bought ingredient'}</span></div></div><div className="stock-row-actions"><Button role="switch" aria-checked={i.track} aria-label={`Track ${i.name}`} variant={i.track?'default':'outline'} disabled={blocked} onClick={()=>void change(i.itemId,true,!i.track)}>Track {i.track?'On':'Off'}</Button><Button variant="ghost" disabled={blocked} aria-label={`Remove ${i.name} from stock list`} onClick={()=>void change(i.itemId,false,false)}>Remove from stock list</Button></div></li>)}</ul>}
   </>}
   <Dialog open={addOpen} onOpenChange={setAddOpen}><DialogContent><DialogHeader><DialogTitle>Add items to stock list</DialogTitle><DialogDescription>Choose existing catalog items. Create new ingredients in Ingredients & prep first; they appear here after saving. Re-added items start with Track Off.</DialogDescription></DialogHeader>
    {status}<Input aria-label="Search items to add" placeholder="Search catalog items…" value={addSearch} onChange={e=>setAddSearch(e.target.value)}/>
