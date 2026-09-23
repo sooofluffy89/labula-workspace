@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
 export const notebooks = sqliteTable('notebooks', {
  id:text('id').primaryKey(), payload:text('payload').notNull(), revision:integer('revision').notNull().default(0),
  updatedAt:text('updated_at').notNull(), updatedBy:text('updated_by').notNull(),
@@ -45,4 +45,21 @@ export const stockCommands = sqliteTable('stock_commands', {
 });
 export const stockCatalogEffects = sqliteTable('stock_catalog_effects', {
  operationId:text('operation_id').primaryKey(),sourceId:text('source_id').notNull(),targetId:text('target_id').notNull(),beforeSource:text('before_source').notNull(),beforeTarget:text('before_target').notNull(),sourceRevision:integer('source_revision').notNull(),targetRevision:integer('target_revision').notNull(),
+});
+
+// A date identifies one shared kitchen check. planDay is set only at confirmation.
+export const eveningChecks=sqliteTable('evening_checks',{
+ id:text('id').primaryKey(),targetDay:text('target_day').notNull(),planDay:text('plan_day').unique(),stage:text('stage').notNull(),revision:integer('revision').notNull(),planRevision:integer('plan_revision').notNull(),version:integer('version').notNull(),startOperation:text('start_operation').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),updatedAt:text('updated_at').notNull(),confirmedAt:text('confirmed_at'),confirmedBy:text('confirmed_by'),
+});
+export const eveningAnswers=sqliteTable('evening_answers',{
+ checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),value:text('value'),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),firstActor:text('first_actor'),firstDevice:text('first_device'),firstSequence:integer('first_sequence'),supersededBy:text('superseded_by'),
+},t=>[primaryKey({columns:[t.checkId,t.itemId]})]);
+export const eveningVersions=sqliteTable('evening_versions',{
+ checkId:text('check_id').notNull(),version:integer('version').notNull(),payload:text('payload').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),
+},t=>[primaryKey({columns:[t.checkId,t.version]})]);
+export const morningTasks=sqliteTable('morning_tasks',{
+ checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),ready:integer('ready').notNull(),cancelled:integer('cancelled').notNull(),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),
+},t=>[primaryKey({columns:[t.checkId,t.itemId]})]);
+export const eveningCommands=sqliteTable('evening_commands',{
+ id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),result:text('result').notNull(),applied:integer('applied').notNull(),createdAt:text('created_at').notNull(),
 });

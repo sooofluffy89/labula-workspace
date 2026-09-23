@@ -1,7 +1,7 @@
 import {getRawDb} from '@/db';
 import {identity,RequestError,failure} from '@/lib/notebook-server';
 export const dynamic='force-dynamic';
-const tables=['notebooks','kitchen_owner','notebook_commands','catalog_operations','data_reviews','data_review_commands','review_actions','review_authority','reviewed_entities','review_import_chunks','stock_items','stock_commands','stock_catalog_effects'] as const;
+const tables=['notebooks','kitchen_owner','notebook_commands','catalog_operations','data_reviews','data_review_commands','review_actions','review_authority','reviewed_entities','review_import_chunks','stock_items','stock_commands','stock_catalog_effects','evening_checks','evening_answers','evening_versions','morning_tasks','evening_commands'] as const;
 // A single read-only D1 transaction captures complete rows, including operation payloads.
 // No client-provided table names, identity headers, writes, migrations or restore route.
 export async function GET(){try{

@@ -44,7 +44,7 @@ export function StockList({account,active}:{account:string;active:boolean}){
   </div>
  </div>;
  return <section className="stock-view" aria-labelledby="stock-heading">
-  <div className="view-heading"><h1 id="stock-heading">Current stock</h1><p className="muted">Choose which ingredients and preparations to include in future stock checks. Stock quantities are not recorded here yet.</p></div>
+  <div className="view-heading"><h1 id="stock-heading">Manage list</h1><p className="muted">Choose which items to check each evening. Track does not mean an item is available.</p></div>
   {!addOpen&&status}
   {state.snapshot&&<>
    <p ref={summary} tabIndex={-1} className="stock-counts">{counts.total} items in list <span>·</span> {counts.tracked} tracked <span>·</span> {counts.untracked} not tracked</p>
