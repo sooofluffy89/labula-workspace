@@ -130,7 +130,25 @@
 .evening-dates{border:1px solid var(--border);padding:12px;margin:8px 0;display:flex;gap:8px;align-items:end;flex-wrap:wrap}.evening-dates label{display:grid;gap:4px;font-size:.875rem;min-width:0}.evening-dates input{padding:8px;border:1px solid var(--border);max-width:100%;min-width:0;min-height:44px;background:var(--background)}.evening-dates p{width:100%;font-size:.875rem;margin:0}.evening-dates button{min-height:44px;height:auto;white-space:normal}
 .evening-confirm{max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));display:flex!important;flex-direction:column;gap:12px!important;max-width:460px!important;padding:20px!important}
 .evening-confirm-list{overflow-y:auto;min-height:0;flex:1;overscroll-behavior:contain}.evening-confirm-list ul{padding-left:22px;list-style:disc}.evening-confirm-list li{overflow-wrap:anywhere;margin-bottom:5px}.evening-confirm [data-slot=dialog-footer]{flex-shrink:0}.evening-confirm button{min-height:48px;white-space:normal;height:auto}
-.morning-group h2{font-size:1rem;margin-top:20px}.morning-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}.morning-row>div{min-width:0;overflow-wrap:anywhere}.morning-row>button{min-height:48px;white-space:normal;height:auto;flex:none;max-width:120px;font-size:.875rem}
+/* Morning A: compact stable rows, only the right-hand target changes readiness. */
+.morning-source,.morning-instruction{font-size:.875rem;line-height:1.4;margin:6px 0;color:var(--muted-foreground)}
+.morning-completion{min-height:2.5rem;font-size:.8125rem;line-height:1.4;padding:4px 0;color:var(--muted-foreground)}
+.morning-columns,.morning-row{display:grid;grid-template-columns:minmax(0,1fr) max(56px,3.5rem);gap:8px;align-items:center;padding:0 4px 0 10px}
+.morning-columns{position:sticky;top:0;z-index:5;background:var(--muted);border-bottom:1px solid var(--border);min-height:36px;padding-top:6px;padding-bottom:6px}
+.morning-columns h2{font-size:.875rem;line-height:1.35;font-weight:600;margin:0;overflow-wrap:anywhere}.morning-columns>span{text-align:center;font-size:.875rem}
+.morning-row{min-height:53px;border-bottom:1px solid var(--border);background:var(--background);border-left:3px solid transparent}
+.morning-row.is-ready{background:light-dark(#e6f4eb,#193829)}.morning-row[data-pending=true]{border-left-color:light-dark(#9b620d,#efba62)}
+.morning-name{min-width:0;overflow-wrap:anywhere;font-size:1rem;line-height:1.35;padding:8px 0}
+.morning-control{position:relative;display:flex;justify-content:center;align-items:center;min-height:48px}
+.morning-toggle[data-slot=checkbox]{width:100%;height:max(48px,3rem);min-height:48px;border:0;box-shadow:none;background:transparent!important;border-radius:6px;position:relative;touch-action:manipulation;color:light-dark(#fff,#18291e)}
+.morning-toggle::before{content:"";position:absolute;width:26px;height:26px;border:1.5px solid var(--muted-foreground);border-radius:4px;background:var(--background);left:50%;top:50%;transform:translate(-50%,-50%)}
+.morning-toggle[data-state=checked]::before{background:light-dark(#20633e,#8de2b6);border-color:light-dark(#20633e,#8de2b6)}
+.morning-toggle [data-slot=checkbox-indicator]{position:relative;z-index:1}.morning-toggle svg{width:22px;height:22px}
+.morning-toggle:focus-visible{outline:3px solid var(--ring);outline-offset:-3px}
+.morning-pending{position:absolute;right:0;bottom:0;font-size:1rem;line-height:1;color:var(--foreground);pointer-events:none}
+.morning-invalid{background:light-dark(#fff3df,#392b17)}.morning-invalid small{color:light-dark(#8b4200,#ffd290)}
+.morning-details{margin:12px 0;font-size:.875rem;overflow-wrap:anywhere}.morning-details summary{min-height:48px;padding:12px 0}.morning-details ul{padding-left:18px}.morning-details li{margin:8px 0}.morning-details p{margin:6px 0}
+
 .stock-workflow .empty-panel button{margin:4px;min-height:48px;max-width:100%;white-space:normal;height:auto}.stock-workflow select{max-width:100%;padding:8px;border:1px solid var(--border)}
 @media(max-width:480px){body:has(.kitchen-stock-work) .app-shell{padding:8px}.stock-work-nav{margin-bottom:6px}.stock-work-nav>button{padding-left:0}.evening-columns,.evening-row{padding-left:4px;padding-right:4px;gap:8px}.evening-confirm{width:calc(100% - 20px)!important}.stock-workflow{min-width:0}.stock-work-nav .actions{width:100%;justify-content:space-between}.stock-work-nav .actions button{flex:1}}
 .kitchen-stock-work .main-tabs>[role=tablist],.kitchen-stock-work .app-frame>.review-status,.kitchen-stock-work .app-footer{display:none}
