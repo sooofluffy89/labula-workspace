@@ -44,10 +44,10 @@ END;
 --> statement-breakpoint
 CREATE TRIGGER stock_undo BEFORE INSERT ON catalog_operations WHEN NEW.kind='undo'
 BEGIN
- SELECT CASE WHEN EXISTS (
+ SELECT RAISE(ABORT,'stock_undo_conflict') WHERE EXISTS (
  SELECT 1 FROM stock_catalog_effects e JOIN stock_items s ON s.item_id=e.source_id JOIN stock_items t ON t.item_id=e.target_id
  WHERE e.operation_id=NEW.undo_of AND (s.revision!=e.source_revision OR t.revision!=e.target_revision)
- ) THEN RAISE(ABORT,'stock_undo_conflict') END;
+ );
  UPDATE stock_items SET included=json_extract(e.before_source,'$.included'),track=json_extract(e.before_source,'$.track'),revision=revision+1,updated_at=NEW.created_at,updated_by=NEW.actor_id
  FROM stock_catalog_effects e WHERE e.operation_id=NEW.undo_of AND stock_items.item_id=e.source_id;
  UPDATE stock_items SET included=json_extract(e.before_target,'$.included'),track=json_extract(e.before_target,'$.track'),revision=revision+1,updated_at=NEW.created_at,updated_by=NEW.actor_id

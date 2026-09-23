@@ -31,3 +31,7 @@ If rollback is needed, prefer a compatible forward fix. The prior UI/build can r
 ## Limits
 
 This first version selects a future nightly checklist; it does not record amounts, inventory dates, target stocks or morning prep tasks. Refresh/on-return loading is used instead of real-time push. A pending stock command must be resolved before another stock command is started in that client. Browser recovery depends on retaining site storage; the shared committed configuration remains in D1. No physical phone or screen reader was used in QA.
+
+## Migration compatibility
+
+The first publication attempt (Sites version 29) failed before applying the new schema with `incomplete input: SQLITE_ERROR`; database inspection still showed only the original ten tables. D1's remote statement splitting differs from SQLite for nested `CASE … END` in trigger bodies. The undo guard uses `SELECT RAISE(...) WHERE EXISTS (...)`, preserving its behavior with a single trigger `END`. The complete migration and actual merge/undo tests are rerun before publishing the corrected version. Related upstream report: https://github.com/cloudflare/workers-sdk/issues/4727. No database restore or destructive migration is used.
