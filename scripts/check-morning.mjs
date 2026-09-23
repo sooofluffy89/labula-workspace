@@ -34,6 +34,7 @@ try{
    if(fault==='slow'){fault='';await new Promise(r=>release=r)}
    return {res,body:await res.json()};
   }
+  if(fault==='get'){fault='';throw Error('offline while refreshing')}
   const res=await m.api.GET(new Request('http://test.local'+url));return {res,body:await res.json()};
  };
  const waitRelease=async()=>{for(let i=0;!release&&i<100;i++)await new Promise(r=>setImmediate(r));assert.ok(release)};
@@ -60,7 +61,10 @@ try{
  // Same task conflict and explicit comparison. Refresh changing the comparison needs another click.
  let s=await read(),task=s.check.tasks[0];await send(cmd({kind:'ready',checkId:day,itemId:task.itemId,revision:task.revision,value:false}));
  assert.ok(client.toggleReady(ids[0]));assert.ok(client.toggleReady(ids[1]));assert.equal(await client.flush(),false);assert.ok(client.state.pending[0].rejected);
- assert.equal(await client.resolveRejected(true),false);assert.match(client.state.error,/Review the updated comparison/);assert.equal(await client.resolveRejected(true),true);assert.equal(client.visibleCheck().tasks[1].ready,false);
+ assert.equal(client.state.snapshot.check.tasks[0].ready,false,'409 comparison auto-loads fresh shared row');assert.ok(client.state.conflictReview);
+ s=await read();task=s.check.tasks[0];await send(cmd({kind:'ready',checkId:day,itemId:task.itemId,revision:task.revision,value:true}));
+ assert.equal(await client.resolveRejected(true),false);assert.match(client.state.error,/Shared result changed again/);assert.equal(client.state.snapshot.check.tasks[0].ready,true);
+ assert.equal(await client.resolveRejected(true),true);assert.equal(client.visibleCheck().tasks[1].ready,false);
  // Two clients editing unrelated rows coexist; same-row edits are never rebased automatically.
  const other=new m.EveningController(chef.email,{...storage,get length(){return 0},key:()=>null,setItem(){},removeItem(){}},{morningDay:'2026-09-24'},adapter);await other.refresh();assert.ok(other.toggleReady(ids[2]));assert.ok(await other.flush());assert.ok(client.toggleReady(ids[3]));assert.ok(await client.flush());assert.equal(client.visibleCheck().tasks[2].ready,false);other.dispose();
  // Correction publish guards concurrent Ready and preserves unchanged Ready tasks.
@@ -83,6 +87,15 @@ try{
  const absent={...client.state,snapshot:{...client.state.snapshot,check:null}};assert.ok(render(absent).includes('No confirmed evening check'));assert.ok(!render({...absent,error:'offline'}).includes('No confirmed evening check'));
  const empty={...client.state,snapshot:{...client.state.snapshot,check:{...client.state.snapshot.check,tasks:[]}}};assert.ok(render(empty).includes('No missing items'));assert.ok(!render(empty).includes('All morning items ready'));
  const draft={...client.state,snapshot:{...client.state.snapshot,check:{...client.state.snapshot.check,version:0}}};assert.ok(!render(draft).includes('role="checkbox"'));
+ // Active morning reads update another cook's Ready state without touching local recovery.
+ const viewer=new m.EveningController(chef.email,{length:0,key:()=>null,getItem:()=>null,setItem(){},removeItem(){}},{morningDay:'2026-09-24'},adapter);
+ await viewer.refresh();s=await read();task=s.check.tasks[9];await send(cmd({kind:'ready',checkId:day,itemId:task.itemId,revision:task.revision,value:!task.ready}));
+ assert.equal(viewer.state.snapshot.check.tasks[9].ready,task.ready);assert.ok(await viewer.refreshVisible());assert.equal(viewer.state.snapshot.check.tasks[9].ready,!task.ready);
+ fault='get';assert.equal(await viewer.refreshVisible(),false);assert.match(viewer.state.freshnessError,/offline/);assert.equal(m.morningProgress(viewer.state).complete,false);
+ assert.ok(await viewer.refreshVisible());assert.equal(viewer.state.freshnessError,'');
+ release=null;fault='slow';assert.ok(viewer.toggleReady(ids[10]));await waitRelease();const local=viewer.state.pending[0].command;assert.equal(await viewer.refreshVisible(),false);assert.deepEqual(viewer.state.pending[0].command,local);release();assert.ok(await viewer.flush());
+ assert.equal(m.morningProgress({...viewer.state,lastVerifiedAt:Date.now()-90000}).complete,false);viewer.dispose();
+ const zeroTrack={...absent,snapshot:{...absent.snapshot,trackedCount:0}};assert.ok(render(zeroTrack).includes('Choose items to track'));
  assert.deepEqual(db.prepare('SELECT * FROM notebooks').get(),notebookBefore);assert.deepEqual(db.prepare('SELECT * FROM stock_items ORDER BY item_id').all(),stockBefore);assert.equal(db.prepare('SELECT count(*) n FROM data_review_commands').get().n,0);
  client.dispose();db.close();console.log('PASS Morning A: 24-row queue, rapid Undo, durable order, exact replay, auth, conflicts, recovery journal, correction concurrency, mappings, actual UI and unchanged notebook/stock');
 }finally{delete globalThis.eveningDb;delete globalThis.eveningUser;await rm(dir,{recursive:true,force:true})}

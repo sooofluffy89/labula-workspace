@@ -4,21 +4,21 @@ import {Button} from '@/components/ui/button';
 import {displayDay} from '@/lib/evening';
 import {morningProgress,type EveningState} from '@/lib/evening-client';
 
-export function MorningList({state,day,onReady,onContinue,onCorrect,correctDisabled}:{state:EveningState;day:string;onReady:(itemId:string)=>void;onContinue:(day:string)=>void;onCorrect:()=>void;correctDisabled:boolean}){
- const check=state.snapshot?.check,{tasks,ready,remaining,complete}=morningProgress(state);
+export function MorningList({state,day,now=0,onReady,onContinue,onCorrect,onManage,correctDisabled}:{state:EveningState;day:string;now?:number;onReady:(itemId:string)=>void;onContinue:(day:string)=>void;onCorrect:()=>void;onManage?:()=>void;correctDisabled:boolean}){
+ const check=state.snapshot?.check,{tasks,ready,remaining,complete}=morningProgress(state,now);
  const locked=state.loading||!!state.error||state.unauthorized||state.recoveryBlocked||state.pending.some(p=>p.rejected||p.command.kind!=='ready');
  const pending=new Set(state.pending.flatMap(p=>p.command.kind==='ready'&&p.command.checkId===check?.id?[p.command.itemId]:[]));
  const drafts=state.snapshot?.checks.filter(c=>c.targetDay===day&&c.stage==='draft')??[];
  return <div className="morning-list">
   <div className="evening-meta"><strong>{displayDay(check?.targetDay??day)}</strong>{check&&check.version>0&&<span aria-live="polite">{ready} ready · {remaining} remaining</span>}</div>
-  {!check&&state.snapshot&&!state.loading&&!state.error&&<div className="empty-panel"><h2>{drafts.length?'Evening check is still in progress':'No confirmed evening check'}</h2><p>Morning prep will appear after the evening check is confirmed.</p>{drafts.map(c=><Button key={c.id} onClick={()=>onContinue(c.id)}>Continue check · {displayDay(c.id)}</Button>)}</div>}
+  {!check&&state.snapshot&&!state.loading&&!state.error&&<div className="empty-panel"><h2>{drafts.length?'Evening check is still in progress':state.snapshot.trackedCount===0?'Choose items to track':'No confirmed evening check for this date'}</h2><p>{drafts.length?'Continue the existing evening check to create Morning prep.':state.snapshot.trackedCount===0?'Choose items in Manage list, then finish an evening check to create Morning prep.':'Morning prep will appear after an evening check for this date is confirmed.'}</p>{!drafts.length&&state.snapshot.trackedCount===0&&onManage&&<Button onClick={onManage}>Choose items in Manage list</Button>}{drafts.map(c=><Button key={c.id} onClick={()=>onContinue(c.id)}>Continue check · {displayDay(c.id)}</Button>)}</div>}
   {check&&check.version===0&&<div className="empty-panel"><h2>Evening check is still in progress</h2><p>Confirm the evening check before marking items ready.</p><Button onClick={()=>onContinue(check.id)}>Continue check · {displayDay(check.id)}</Button></div>}
   {check&&check.version>0&&<>
-   <p className="morning-source">From confirmed evening check · {displayDay(check.id)}</p>
+   <p className="morning-source">From {displayDay(check.id)} evening check</p>
    {check.stage==='draft'&&<p className="notice">A correction is in progress. These tasks still use confirmed version {check.version}.</p>}
    {tasks.length===0&&!state.loading&&!state.error&&!state.pending.length?<div className="empty-panel"><h2>No missing items</h2><p>The evening check was confirmed with no items to replenish.</p></div>:<>
     <p className="morning-instruction">Tick when available. Untick to undo.</p>
-    <div className="morning-completion" role="status">{complete?'✓ All morning items ready':state.pending.length?'Changes waiting to sync — not yet confirmed saved.':'Ready means available, not enough for the whole service.'}</div>
+    <div className="morning-completion" role="status">{complete?'✓ All morning items ready':state.pending.length?'Changes waiting to sync — not yet confirmed saved.':state.freshnessError?'Could not refresh shared tasks. Check your connection.':!state.lastVerifiedAt||now-state.lastVerifiedAt>=75000?'Shared tasks may have changed. Refresh to confirm.':'Ready = available; quantity not checked.'}</div>
     {(['prep','bought'] as const).map(kind=>{const group=tasks.filter(t=>t.kind===kind);return group.length>0&&<section key={kind} className="morning-group" aria-label={kind==='prep'?'House-made prep':'Bought ingredients'}>
      <div className="morning-columns"><h2>{kind==='prep'?'House-made prep':'Bought ingredients · Restock'}</h2><span>Ready</span></div>
      {group.map(t=><div className={'morning-row'+(t.ready&&t.mappingValid?' is-ready':'')+(!t.mappingValid?' morning-invalid':'')} key={t.itemId} data-item-id={t.itemId} data-pending={pending.has(t.itemId)}>
