@@ -35,3 +35,14 @@ export const reviewedEntities = sqliteTable('reviewed_entities', {
 });
 
 export const reviewImportChunks = sqliteTable('review_import_chunks', {id:text('id').primaryKey(),archiveId:text('archive_id').notNull(),part:integer('part').notNull(),payload:text('payload').notNull()});
+
+// Shared stock-list configuration is independent of whole-notebook autosave and imports.
+export const stockItems = sqliteTable('stock_items', {
+ itemId:text('item_id').primaryKey(),included:integer('included').notNull(),track:integer('track').notNull(),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),
+});
+export const stockCommands = sqliteTable('stock_commands', {
+ id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),result:text('result').notNull(),createdAt:text('created_at').notNull(),
+});
+export const stockCatalogEffects = sqliteTable('stock_catalog_effects', {
+ operationId:text('operation_id').primaryKey(),sourceId:text('source_id').notNull(),targetId:text('target_id').notNull(),beforeSource:text('before_source').notNull(),beforeTarget:text('before_target').notNull(),sourceRevision:integer('source_revision').notNull(),targetRevision:integer('target_revision').notNull(),
+});
