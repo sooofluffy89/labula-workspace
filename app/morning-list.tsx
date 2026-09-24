@@ -16,11 +16,11 @@ export function MorningList({state,day,now=0,onReady,onContinue,onCorrect,onMana
   {check&&check.version>0&&<>
    <p className="morning-source">From {displayDay(check.id)} evening check</p>
    {check.stage==='draft'&&<p className="notice">A correction is in progress. These tasks still use confirmed version {check.version}.</p>}
-   {tasks.length===0&&!state.loading&&!state.error&&!state.pending.length?<div className="empty-panel"><h2>No missing items</h2><p>The evening check was confirmed with no items to replenish.</p></div>:<>
-    <p className="morning-instruction">Tick when available. Untick to undo.</p>
+   {tasks.length===0&&!state.loading&&!state.error&&!state.pending.length?<div className="empty-panel"><h2>No tasks planned</h2><p>The evening check was confirmed with no preparation or restocking tasks for this date.</p></div>:<>
+    <p className="morning-instruction">Tick when prepared or restocked and available. Untick to undo.</p>
     <div className="morning-completion" role="status">{complete?'✓ All morning items ready':state.pending.length?'Changes waiting to sync — not yet confirmed saved.':state.freshnessError?'Could not refresh shared tasks. Check your connection.':!state.lastVerifiedAt||now-state.lastVerifiedAt>=75000?'Shared tasks may have changed. Refresh to confirm.':'Ready = available; quantity not checked.'}</div>
     {(['prep','bought'] as const).map(kind=>{const group=tasks.filter(t=>t.kind===kind);return group.length>0&&<section key={kind} className="morning-group" aria-label={kind==='prep'?'House-made prep':'Bought ingredients'}>
-     <div className="morning-columns"><h2>{kind==='prep'?'House-made prep':'Bought ingredients · Restock'}</h2><span>Ready</span></div>
+     <div className="morning-columns"><h2>{kind==='prep'?'House-made prep · Prepare':'Bought ingredients · Restock'}</h2><span>Ready</span></div>
      {group.map(t=><div className={'morning-row'+(t.ready&&t.mappingValid?' is-ready':'')+(!t.mappingValid?' morning-invalid':'')} key={t.itemId} data-item-id={t.itemId} data-pending={pending.has(t.itemId)}>
       <div className="morning-name">{t.name}{!t.mappingValid&&<small>Catalog link needs review. Use Correct check.</small>}</div>
       <div className="morning-control"><Checkbox className="morning-toggle" checked={t.ready&&t.mappingValid} disabled={locked||!t.mappingValid} aria-label={`Ready: ${t.name}`} aria-describedby="stock-save-status" onCheckedChange={()=>onReady(t.itemId)}/>{pending.has(t.itemId)&&<span className="morning-pending" aria-hidden="true">…</span>}</div>

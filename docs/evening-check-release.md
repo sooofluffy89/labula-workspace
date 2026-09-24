@@ -10,7 +10,7 @@ One shared check is identified by the kitchen operational date. Europe/Prague an
 
 Finish first drains recoverable writes, fetches fresh shared data and checks completeness. The modal shows the evening date, morning date, available/missing counts and every missing name. Back/Escape never confirm; focus returns to Finish. Confirm sends the exact displayed check, plan and catalog revisions. A stale summary requires another explicit confirmation. An all-available check still needs confirmation and creates a distinguishable empty confirmed plan.
 
-Morning prep splits missing items into preparations and bought ingredients, with Ready/Undo, dates, authorship and server time. Unchanged tasks retain Ready during corrections. Correct check starts a draft while the old plan remains readable; only reconfirmation publishes additions/cancellations. Reappearing missing tasks reopen individually. Concurrent Ready changes invalidate a stale correction summary instead of being overwritten.
+Morning prep splits items selected for the morning plan into preparations and bought ingredients, with Ready/Undo, dates, authorship and server time. Unchanged tasks retain Ready during corrections. Correct check starts a draft while the old plan remains readable; only reconfirmation publishes additions/cancellations. Reappearing selected tasks reopen individually. Concurrent Ready changes invalidate a stale correction summary instead of being overwritten.
 
 ## Persistence and concurrency
 

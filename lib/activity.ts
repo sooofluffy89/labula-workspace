@@ -1,3 +1,4 @@
+import {answerActivityLabel} from './stock-wording';
 import {z} from 'zod';
 
 // Optional for old, already queued requests. Never synthesize a click time on retry.
@@ -14,7 +15,7 @@ export type ActivityPage={events:ActivityEvent[];next:string|null;capturedThroug
 export function activityTime(value:string){return new Date(value).toLocaleString('en-GB',{timeZone:'Europe/Prague',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 export function activityLabel(e:Pick<ActivityEvent,'category'|'action'|'after_value'>){
  const a=JSON.parse(e.after_value??'null');
- if(e.action==='answer')return a?.value==='have'?'Marked Have it':a?.value==='missing'?'Marked Missing':'Returned to Unchecked';
+ if(e.action==='answer')return answerActivityLabel(a?.value);
  if(e.action==='ready')return a?.ready?'Marked Ready':'Undid Ready';
  const labels:Record<string,string>={start:'Started evening check',confirm:'Confirmed evening check',correct:'Reopened check for correction',dates:'Changed morning date',resolve:'Changed catalog link',supersede:'Linked merged item',created:'Task created from check',reopened:'Task reopened by check correction',cancelled:'Task removed by check correction',settings:'Changed stock settings',add:'Added team profile',edit:'Updated team profile',merge:'Catalog merge affected stock',undo:'Catalog undo affected stock'};
  return labels[e.action]??e.action;

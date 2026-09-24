@@ -85,7 +85,7 @@ try{
  let html=render(client.state);assert.equal((html.match(/role="checkbox"/g)||[]).length,23);assert.ok(html.includes('Check details &amp; activity'));assert.ok(html.includes('Bought ingredients · Restock'));assert.ok(!html.includes('Finish morning'));assert.ok(!html.includes('Mark ready'));
  const failure={...client.state,error:'offline'};assert.equal(m.morningProgress(failure).complete,false);assert.ok(!render(failure).includes('All morning items ready'));
  const absent={...client.state,snapshot:{...client.state.snapshot,check:null}};assert.ok(render(absent).includes('No confirmed evening check'));assert.ok(!render({...absent,error:'offline'}).includes('No confirmed evening check'));
- const empty={...client.state,snapshot:{...client.state.snapshot,check:{...client.state.snapshot.check,tasks:[]}}};assert.ok(render(empty).includes('No missing items'));assert.ok(!render(empty).includes('All morning items ready'));
+ const empty={...client.state,snapshot:{...client.state.snapshot,check:{...client.state.snapshot.check,tasks:[]}}};assert.ok(render(empty).includes('No tasks planned'));assert.ok(!render(empty).includes('All morning items ready'));
  const draft={...client.state,snapshot:{...client.state.snapshot,check:{...client.state.snapshot.check,version:0}}};assert.ok(!render(draft).includes('role="checkbox"'));
  // Active morning reads update another cook's Ready state without touching local recovery.
  const viewer=new m.EveningController(chef.email,{length:0,key:()=>null,getItem:()=>null,setItem(){},removeItem(){}},{morningDay:'2026-09-24'},adapter);
