@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {actionMetaSchema} from './activity';
 
 export const KITCHEN_TIME_ZONE='Europe/Prague';
 export const OPERATIONAL_DAY_START_HOUR=4;
@@ -7,7 +8,7 @@ export function calendarDay(now=new Date()){return new Intl.DateTimeFormat('en-C
 export function shiftDay(day:string,days:number){if(!dateSchema.safeParse(day).success)return '';const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);}
 export function operationalDay(now=new Date()){const hour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:KITCHEN_TIME_ZONE,hour:'2-digit',hourCycle:'h23'}).format(now));return shiftDay(calendarDay(now),hour<OPERATIONAL_DAY_START_HOUR?-1:0);}
 export function displayDay(day:string){if(!dateSchema.safeParse(day).success)return 'Choose a date';return new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(day+'T12:00:00Z'));}
-const id=z.string().min(1).max(160),rev=z.number().int().nonnegative(),base={id:z.string().uuid(),actorId:id,scope:z.literal('kitchen')},check={checkId:dateSchema};
+const id=z.string().min(1).max(160),rev=z.number().int().nonnegative(),base={id:z.string().uuid(),actorId:id,scope:z.literal('kitchen'),meta:actionMetaSchema.optional()},check={checkId:dateSchema};
 export const eveningCommandSchema=z.discriminatedUnion('kind',[
  z.object({...base,kind:z.literal('start'),day:dateSchema,targetDay:dateSchema}),
  z.object({...base,...check,kind:z.literal('answer'),itemId:id,revision:rev,generation:rev,value:z.enum(['have','missing']).nullable(),deviceId:z.string().uuid(),sequence:z.number().int().positive()}),

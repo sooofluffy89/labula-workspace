@@ -1,3 +1,5 @@
+import {activeMember} from './activity-server';
+import {eveningEvents} from './evening-activity';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import type {Notebook} from './notebook';
@@ -33,6 +35,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  if(c.actorId!==user.userId)throw new RequestError('The signed-in account changed. Return to the original account before retrying.',403);
  const replay=async()=>{const r=await db.prepare('SELECT * FROM evening_commands WHERE id=?').bind(c.id).first<Receipt>();if(!r)return null;if(r.actor_id!==user.userId||r.request!==request)throw conflict('This request belongs to a different account or change.','command_mismatch');if(!r.applied)throw Error('Incomplete operation receipt');return {operationId:r.id,...JSON.parse(r.result) as {checkId:string},replayed:true};};
  const prior=await replay();if(prior)return prior;
+ const member=await activeMember(user);
  const checkId=c.kind==='start'?c.day:c.checkId;
  const snapshot=await readEvening(user,{day:checkId}),check=snapshot.check,now=new Date().toISOString();
  if(c.kind!=='start'&&!check)throw new RequestError('This kitchen check does not exist.',404);
@@ -102,8 +105,8 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
   writes.push(db.prepare(`UPDATE morning_tasks SET cancelled=1,revision=revision+1,updated_at=?,updated_by=? WHERE check_id=? AND cancelled=0 AND item_id IN (SELECT item_id FROM evening_answers WHERE check_id=? AND value='have') AND ${gate}`).bind(now,user.email,checkId,checkId,...args));
   updateCheck("stage='confirmed',version=version+1,revision=revision+1,plan_revision=plan_revision+1,plan_day=target_day,confirmed_at=?,confirmed_by=?",[now,user.email]);
  }
- const receipt=db.prepare(`INSERT INTO evening_commands (id,actor_id,request,result,applied,created_at) SELECT ?,?,?,?,0,? WHERE (${condition}) ON CONFLICT(id) DO NOTHING`).bind(c.id,user.userId,request,JSON.stringify({checkId}),now,...conditionArgs);
- await db.batch([receipt,...writes,db.prepare(`UPDATE evening_commands SET applied=1 WHERE id=? AND actor_id=? AND request=? AND applied=0`).bind(...args)]);
+ const receipt=db.prepare(`INSERT INTO evening_commands (id,actor_id,request,result,applied,created_at) SELECT ?,?,?,?,0,? WHERE (${condition}) AND EXISTS (SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) ON CONFLICT(id) DO NOTHING`).bind(c.id,user.userId,request,JSON.stringify({checkId}),now,...conditionArgs,user.userId);
+ await db.batch([receipt,...eveningEvents(user,member.name,c,now,gate,args),...writes,db.prepare(`UPDATE evening_commands SET applied=1 WHERE id=? AND actor_id=? AND request=? AND applied=0`).bind(...args)]);
  const saved=await replay();if(saved)return saved;
  if(c.kind==='start')throw conflict('No items selected for checking. Choose items in Manage list.','empty_roster');
  throw conflict(c.kind==='confirm'?'Answers, morning tasks or the catalog changed. Refresh the summary and confirm again.':undefined);

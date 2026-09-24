@@ -12,6 +12,7 @@ export class StockController {
  private listeners=new Set<()=>void>();
  private epoch=0;
  private busy=false;
+ private sessionId=crypto.randomUUID();private actionSequence=0;
  private disposed=false;
  constructor(private accountEmail:string,private storage:StoragePort,private request:typeof requestJson=requestJson){}
  subscribe=(fn:()=>void)=>{this.listeners.add(fn);return()=>{this.listeners.delete(fn);};};
@@ -42,7 +43,7 @@ export class StockController {
  }
  async change(changes:StockCommand['changes']){
   if(this.busy||this.disposed||this.state.pending||this.state.error||!this.state.snapshot)return false;
-  const command=stockCommandSchema.parse({id:crypto.randomUUID(),changes});
+  const command=stockCommandSchema.parse({id:crypto.randomUUID(),changes,meta:{occurredAt:new Date().toISOString(),sessionId:this.sessionId,sequence:++this.actionSequence}});
   const pending:StockRecovery={accountId:this.state.snapshot.accountId,scope:'kitchen',command};
   try{this.persist(pending);}catch{this.set({error:'Your browser could not keep a recovery copy. Nothing was sent. Enable browser storage and try again.'});return false;}
   this.set({pending,notice:''});return this.retry();
@@ -79,7 +80,7 @@ export class StockController {
   const changes=p.command.changes.map(c=>{const row=s.items.find(i=>i.itemId===c.itemId);if(!row||!row.included&&c.track)return null;return {...c,revision:row.revision};});
   if(changes.some(c=>c===null)){this.set({error:'An item was removed or merged. Keep shared settings, then select the available catalog item again.'});return false;}
   // Persist a replacement before removing the rejected intent, so interruption never loses both.
-  const next:StockRecovery={accountId:p.accountId,scope:'kitchen',command:{id:crypto.randomUUID(),changes:changes as StockCommand['changes']}};
+  const next:StockRecovery={accountId:p.accountId,scope:'kitchen',command:{id:crypto.randomUUID(),changes:changes as StockCommand['changes'],meta:{occurredAt:new Date().toISOString(),sessionId:this.sessionId,sequence:++this.actionSequence,supersedesCommandId:p.command.id}}};
   try{this.persist(next);this.storage.removeItem(this.key(p));this.set({pending:next});return this.retry();}catch{this.set({error:'Could not update the recovery copy. Please retry.'});return false;}
  }
 }

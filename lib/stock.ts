@@ -1,8 +1,9 @@
 import {z} from 'zod';
+import {actionMetaSchema} from './activity';
 import {normalizeName} from './notebook';
 
 export const stockChangeSchema=z.object({itemId:z.string().min(1).max(100),revision:z.number().int().nonnegative(),included:z.boolean(),track:z.boolean()}).strict().refine(v=>v.included||!v.track,'Removed items cannot be tracked.');
-export const stockCommandSchema=z.object({id:z.string().uuid(),changes:z.array(stockChangeSchema).min(1).max(1000)}).strict().refine(v=>new Set(v.changes.map(c=>c.itemId)).size===v.changes.length,'Each item can only appear once.');
+export const stockCommandSchema=z.object({id:z.string().uuid(),meta:actionMetaSchema.optional(),changes:z.array(stockChangeSchema).min(1).max(1000)}).strict().refine(v=>new Set(v.changes.map(c=>c.itemId)).size===v.changes.length,'Each item can only appear once.');
 export type StockCommand=z.infer<typeof stockCommandSchema>;
 export type StockItem={itemId:string;name:string;aliases:string[];kind:'bought'|'prep';included:boolean;track:boolean;revision:number;updatedAt:string;updatedBy:string};
 export type StockSnapshot={accountId:string;account:string;scope:'kitchen';items:StockItem[];notebookRevision:number};

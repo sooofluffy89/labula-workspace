@@ -1,3 +1,4 @@
+import {activeMember,eventStatement} from './activity-server';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {readNotebook,RequestError} from './notebook-server';
@@ -36,6 +37,7 @@ export async function stockCommand(user:ChatGPTUser,raw:unknown){
   return {operationId:prior.id,result:JSON.parse(prior.result),replayed:true};
  };
  const prior=await replay();if(prior)return prior;
+ const member=await activeMember(user);
  await initialize(user);
  const now=new Date().toISOString(),changes=JSON.stringify(command.changes);
  const result=JSON.stringify(command.changes.map(c=>({...c,revision:c.revision+1,updatedAt:now,updatedBy:user.userId})));
@@ -46,12 +48,13 @@ export async function stockCommand(user:ChatGPTUser,raw:unknown){
  WHERE s.item_id IS NULL OR s.revision!=json_extract(c.value,'$.revision')
  OR (s.included=0 AND json_extract(c.value,'$.track')=1)
  OR NOT EXISTS (SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id)
- ) ON CONFLICT(id) DO NOTHING`).bind(command.id,user.userId,request,result,now,changes);
+ ) AND EXISTS (SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) ON CONFLICT(id) DO NOTHING`).bind(command.id,user.userId,request,result,now,changes,user.userId);
  const update=db.prepare(`UPDATE stock_items SET
  included=json_extract(c.value,'$.included'),track=json_extract(c.value,'$.track'),revision=stock_items.revision+1,updated_at=?,updated_by=?
  FROM json_each(?) c WHERE stock_items.item_id=json_extract(c.value,'$.itemId') AND stock_items.revision=json_extract(c.value,'$.revision')
  AND EXISTS (SELECT 1 FROM stock_commands WHERE id=? AND actor_id=? AND request=?)`).bind(now,user.userId,changes,command.id,user.userId,request);
- await db.batch([receipt,update]);
+ const events=eventStatement(user,member.name,command,now,{category:'stock',action:'settings',itemId:'s.item_id',itemName:"json_extract(i.value,'$.name')",itemKind:"json_extract(i.value,'$.kind')",before:"json_object('included',s.included,'track',s.track,'revision',s.revision)",after:"json_object('included',json_extract(c.value,'$.included'),'track',json_extract(c.value,'$.track'),'revision',s.revision+1)",from:`FROM json_each(?) c JOIN stock_items s ON s.item_id=json_extract(c.value,'$.itemId'),notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id AND s.revision=json_extract(c.value,'$.revision') AND (s.included!=json_extract(c.value,'$.included') OR s.track!=json_extract(c.value,'$.track')) AND EXISTS (SELECT 1 FROM stock_commands WHERE id=? AND actor_id=? AND request=?)`,args:[changes,command.id,user.userId,request]});
+ await db.batch([receipt,events,update]);
  const saved=await replay();if(saved)return saved;
  throw new RequestError('This stock item changed or is no longer available. Refresh the list, review your intended change, then try again.',409,'stock_conflict');
 }

@@ -9,7 +9,7 @@ type Resolution={before:string[];next:PendingEvening[]};
 const prefix='labula-evening-v1:';
 export class EveningController {
  state:EveningState={snapshot:null,pending:[],loading:false,saving:false,error:'',unauthorized:false,notice:''};
- private listeners=new Set<()=>void>();private disposed=false;private busy=false;private polling=false;private snapshotSerial=0;private loadedRecovery=false;private accountId='';private deviceId=crypto.randomUUID();private sequence=0;private inflight:Promise<boolean>|null=null;private lastCreated=0;
+ private listeners=new Set<()=>void>();private disposed=false;private busy=false;private polling=false;private snapshotSerial=0;private loadedRecovery=false;private accountId='';private deviceId=crypto.randomUUID();private sequence=0;private inflight:Promise<boolean>|null=null;private lastCreated=0;private actionSequence=0;
  constructor(private account:string,private storage:Storage,private selection:EveningSelection,private request:Requester=requestJson){}
  subscribe(fn:()=>void){this.listeners.add(fn);return()=>{this.listeners.delete(fn);};}
  getSnapshot=()=>this.state;
@@ -69,7 +69,7 @@ export class EveningController {
  // Shared snapshots remain authoritative; pending intents are a separate visible overlay.
  visibleCheck(){return visibleEveningCheck(this.state);}
  private enqueue(input:EveningCommand){
-  const command={...input,actorId:this.accountId};if(this.disposed||!this.state.snapshot)return false;
+  const command={...input,actorId:this.accountId,meta:input.meta??{occurredAt:new Date().toISOString(),sessionId:this.deviceId,sequence:++this.actionSequence}};if(this.disposed||!this.state.snapshot)return false;
   if(this.state.pending.length>=500){this.emit({error:'Too many changes are waiting to sync. Retry before adding more.'});return false;}
   // Millisecond ties must not reorder rapid Ready/Undo on reload (legacy records still load).
   const created=Math.max(Date.now(),this.lastCreated+1);const p:PendingEvening={accountId:this.accountId,account:this.account,command,created,sent:false,rejected:false};
@@ -123,7 +123,7 @@ export class EveningController {
   if(keep.some(p=>!('itemId' in p.command)||!revisions.has(p.command.itemId))){this.emit({error:'A listed item is no longer available. Keep the shared result and use Correct check to resolve its link.'});return false;}
   const next:PendingEvening[]=keep.map(p=>{
    const c=p.command as Extract<EveningCommand,{kind:'answer'|'ready'}>,revision=revisions.get(c.itemId)!;revisions.set(c.itemId,revision+1);
-   return {...p,sent:false,rejected:false,command:{...c,id:crypto.randomUUID(),revision,...(c.kind==='answer'?{generation:check!.version}:{})}};
+   return {...p,sent:false,rejected:false,command:{...c,id:crypto.randomUUID(),revision,meta:{occurredAt:new Date().toISOString(),sessionId:this.deviceId,sequence:++this.actionSequence,supersedesCommandId:c.id},...(c.kind==='answer'?{generation:check!.version}:{})}};
   });
   const journal:Resolution={before:before.map(p=>p.command.id),next};
   try{this.storage.setItem(this.accountPrefix()+'resolution:'+crypto.randomUUID(),JSON.stringify(journal));this.finishResolutions();}
