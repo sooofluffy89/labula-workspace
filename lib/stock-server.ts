@@ -3,7 +3,8 @@ import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {readNotebook,RequestError} from './notebook-server';
 import {stockCommandSchema,type StockCommand,type StockSnapshot} from './stock';
-import type {Notebook} from './notebook';
+import {usageMap,type Notebook} from './notebook';
+import {menu,categories} from './menu';
 
 type StockRow={item_id:string;included:number;track:number;revision:number;updated_at:string;updated_by:string};
 type Receipt={id:string;actor_id:string;request:string;result:string};
@@ -23,10 +24,13 @@ export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
  ]);
  const notebook=results[0].results[0] as {payload:string;revision:number};
  const rows=new Map((results[1].results as StockRow[]).map(row=>[row.item_id,row]));
- const items=(JSON.parse(notebook.payload) as Notebook).items.map(item=>{
+ const saved=JSON.parse(notebook.payload) as Notebook,usage=usageMap(saved);
+ const items=saved.items.map(item=>{
   const row=rows.get(item.id);
+  const usedBy=usage.get(item.id)?.all;
+  const itemCategories=categories.filter(category=>menu.some(dish=>dish.category===category&&usedBy?.has(dish.id)));
   // A newly committed catalog item may arrive between initialization and this read.
-  return {itemId:item.id,name:item.name,aliases:item.aliases,kind:item.kind,included:row?!!row.included:true,track:row?!!row.track:false,revision:row?.revision??0,updatedAt:row?.updated_at??'',updatedBy:row?.updated_by??''};
+  return {itemId:item.id,name:item.name,aliases:item.aliases,kind:item.kind,categories:itemCategories,included:row?!!row.included:true,track:row?!!row.track:false,revision:row?.revision??0,updatedAt:row?.updated_at??'',updatedBy:row?.updated_by??''};
  });
  return {accountId:user.userId,account:user.email,scope:'kitchen',items,notebookRevision:notebook.revision};
 }
