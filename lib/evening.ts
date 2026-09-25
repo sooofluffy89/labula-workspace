@@ -22,9 +22,9 @@ export const eveningCommandSchema=z.discriminatedUnion('kind',[
 export type EveningCommand=z.infer<typeof eveningCommandSchema>;
 export type Availability='have'|'missing'|null;
 export type CheckSummary={id:string;targetDay:string;stage:'draft'|'confirmed';revision:number;planRevision:number;version:number;confirmedAt:string|null;confirmedBy:string|null};
-export type CheckAnswer={itemId:string;catalogId:string;name:string;kind:'bought'|'prep';position:number;value:Availability;revision:number;updatedAt:string;updatedBy:string;firstActor:string|null;firstDevice:string|null;firstSequence:number|null;supersededBy:string|null;mappingValid:boolean;currentName:string|null};
-export type MorningTask={itemId:string;catalogId:string;name:string;kind:'bought'|'prep';position:number;ready:boolean;cancelled:boolean;revision:number;updatedAt:string;updatedBy:string;mappingValid:boolean};
-export type EveningCheck=CheckSummary&{answers:CheckAnswer[];tasks:MorningTask[]};
+export type CheckAnswer={itemId:string;catalogId:string;name:string;kind:'bought'|'prep';position:number;value:Availability;revision:number;updatedAt:string;updatedBy:string;firstActor:string|null;firstDevice:string|null;firstSequence:number|null;supersededBy:string|null;mappingValid:boolean;currentName:string|null;groupId:string|null};
+export type MorningTask={itemId:string;catalogId:string;name:string;kind:'bought'|'prep';position:number;ready:boolean;cancelled:boolean;revision:number;updatedAt:string;updatedBy:string;mappingValid:boolean;groupId:string|null};
+export type EveningCheck=CheckSummary&{answers:CheckAnswer[];tasks:MorningTask[];grouped:boolean};
 export type EveningSnapshot={scope:'kitchen';accountId:string;account:string;notebookRevision:number;trackedCount:number;catalog:{id:string;name:string;kind:'bought'|'prep'}[];checks:CheckSummary[];check:EveningCheck|null};
 export type EveningSelection={day:string}|{morningDay:string};
 export function selectionQuery(selection:EveningSelection){return new URLSearchParams(selection).toString();}

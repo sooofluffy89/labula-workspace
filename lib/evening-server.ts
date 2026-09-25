@@ -6,9 +6,10 @@ import type {Notebook} from './notebook';
 import {RequestError} from './notebook-server';
 import {readStock} from './stock-server';
 import {dateSchema,eveningCommandSchema,operationalDay,type CheckSummary,type CheckAnswer,type MorningTask,type EveningSnapshot,type EveningCommand,type EveningSelection} from './evening';
+import {validGroup} from './ingredient-groups';
 
-type CheckRow={id:string;target_day:string;plan_day:string|null;stage:'draft'|'confirmed';revision:number;plan_revision:number;version:number;confirmed_at:string|null;confirmed_by:string|null};
-type AnswerRow={check_id:string;item_id:string;catalog_id:string;name:string;kind:'bought'|'prep';position:number;value:'have'|'missing'|null;revision:number;updated_at:string;updated_by:string;first_actor:string|null;first_device:string|null;first_sequence:number|null;superseded_by:string|null};
+type CheckRow={id:string;target_day:string;plan_day:string|null;stage:'draft'|'confirmed';revision:number;plan_revision:number;version:number;confirmed_at:string|null;confirmed_by:string|null;grouped:number};
+type AnswerRow={check_id:string;item_id:string;catalog_id:string;name:string;kind:'bought'|'prep';position:number;value:'have'|'missing'|null;revision:number;updated_at:string;updated_by:string;first_actor:string|null;first_device:string|null;first_sequence:number|null;superseded_by:string|null;group_id:string|null};
 type TaskRow=Omit<AnswerRow,'value'|'first_actor'|'first_device'|'first_sequence'|'superseded_by'>&{ready:number;cancelled:number};
 type Receipt={id:string;actor_id:string;request:string;result:string;applied:number};
 const summary=(r:CheckRow):CheckSummary=>({id:r.id,targetDay:r.target_day,stage:r.stage,revision:r.revision,planRevision:r.plan_revision,version:r.version,confirmedAt:r.confirmed_at,confirmedBy:r.confirmed_by});
@@ -25,9 +26,9 @@ export async function readEvening(user:ChatGPTUser,selection:EveningSelection={d
  ]);
  const notebook=results[0].results[0] as {payload:string;revision:number},catalog=(JSON.parse(notebook.payload) as Notebook).items.map(i=>({id:i.id,name:i.name,kind:i.kind})),byId=new Map(catalog.map(i=>[i.id,i]));
  const checks=results[1].results as CheckRow[],row=checks.find(c=>'day' in selection?c.id===selected:c.plan_day===selected);
- const answers:CheckAnswer[]=(results[2].results as AnswerRow[]).map(a=>({itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId.get(a.catalog_id)?.name??null}));
- const tasks:MorningTask[]=(results[3].results as TaskRow[]).map(t=>({itemId:t.item_id,catalogId:t.catalog_id,name:t.name,kind:t.kind,position:t.position,ready:!!t.ready,cancelled:!!t.cancelled,revision:t.revision,updatedAt:t.updated_at,updatedBy:t.updated_by,mappingValid:byId.get(t.catalog_id)?.kind===t.kind}));
- return {scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:notebook.revision,catalog,trackedCount:(results[4].results as {item_id:string}[]).filter(s=>byId.has(s.item_id)).length,checks:checks.map(summary),check:row?{...summary(row),answers,tasks}:null};
+ const answers:CheckAnswer[]=(results[2].results as AnswerRow[]).map(a=>({itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId.get(a.catalog_id)?.name??null,groupId:validGroup(a.group_id)}));
+ const tasks:MorningTask[]=(results[3].results as TaskRow[]).map(t=>({itemId:t.item_id,catalogId:t.catalog_id,name:t.name,kind:t.kind,position:t.position,ready:!!t.ready,cancelled:!!t.cancelled,revision:t.revision,updatedAt:t.updated_at,updatedBy:t.updated_by,mappingValid:byId.get(t.catalog_id)?.kind===t.kind,groupId:validGroup(t.group_id)}));
+ return {scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:notebook.revision,catalog,trackedCount:(results[4].results as {item_id:string}[]).filter(s=>byId.has(s.item_id)).length,checks:checks.map(summary),check:row?{...summary(row),answers,tasks,grouped:!!row.grouped}:null};
 }
 
 export async function eveningCommand(user:ChatGPTUser,raw:unknown){
@@ -48,9 +49,9 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  const updateCheck=(set:string,values:unknown[])=>writes.push(db.prepare(`UPDATE evening_checks SET ${set},updated_at=? WHERE id=? AND ${gate}`).bind(...values,now,checkId,...args));
  if(c.kind==='start'){
   condition="EXISTS (SELECT 1 FROM evening_checks WHERE id=?) OR EXISTS (SELECT 1 FROM stock_items s,notebooks n,json_each(n.payload,'$.items') j WHERE n.id='kitchen' AND s.item_id=json_extract(j.value,'$.id') AND s.included=1 AND s.track=1)";conditionArgs=[checkId];
-  writes.push(db.prepare(`INSERT INTO evening_checks (id,target_day,stage,revision,plan_revision,version,start_operation,created_at,created_by,updated_at) SELECT ?,?,'draft',0,0,0,?,?,?,? WHERE ${gate} ON CONFLICT(id) DO NOTHING`).bind(checkId,c.targetDay,c.id,now,user.email,now,...args));
-  writes.push(db.prepare(`INSERT INTO evening_answers (check_id,item_id,catalog_id,name,kind,position,value,revision,updated_at,updated_by)
-   SELECT ?,s.item_id,s.item_id,json_extract(j.value,'$.name'),json_extract(j.value,'$.kind'),row_number() OVER (ORDER BY lower(json_extract(j.value,'$.name')),s.item_id)-1,NULL,0,?,?
+  writes.push(db.prepare(`INSERT INTO evening_checks (id,target_day,stage,revision,plan_revision,version,start_operation,created_at,created_by,updated_at,grouped) SELECT ?,?,'draft',0,0,0,?,?,?,?,1 WHERE ${gate} ON CONFLICT(id) DO NOTHING`).bind(checkId,c.targetDay,c.id,now,user.email,now,...args));
+  writes.push(db.prepare(`INSERT INTO evening_answers (check_id,item_id,catalog_id,name,kind,position,value,revision,updated_at,updated_by,group_id)
+   SELECT ?,s.item_id,s.item_id,json_extract(j.value,'$.name'),json_extract(j.value,'$.kind'),row_number() OVER (ORDER BY lower(json_extract(j.value,'$.name')),s.item_id)-1,NULL,0,?,?,s.group_id
    FROM stock_items s,notebooks n,json_each(n.payload,'$.items') j WHERE n.id='kitchen' AND s.item_id=json_extract(j.value,'$.id') AND s.included=1 AND s.track=1
    AND EXISTS (SELECT 1 FROM evening_checks WHERE id=? AND start_operation=?) AND ${gate} ON CONFLICT(check_id,item_id) DO NOTHING`).bind(checkId,now,user.email,checkId,c.id,...args));
  }else if(c.kind==='answer'||c.kind==='resolve'){
@@ -63,7 +64,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
    const item=snapshot.catalog.find(i=>i.id===c.catalogId),old=check!.answers.find(a=>a.itemId===c.itemId);
    if(!item||!old||item.kind!==old.kind)throw conflict('Choose an existing catalog item of the same type.','mapping_conflict');
    condition+=" AND EXISTS (SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') j WHERE n.id='kitchen' AND json_extract(j.value,'$.id')=? AND json_extract(j.value,'$.kind')=?) AND NOT EXISTS (SELECT 1 FROM evening_answers WHERE check_id=? AND item_id!=? AND catalog_id=?)";conditionArgs.push(c.catalogId,old.kind,checkId,c.itemId,c.catalogId);
-   writes.push(db.prepare(`UPDATE evening_answers SET catalog_id=?,superseded_by=NULL,value=NULL,revision=revision+1,updated_at=?,updated_by=? WHERE check_id=? AND item_id=? AND ${gate}`).bind(c.catalogId,now,user.email,checkId,c.itemId,...args));
+   writes.push(db.prepare(`UPDATE evening_answers SET catalog_id=?,group_id=(SELECT group_id FROM stock_items WHERE item_id=?),superseded_by=NULL,value=NULL,revision=revision+1,updated_at=?,updated_by=? WHERE check_id=? AND item_id=? AND ${gate}`).bind(c.catalogId,c.catalogId,now,user.email,checkId,c.itemId,...args));
   }
   updateCheck('revision=revision+1',[]);
  }else if(c.kind==='supersede'){
@@ -98,9 +99,9 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
   const payload=JSON.stringify({checkId,targetDay:check!.targetDay,answers:check!.answers,priorTasks:check!.tasks,actor:user.email,confirmedAt:now});
   writes.push(db.prepare(`INSERT INTO evening_versions (check_id,version,payload,created_at,created_by) SELECT ?,version+1,?,?,? FROM evening_checks WHERE id=? AND ${gate}`).bind(checkId,payload,now,user.email,checkId,...args));
   // Existing unchanged Missing rows retain Ready and its authorship. Cancelled/re-mapped rows reopen.
-  writes.push(db.prepare(`INSERT INTO morning_tasks (check_id,item_id,catalog_id,name,kind,position,ready,cancelled,revision,updated_at,updated_by)
-   SELECT check_id,item_id,catalog_id,name,kind,position,0,0,0,?,? FROM evening_answers WHERE check_id=? AND value='missing' AND ${gate}
-   ON CONFLICT(check_id,item_id) DO UPDATE SET catalog_id=excluded.catalog_id,ready=0,cancelled=0,revision=morning_tasks.revision+1,updated_at=excluded.updated_at,updated_by=excluded.updated_by
+  writes.push(db.prepare(`INSERT INTO morning_tasks (check_id,item_id,catalog_id,name,kind,position,ready,cancelled,revision,updated_at,updated_by,group_id)
+   SELECT check_id,item_id,catalog_id,name,kind,position,0,0,0,?,?,group_id FROM evening_answers WHERE check_id=? AND value='missing' AND ${gate}
+   ON CONFLICT(check_id,item_id) DO UPDATE SET catalog_id=excluded.catalog_id,group_id=excluded.group_id,ready=0,cancelled=0,revision=morning_tasks.revision+1,updated_at=excluded.updated_at,updated_by=excluded.updated_by
    WHERE morning_tasks.cancelled=1 OR morning_tasks.catalog_id!=excluded.catalog_id`).bind(now,user.email,checkId,...args));
   writes.push(db.prepare(`UPDATE morning_tasks SET cancelled=1,revision=revision+1,updated_at=?,updated_by=? WHERE check_id=? AND cancelled=0 AND item_id IN (SELECT item_id FROM evening_answers WHERE check_id=? AND value='have') AND ${gate}`).bind(now,user.email,checkId,checkId,...args));
   updateCheck("stage='confirmed',version=version+1,revision=revision+1,plan_revision=plan_revision+1,plan_day=target_day,confirmed_at=?,confirmed_by=?",[now,user.email]);

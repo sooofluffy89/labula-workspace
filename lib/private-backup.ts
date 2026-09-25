@@ -3,7 +3,7 @@
 export const privateBackupTables = [
   'notebooks', 'kitchen_owner', 'notebook_commands', 'catalog_operations',
   'data_reviews', 'data_review_commands', 'review_actions', 'review_authority',
-  'reviewed_entities', 'review_import_chunks', 'stock_items', 'stock_commands',
+  'reviewed_entities', 'review_import_chunks', 'stock_items', 'stock_commands', 'ingredient_group_commands',
   'stock_catalog_effects', 'evening_checks', 'evening_answers', 'evening_versions',
   'morning_tasks', 'evening_commands', 'kitchen_team', 'kitchen_activity',
   'team_commands',

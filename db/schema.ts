@@ -39,6 +39,10 @@ export const reviewImportChunks = sqliteTable('review_import_chunks', {id:text('
 // Shared stock-list configuration is independent of whole-notebook autosave and imports.
 export const stockItems = sqliteTable('stock_items', {
  itemId:text('item_id').primaryKey(),included:integer('included').notNull(),track:integer('track').notNull(),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),
+ groupId:text('group_id'),groupRevision:integer('group_revision').notNull().default(0),groupSource:text('group_source'),groupUpdatedAt:text('group_updated_at'),groupUpdatedBy:text('group_updated_by'),
+});
+export const ingredientGroupCommands = sqliteTable('ingredient_group_commands', {
+ id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),result:text('result').notNull(),createdAt:text('created_at').notNull(),
 });
 export const stockCommands = sqliteTable('stock_commands', {
  id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),result:text('result').notNull(),createdAt:text('created_at').notNull(),
@@ -49,16 +53,16 @@ export const stockCatalogEffects = sqliteTable('stock_catalog_effects', {
 
 // A date identifies one shared kitchen check. planDay is set only at confirmation.
 export const eveningChecks=sqliteTable('evening_checks',{
- id:text('id').primaryKey(),targetDay:text('target_day').notNull(),planDay:text('plan_day').unique(),stage:text('stage').notNull(),revision:integer('revision').notNull(),planRevision:integer('plan_revision').notNull(),version:integer('version').notNull(),startOperation:text('start_operation').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),updatedAt:text('updated_at').notNull(),confirmedAt:text('confirmed_at'),confirmedBy:text('confirmed_by'),
+ id:text('id').primaryKey(),targetDay:text('target_day').notNull(),planDay:text('plan_day').unique(),stage:text('stage').notNull(),revision:integer('revision').notNull(),planRevision:integer('plan_revision').notNull(),version:integer('version').notNull(),startOperation:text('start_operation').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),updatedAt:text('updated_at').notNull(),confirmedAt:text('confirmed_at'),confirmedBy:text('confirmed_by'),grouped:integer('grouped').notNull().default(0),
 });
 export const eveningAnswers=sqliteTable('evening_answers',{
- checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),value:text('value'),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),firstActor:text('first_actor'),firstDevice:text('first_device'),firstSequence:integer('first_sequence'),supersededBy:text('superseded_by'),
+ checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),value:text('value'),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),firstActor:text('first_actor'),firstDevice:text('first_device'),firstSequence:integer('first_sequence'),supersededBy:text('superseded_by'),groupId:text('group_id'),
 },t=>[primaryKey({columns:[t.checkId,t.itemId]})]);
 export const eveningVersions=sqliteTable('evening_versions',{
  checkId:text('check_id').notNull(),version:integer('version').notNull(),payload:text('payload').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),
 },t=>[primaryKey({columns:[t.checkId,t.version]})]);
 export const morningTasks=sqliteTable('morning_tasks',{
- checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),ready:integer('ready').notNull(),cancelled:integer('cancelled').notNull(),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),
+ checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),ready:integer('ready').notNull(),cancelled:integer('cancelled').notNull(),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),groupId:text('group_id'),
 },t=>[primaryKey({columns:[t.checkId,t.itemId]})]);
 export const eveningCommands=sqliteTable('evening_commands',{
  id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),result:text('result').notNull(),applied:integer('applied').notNull(),createdAt:text('created_at').notNull(),
