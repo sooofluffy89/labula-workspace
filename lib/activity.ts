@@ -4,7 +4,7 @@ import {z} from 'zod';
 // Optional for old, already queued requests. Never synthesize a click time on retry.
 export const actionMetaSchema=z.object({occurredAt:z.string().datetime(),sessionId:z.string().uuid(),sequence:z.number().int().positive(),supersedesCommandId:z.string().uuid().optional()}).strict();
 export type ActionMeta=z.infer<typeof actionMetaSchema>;
-export type TeamMember={id:string;userId:string|null;email:string;name:string;active:boolean;revision:number;owner:boolean};
+export type TeamMember={id:string;userId:string|null;email:string;name:string;active:boolean;accessRole?:'cook'|'legacy';revision:number;owner:boolean};
 export type TeamSnapshot={accountId:string;self:TeamMember;isOwner:boolean;members:TeamMember[]};
 export type TeamDirectory={accountId:string;email:string;isOwner:true;members:TeamMember[]};
 export const teamCommandSchema=z.discriminatedUnion('kind',[

@@ -9,7 +9,14 @@ const checked=<T>(fn:()=>T):T=>{try{return fn();}catch(e){throw new RequestError
 export const respond=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 export type Row={payload:string;revision:number;updated_at:string;updated_by:string};
 type Audit={id:string;kind:string;request:string;actor_id:string;actor_email:string;before_revision:number;after_revision:number;before_payload:string;after_payload:string;summary:string;created_at:string;undo_of:string|null};
-export async function identity(){const user=await getChatGPTUser();if(!user)throw new RequestError('Sign in to access the kitchen notebook.',401);return user;}
+export async function identity(scope:'workspace'|'operations'='workspace'){const user=await getChatGPTUser();if(!user)throw new RequestError('Sign in to access the kitchen notebook.',401);if(scope==='workspace'&&await workspaceRole(user)==='cook')throw new RequestError('Your Cook role includes Evening check and Morning prep only.',403,'role_restricted');return user;}
+export async function workspaceRole(user:ChatGPTUser):Promise<'owner'|'cook'|'legacy'>{
+ if(await owner(user))return 'owner';
+ const row=await getRawDb().prepare('SELECT user_id,access_role FROM kitchen_team WHERE user_id=? OR email=? ORDER BY CASE WHEN user_id=? THEN 0 ELSE 1 END LIMIT 1').bind(user.userId,user.email.toLowerCase(),user.userId).first<{user_id:string|null;access_role:string}>();
+ if(row?.user_id&&row.user_id!==user.userId)throw new RequestError('This profile is linked to a different account. Ask the owner to check it.',403);
+ // Preserve pre-existing private Sites access; only explicitly created Cook profiles are restricted.
+ return row?.access_role==='cook'?'cook':'legacy';
+}
 export async function owner(user:ChatGPTUser){
  // Bind the explicitly configured owner's verified dispatch identity once. Later checks use the site-scoped stable user ID.
  // The bundled loopback-only development identity is removed from production by Vite.

@@ -16,6 +16,8 @@ try{
  const post=async(api,c,status=200)=>{const r=await m[api].POST(new Request('http://test.local/api/'+api,{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':'0'},body:JSON.stringify(c)})),body=await r.json();assert.equal(r.status,status,JSON.stringify(body));return body};
  let team=await get('team');assert.ok(team.isOwner);const ownId=team.self.id;
  const add={id:crypto.randomUUID(),kind:'add',email:chef.email,name:'Wen'};await post('team',add);await post('team',add);assert.equal(db.prepare("SELECT count(*) n FROM kitchen_activity WHERE category='team'").get().n,1);
+ // Retain this suite's pre-existing collaborator fixture; restricted Cook is covered in check-cook-access.
+ db.prepare("UPDATE kitchen_team SET access_role='legacy' WHERE id=?").run(add.id);
  globalThis.activityUser=chef;team=await get('team');assert.equal(team.self.id,add.id);assert.equal(team.self.name,'Wen');assert.equal(team.members.length,1);assert.equal(team.self.userId,chef.userId);await post('team',{...add,id:crypto.randomUUID(),email:'other@test.test'},403);await get('activity','?export=1',403);assert.equal((await get('activity')).events.length,0);
  await get('stock');const n=m.initialNotebook();n.items=[m.newItem('QA Broth','prep'),m.newItem('QA Onion')];db.prepare("UPDATE notebooks SET payload=?,revision=1 WHERE id='kitchen'").run(JSON.stringify(n));await get('stock');const [a,b]=n.items.map(i=>i.id),before=db.prepare('SELECT * FROM notebooks').get();
  const meta={occurredAt:'2026-09-23T20:10:00.000Z',sessionId:crypto.randomUUID(),sequence:1};

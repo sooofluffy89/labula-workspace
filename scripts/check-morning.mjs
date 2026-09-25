@@ -95,7 +95,7 @@ try{
  assert.ok(await viewer.refreshVisible());assert.equal(viewer.state.freshnessError,'');
  release=null;fault='slow';assert.ok(viewer.toggleReady(ids[10]));await waitRelease();const local=viewer.state.pending[0].command;assert.equal(await viewer.refreshVisible(),false);assert.deepEqual(viewer.state.pending[0].command,local);release();assert.ok(await viewer.flush());
  assert.equal(m.morningProgress({...viewer.state,lastVerifiedAt:Date.now()-90000}).complete,false);viewer.dispose();
- const zeroTrack={...absent,snapshot:{...absent.snapshot,trackedCount:0}};assert.ok(render(zeroTrack).includes('Choose items to track'));
+ const zeroTrack={...absent,snapshot:{...absent.snapshot,trackedCount:0}};assert.ok(render(zeroTrack).includes('No items selected for checking'));
  assert.deepEqual(db.prepare('SELECT * FROM notebooks').get(),notebookBefore);assert.deepEqual(db.prepare('SELECT * FROM stock_items ORDER BY item_id').all(),stockBefore);assert.equal(db.prepare('SELECT count(*) n FROM data_review_commands').get().n,0);
  client.dispose();db.close();console.log('PASS Morning A: 24-row queue, rapid Undo, durable order, exact replay, auth, conflicts, recovery journal, correction concurrency, mappings, actual UI and unchanged notebook/stock');
 }finally{delete globalThis.eveningDb;delete globalThis.eveningUser;await rm(dir,{recursive:true,force:true})}

@@ -4,7 +4,7 @@ import {owner,RequestError} from './notebook-server';
 import {teamCommandSchema,type TeamMember,type ActionMeta,type ActivityEvent} from './activity';
 import {dateSchema} from './evening';
 
-type MemberRow={id:string;user_id:string|null;email:string;name:string;active:number;revision:number};
+type MemberRow={id:string;user_id:string|null;email:string;name:string;active:number;access_role?:string;revision:number};
 export async function ensureMember(user:ChatGPTUser){
  const db=getRawDb();let row=await db.prepare('SELECT * FROM kitchen_team WHERE user_id=?').bind(user.userId).first<MemberRow>();
  if(!row){
@@ -17,7 +17,7 @@ export async function ensureMember(user:ChatGPTUser){
  return row;
 }
 export async function activeMember(user:ChatGPTUser){const member=await ensureMember(user);if(!member.active)throw new RequestError('Your Current stock access is paused. Ask the owner to reactivate your team profile. Saved changes stay on this device.',403);return member;}
-const memberView=(m:MemberRow,ownerId:string|null):TeamMember=>({id:m.id,userId:m.user_id,email:m.email,name:m.name,active:!!m.active,revision:m.revision,owner:m.user_id===ownerId});
+const memberView=(m:MemberRow,ownerId:string|null):TeamMember=>({id:m.id,userId:m.user_id,email:m.email,name:m.name,active:!!m.active,accessRole:m.access_role==='cook'?'cook' as const:'legacy' as const,revision:m.revision,owner:m.user_id===ownerId});
 // Management reads must not register visitors or link an unclaimed profile.
 export async function readTeamDirectory(user:ChatGPTUser){
  const db=getRawDb(),ownerId=(await db.prepare("SELECT user_id FROM kitchen_owner WHERE id='owner'").first<{user_id:string}>())?.user_id;
@@ -51,7 +51,7 @@ export async function teamCommand(user:ChatGPTUser,raw:unknown){
  const conditionArgs=c.kind==='add'?[c.email]:[id,c.revision,c.active?1:0];
  const receipt=db.prepare(`INSERT INTO team_commands(id,actor_id,request,created_at) SELECT ?,?,?,? WHERE ${condition} ON CONFLICT(id) DO NOTHING`).bind(...args,now,...conditionArgs);
  const event=eventStatement(user,member.name,c,now,{category:'team',action:c.kind,itemId:'x.id',itemName:'x.name',before:c.kind==='add'?'NULL':"json_object('name',x.name,'active',x.active,'revision',x.revision)",after:'?',from:`FROM ${c.kind==='add'?"(SELECT ? AS id,? AS name)":"kitchen_team"} x WHERE ${c.kind==='add'?'':'x.id=? AND x.revision=? AND '}${gate}`,args:[JSON.stringify(c),...(c.kind==='add'?[id,c.name]:[id,c.revision]),...args]});
- const write=c.kind==='add'?db.prepare(`INSERT INTO kitchen_team(id,email,name,active,revision,created_at) SELECT ?,?,?,1,0,? WHERE ${gate} ON CONFLICT(id) DO NOTHING`).bind(id,c.email,c.name,now,...args):db.prepare(`UPDATE kitchen_team SET name=?,active=?,revision=revision+1 WHERE id=? AND revision=? AND ${gate}`).bind(c.name,c.active?1:0,id,c.revision,...args);
+ const write=c.kind==='add'?db.prepare(`INSERT INTO kitchen_team(id,email,name,active,revision,created_at,access_role) SELECT ?,?,?,1,0,?,'cook' WHERE ${gate} ON CONFLICT(id) DO NOTHING`).bind(id,c.email,c.name,now,...args):db.prepare(`UPDATE kitchen_team SET name=?,active=?,revision=revision+1 WHERE id=? AND revision=? AND ${gate}`).bind(c.name,c.active?1:0,id,c.revision,...args);
  await db.batch([receipt,event,write]);if(!await replay())throw new RequestError('This profile changed, this email already exists, or the owner would be paused. Refresh and review the team.',409);
  return {operationId:c.id};
 }

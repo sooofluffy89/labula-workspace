@@ -1,2 +1,4 @@
 import DataReview from './review';
-export default function Page(){return <DataReview/>;}
+import {requireWorkspacePage} from '../workspace-access';
+export const dynamic='force-dynamic';
+export default async function Page(){await requireWorkspacePage('/review');return <DataReview/>;}

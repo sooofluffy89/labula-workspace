@@ -1,3 +1,4 @@
+import {readdir} from 'node:fs/promises';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -22,7 +23,7 @@ try{
  const merged=c.mergePreview(n,a.id,b.id).next;assert.deepEqual(merged.distinctPairs,[[b.id,third.id].sort()]);assert.equal(c.duplicatePairs(merged).length,0);
  const renamed=c.applyOperation(n,{kind:'reclassify',itemId:a.id,itemKind:'prep'}).next;assert.equal(renamed.items[0].kind,'prep');assert.deepEqual({...renamed.items[0],kind:'bought'},a);assert.deepEqual(renamed.recipes,n.recipes);assert.throws(()=>c.validateOrdinaryEdit(n,renamed),/Only the item name/);
  renamed.items[0].inputs=[{itemId:third.id,amount:12,note:'Keep historical recipe'}];assert.throws(()=>c.applyOperation(renamed,{kind:'reclassify',itemId:a.id,itemKind:'bought'}),/saved recipe/);
- const sqlite=new DatabaseSync(':memory:');for(const file of ['0000_same_lockjaw.sql','0001_milky_toad_men.sql','0002_round_tyger_tiger.sql'])sqlite.exec(await readFile('drizzle/'+file,'utf8'));
+ const sqlite=new DatabaseSync(':memory:');for(const file of (await readdir('drizzle')).filter(f=>f.endsWith('.sql')).sort())sqlite.exec(await readFile('drizzle/'+file,'utf8'));
  const stmt=(sql,args=[])=>({bind(...values){return stmt(sql,values);},async first(){return sqlite.prepare(sql).get(...args)??null;},async all(){return {results:sqlite.prepare(sql).all(...args)};},async run(){return this._run();},_run(){return {meta:{changes:Number(sqlite.prepare(sql).run(...args).changes)}};}});
  globalThis.auditDb={prepare:stmt,async batch(statements){sqlite.exec('BEGIN');try{const result=statements.map(s=>s._run());sqlite.exec('COMMIT');return result;}catch(e){sqlite.exec('ROLLBACK');throw e;}}};
  await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.auditDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.auditUser;');

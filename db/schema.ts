@@ -66,7 +66,7 @@ export const eveningCommands=sqliteTable('evening_commands',{
 
 // Stable authenticated identity; roster names never replace the signed-in actor.
 export const kitchenTeam=sqliteTable('kitchen_team',{
- id:text('id').primaryKey(),userId:text('user_id'),email:text('email').notNull(),name:text('name').notNull(),active:integer('active').notNull().default(1),revision:integer('revision').notNull().default(0),createdAt:text('created_at').notNull(),
+ id:text('id').primaryKey(),userId:text('user_id'),email:text('email').notNull(),name:text('name').notNull(),accessRole:text('access_role').notNull().default('legacy'),active:integer('active').notNull().default(1),revision:integer('revision').notNull().default(0),createdAt:text('created_at').notNull(),
 },t=>[uniqueIndex('kitchen_team_user').on(t.userId),uniqueIndex('kitchen_team_email').on(t.email)]);
 export const teamCommands=sqliteTable('team_commands',{
  id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),createdAt:text('created_at').notNull(),

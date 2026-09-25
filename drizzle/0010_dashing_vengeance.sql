@@ -1,0 +1,1 @@
+ALTER TABLE `kitchen_team` ADD `access_role` text DEFAULT 'legacy' NOT NULL;

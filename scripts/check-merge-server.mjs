@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
+import {mkdtemp,readFile,writeFile,rm,readdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -16,7 +16,7 @@ try{
  await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.__mergeAuditUser;');
  const options={alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'}};
  const api=await bundle('app/api/notebook/route.ts','api',options),cat=await bundle('app/api/catalog/route.ts','catalog-api',options);
- const migrations=await Promise.all(['0000_same_lockjaw.sql','0001_milky_toad_men.sql','0002_round_tyger_tiger.sql'].map(name=>readFile('drizzle/'+name,'utf8')));
+ const migrations=await Promise.all((await readdir('drizzle')).filter(f=>f.endsWith('.sql')).sort().map(name=>readFile('drizzle/'+name,'utf8')));
  const owner={userId:'owner',email:'jan@bananasport.cz'},chef={userId:'chef',email:'xuewenokay@gmail.com'};
  const request=(method,body,revision,extra={})=>new Request('https://test.local/api/notebook',{method,headers:{Origin:'https://test.local','Content-Type':'application/json','If-Match':String(revision),...extra},body:JSON.stringify(body)});
  const send=(operation,revision,id=crypto.randomUUID(),headers={})=>cat.POST(request('POST',{operationId:id,operation},revision,headers));
