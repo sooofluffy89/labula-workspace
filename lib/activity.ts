@@ -6,6 +6,7 @@ export const actionMetaSchema=z.object({occurredAt:z.string().datetime(),session
 export type ActionMeta=z.infer<typeof actionMetaSchema>;
 export type TeamMember={id:string;userId:string|null;email:string;name:string;active:boolean;revision:number;owner:boolean};
 export type TeamSnapshot={accountId:string;self:TeamMember;isOwner:boolean;members:TeamMember[]};
+export type TeamDirectory={accountId:string;email:string;isOwner:true;members:TeamMember[]};
 export const teamCommandSchema=z.discriminatedUnion('kind',[
  z.object({id:z.string().uuid(),kind:z.literal('add'),email:z.string().trim().email().max(254).transform(v=>v.toLowerCase()),name:z.string().trim().min(1).max(80)}).strict(),
  z.object({id:z.string().uuid(),kind:z.literal('edit'),memberId:z.string().uuid(),revision:z.number().int().nonnegative(),name:z.string().trim().min(1).max(80),active:z.boolean()}).strict(),

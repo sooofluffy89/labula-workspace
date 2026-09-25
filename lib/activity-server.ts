@@ -18,6 +18,13 @@ export async function ensureMember(user:ChatGPTUser){
 }
 export async function activeMember(user:ChatGPTUser){const member=await ensureMember(user);if(!member.active)throw new RequestError('Your Current stock access is paused. Ask the owner to reactivate your team profile. Saved changes stay on this device.',403);return member;}
 const memberView=(m:MemberRow,ownerId:string|null):TeamMember=>({id:m.id,userId:m.user_id,email:m.email,name:m.name,active:!!m.active,revision:m.revision,owner:m.user_id===ownerId});
+// Management reads must not register visitors or link an unclaimed profile.
+export async function readTeamDirectory(user:ChatGPTUser){
+ const db=getRawDb(),ownerId=(await db.prepare("SELECT user_id FROM kitchen_owner WHERE id='owner'").first<{user_id:string}>())?.user_id;
+ if(!ownerId||ownerId!==user.userId)throw new RequestError('Only the owner can manage the kitchen team.',403);
+ const rows=(await db.prepare('SELECT * FROM kitchen_team ORDER BY lower(name),id').all<MemberRow>()).results;
+ return {accountId:user.userId,email:user.email,isOwner:true as const,members:rows.map(m=>memberView(m,ownerId))};
+}
 export async function readTeam(user:ChatGPTUser){
  const self=await ensureMember(user),isOwner=await owner(user),db=getRawDb(),ownerId=(await db.prepare("SELECT user_id FROM kitchen_owner WHERE id='owner'").first<{user_id:string}>())?.user_id??null;
  const members=isOwner?(await db.prepare('SELECT * FROM kitchen_team ORDER BY lower(name),id').all<MemberRow>()).results:[self];
