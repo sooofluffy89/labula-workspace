@@ -10,9 +10,9 @@ export type StockItem={itemId:string;name:string;aliases:string[];kind:'bought'|
 export type StockSnapshot={accountId:string;account:string;scope:'kitchen';items:StockItem[];notebookRevision:number};
 export type StockFilter='all'|'tracked'|'untracked';
 export type StockTypeFilter='all'|StockItem['kind'];
-export type StockCategoryFilter='all'|Category;
-export function stockRows(items:StockItem[],search:string,filter:StockFilter='all',included=true,kind:StockTypeFilter='all',category:StockCategoryFilter='all'){
+export type StockCategoryFilter=readonly Category[];
+export function stockRows(items:StockItem[],search:string,filter:StockFilter='all',included=true,kind:StockTypeFilter='all',categories:StockCategoryFilter=[]){
  const query=normalizeName(search);
- return items.filter(i=>i.included===included&&(kind==='all'||i.kind===kind)&&(category==='all'||i.categories?.includes(category))&&(filter==='all'||(filter==='tracked'?i.track:!i.track))&&[i.name,...i.aliases].some(n=>normalizeName(n).includes(query))).sort((a,b)=>a.name.localeCompare(b.name,'en')||a.itemId.localeCompare(b.itemId));
+ return items.filter(i=>i.included===included&&(kind==='all'||i.kind===kind)&&(!categories.length||categories.some(category=>i.categories?.includes(category)))&&(filter==='all'||(filter==='tracked'?i.track:!i.track))&&[i.name,...i.aliases].some(n=>normalizeName(n).includes(query))).sort((a,b)=>a.name.localeCompare(b.name,'en')||a.itemId.localeCompare(b.itemId));
 }
 export function stockCounts(items:StockItem[]){const included=items.filter(i=>i.included);const tracked=included.filter(i=>i.track).length;return {total:included.length,tracked,untracked:included.length-tracked};}
