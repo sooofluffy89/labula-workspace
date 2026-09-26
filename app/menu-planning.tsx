@@ -6,7 +6,7 @@ import {Tabs,TabsList,TabsTrigger} from '@/components/ui/tabs';
 import {directUsage,directUsageNote,droppedItems,dedicatedPreparations,scenarioSelection,scenarioNotice,type DirectUsage,type MenuScenario} from '@/lib/direct-usage';
 import type {Notebook} from '@/lib/notebook';
 
-type Navigation={onDish:(id:string)=>void;onEdit:(id:string)=>void};
+type Navigation={onDish:(id:string,item?:string,variant?:string)=>void;onEdit:(id:string)=>void};
 export function DedicatedPreparations({index,context,onDish,onEdit}:{index:DirectUsage;context:string}&Navigation){
  const rows=useMemo(()=>dedicatedPreparations(index),[index]);
  return <section className="planning-section" aria-label="Preparations listed in one dish"><div className="section-top"><div><h2>Preparations listed in one dish</h2><p className="scope-label">{context} · {index.dishes.length} dishes</p></div></div><p className="muted small usage-note">{directUsageNote} Preparation counts do not measure workload.</p>{!rows.length?<p className="info">No dishes selected. Select a dish to see its preparations.</p>:<div className="dedicated-list">{rows.map(({dish,total,dedicated})=><article className="dedicated-row" key={dish.id}><button className="click-link item-name" onClick={()=>onDish(dish.id)}>{dish.name}</button><p className="muted small">{total} direct {total===1?'preparation':'preparations'} · <strong>{dedicated.length} listed only here</strong></p>{dedicated.length?<details><summary>Show {dedicated.length} {dedicated.length===1?'preparation':'preparations'}</summary><ul>{dedicated.map(i=><li key={i.id}><button className="click-link" onClick={()=>onEdit(i.id)}>{i.name}</button></li>)}</ul></details>:<p className="muted small">No preparations listed only here</p>}</article>)}</div>}</section>;

@@ -257,3 +257,21 @@
  .stock-workflow [data-sync=saved] > .stock-sync-marker,.stock-workflow .evening-row[data-reveal=true],.stock-workflow [data-pulse=true],.stock-workflow .stock-morning-enter,
  .stock-confirm-content[data-state],.stock-confirm-overlay[data-state] { animation:none; }
 }
+/* Optional read-only context. One scroll surface; operational answer targets stay intact. */
+.information-dialog { width:min(760px,calc(100vw - 24px)); max-width:760px; max-height:90dvh; display:flex; flex-direction:column; gap:14px; overflow:hidden; }
+.information-scroll { overflow-y:auto; min-height:0; overscroll-behavior:contain; padding:2px 5px 12px; }
+.information-scroll h2 { font-size:1.35rem; margin-bottom:12px; overflow-wrap:anywhere; }
+.information-scroll h3 { font-size:1rem; margin:12px 0 8px; }
+.information-scroll section,.information-scroll details { margin:16px 0; border-top:1px solid var(--border); padding-top:12px; }
+.information-scroll summary { cursor:pointer; min-height:44px; display:list-item; padding:10px 0; font-weight:600; }
+.information-list { list-style:none; margin:8px 0; padding:0; }
+.information-list li { padding:10px 0; border-bottom:1px solid var(--border); }
+.information-list .click-link,.information-scroll .click-link { display:inline-block; min-height:44px; padding:10px 0; text-align:left; overflow-wrap:anywhere; }
+.information-highlight { background:#f3f4f6; outline:2px solid #7b2430; outline-offset:-2px; padding:12px!important; border-radius:6px; }
+.information-facts > div { padding:8px 0; display:grid; grid-template-columns:minmax(100px,1fr) minmax(0,2fr); gap:12px; border-bottom:1px solid var(--border); }
+.information-facts dt { font-weight:600; }.information-facts dd { overflow-wrap:anywhere; white-space:pre-wrap; }
+.information-note { white-space:pre-wrap; overflow-wrap:anywhere; }
+.morning-detail { text-align:left; cursor:pointer; min-height:48px; width:100%; }
+.morning-detail:hover { text-decoration:underline; }.morning-detail:focus-visible { outline:2px solid #92202a; outline-offset:-2px; }
+@media(max-width:480px){.information-dialog {width:calc(100vw - 12px);max-height:94dvh;padding:16px;}.information-facts > div {grid-template-columns:1fr;gap:2px;}}
+@media(prefers-reduced-motion:reduce){.information-dialog[data-state],body:has(.information-dialog) [data-slot=dialog-overlay]{animation:none!important;transition:none!important;}}
