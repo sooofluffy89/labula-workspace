@@ -10,7 +10,8 @@ export function operationalDay(now=new Date()){const hour=Number(new Intl.DateTi
 export function displayDay(day:string){if(!dateSchema.safeParse(day).success)return 'Choose a date';return new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(day+'T12:00:00Z'));}
 const id=z.string().min(1).max(160),rev=z.number().int().nonnegative(),base={id:z.string().uuid(),actorId:id,scope:z.literal('kitchen'),meta:actionMetaSchema.optional()},check={checkId:dateSchema};
 export const eveningCommandSchema=z.discriminatedUnion('kind',[
- z.object({...base,kind:z.literal('start'),day:dateSchema,targetDay:dateSchema}),
+ z.object({...base,kind:z.literal('start'),day:dateSchema,targetDay:dateSchema,extraItemIds:z.array(id).max(1000).optional()}),
+ z.object({...base,...check,kind:z.literal('add-items'),revision:rev,itemIds:z.array(id).min(1).max(1000)}),
  z.object({...base,...check,kind:z.literal('answer'),itemId:id,revision:rev,generation:rev,value:z.enum(['have','missing']).nullable(),deviceId:z.string().uuid(),sequence:z.number().int().positive()}),
  z.object({...base,...check,kind:z.literal('resolve'),itemId:id,revision:rev,generation:rev,catalogId:id}),
  z.object({...base,...check,kind:z.literal('supersede'),itemId:id,revision:rev,generation:rev,targetItemId:id,notebookRevision:rev}),
@@ -21,11 +22,11 @@ export const eveningCommandSchema=z.discriminatedUnion('kind',[
 ]);
 export type EveningCommand=z.infer<typeof eveningCommandSchema>;
 export type Availability='have'|'missing'|null;
-export type CheckSummary={id:string;targetDay:string;stage:'draft'|'confirmed';revision:number;planRevision:number;version:number;confirmedAt:string|null;confirmedBy:string|null};
-export type CheckAnswer={itemId:string;catalogId:string;name:string;kind:'bought'|'prep';position:number;value:Availability;revision:number;updatedAt:string;updatedBy:string;firstActor:string|null;firstDevice:string|null;firstSequence:number|null;supersededBy:string|null;mappingValid:boolean;currentName:string|null;groupId:string|null};
+export type CheckSummary={coveredBy?:string|null;roundsVersion?:number;id:string;targetDay:string;stage:'draft'|'confirmed';revision:number;planRevision:number;version:number;confirmedAt:string|null;confirmedBy:string|null};
+export type CheckAnswer={round?:import('./check-rounds').RoundReason|null;itemId:string;catalogId:string;name:string;kind:'bought'|'prep';position:number;value:Availability;revision:number;updatedAt:string;updatedBy:string;firstActor:string|null;firstDevice:string|null;firstSequence:number|null;supersededBy:string|null;mappingValid:boolean;currentName:string|null;groupId:string|null};
 export type MorningTask={itemId:string;catalogId:string;name:string;kind:'bought'|'prep';position:number;ready:boolean;cancelled:boolean;revision:number;updatedAt:string;updatedBy:string;mappingValid:boolean;groupId:string|null};
 export type EveningCheck=CheckSummary&{answers:CheckAnswer[];tasks:MorningTask[];grouped:boolean};
-export type EveningSnapshot={scope:'kitchen';accountId:string;account:string;notebookRevision:number;trackedCount:number;catalog:{id:string;name:string;kind:'bought'|'prep'}[];checks:CheckSummary[];check:EveningCheck|null};
+export type EveningSnapshot={planning?:{day:string;revision:number;dueCount:number;rounds:import('./check-rounds').Round[];items:import('./round-store').PlanningItem[]};scope:'kitchen';accountId:string;account:string;notebookRevision:number;trackedCount:number;catalog:{id:string;name:string;kind:'bought'|'prep'}[];checks:CheckSummary[];check:EveningCheck|null};
 export type EveningSelection={day:string}|{morningDay:string};
 export function selectionQuery(selection:EveningSelection){return new URLSearchParams(selection).toString();}
 export function correctionDiff(check:EveningCheck){const active=new Map(check.tasks.filter(t=>!t.cancelled).map(t=>[t.itemId,t]));return {added:check.answers.filter(a=>a.value==='missing'&&(!active.has(a.itemId)||active.get(a.itemId)?.catalogId!==a.catalogId)),removed:check.tasks.filter(t=>!t.cancelled&&check.answers.find(a=>a.itemId===t.itemId)?.value!=='missing')};}

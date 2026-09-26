@@ -6,7 +6,7 @@ export const privateBackupTables = [
   'reviewed_entities', 'review_import_chunks', 'stock_items', 'stock_commands', 'ingredient_group_commands',
   'stock_catalog_effects', 'evening_checks', 'evening_answers', 'evening_versions',
   'morning_tasks', 'evening_commands', 'kitchen_team', 'kitchen_activity',
-  'team_commands',
+  'team_commands', 'check_rounds', 'round_state', 'round_timeline', 'round_commands',
 ] as const;
 
 export type PrivateBackup = {
@@ -29,4 +29,16 @@ export function isCompletePrivateBackup(value: unknown): value is PrivateBackup 
     Number.isSafeInteger(backup.counts?.[table]) &&
     backup.counts![table] === backup.tables![table].length
   );
+}
+
+// An older archive remains readable; absence of round metadata is explicitly legacy.
+export function readPrivateBackup(value:unknown){
+ if(isCompletePrivateBackup(value))return {backup:value,legacyRounds:false};
+ if(typeof value!=='object'||!value)return null;
+ const b=value as PrivateBackup;
+ const added=['check_rounds','round_state','round_timeline','round_commands'];
+ if(added.some(t=>b.tables?.[t]!==undefined))return null;
+ const upgraded={...b,tables:{...b.tables},counts:{...b.counts}};
+ for(const t of added){upgraded.tables[t]=[];upgraded.counts[t]=0;}
+ return isCompletePrivateBackup(upgraded)?{backup:b,legacyRounds:true}:null;
 }

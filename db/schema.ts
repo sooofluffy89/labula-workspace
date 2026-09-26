@@ -39,7 +39,7 @@ export const reviewImportChunks = sqliteTable('review_import_chunks', {id:text('
 // Shared stock-list configuration is independent of whole-notebook autosave and imports.
 export const stockItems = sqliteTable('stock_items', {
  itemId:text('item_id').primaryKey(),included:integer('included').notNull(),track:integer('track').notNull(),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),
- groupId:text('group_id'),groupRevision:integer('group_revision').notNull().default(0),groupSource:text('group_source'),groupUpdatedAt:text('group_updated_at'),groupUpdatedBy:text('group_updated_by'),
+ roundId:text('round_id'),roundRevision:integer('round_revision').notNull().default(0),roundSource:text('round_source'),groupId:text('group_id'),groupRevision:integer('group_revision').notNull().default(0),groupSource:text('group_source'),groupUpdatedAt:text('group_updated_at'),groupUpdatedBy:text('group_updated_by'),
 });
 export const ingredientGroupCommands = sqliteTable('ingredient_group_commands', {
  id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),result:text('result').notNull(),createdAt:text('created_at').notNull(),
@@ -53,10 +53,10 @@ export const stockCatalogEffects = sqliteTable('stock_catalog_effects', {
 
 // A date identifies one shared kitchen check. planDay is set only at confirmation.
 export const eveningChecks=sqliteTable('evening_checks',{
- id:text('id').primaryKey(),targetDay:text('target_day').notNull(),planDay:text('plan_day').unique(),stage:text('stage').notNull(),revision:integer('revision').notNull(),planRevision:integer('plan_revision').notNull(),version:integer('version').notNull(),startOperation:text('start_operation').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),updatedAt:text('updated_at').notNull(),confirmedAt:text('confirmed_at'),confirmedBy:text('confirmed_by'),grouped:integer('grouped').notNull().default(0),
+ id:text('id').primaryKey(),targetDay:text('target_day').notNull(),planDay:text('plan_day').unique(),stage:text('stage').notNull(),revision:integer('revision').notNull(),planRevision:integer('plan_revision').notNull(),version:integer('version').notNull(),startOperation:text('start_operation').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),updatedAt:text('updated_at').notNull(),confirmedAt:text('confirmed_at'),confirmedBy:text('confirmed_by'),grouped:integer('grouped').notNull().default(0),roundsVersion:integer('rounds_version').notNull().default(0),
 });
 export const eveningAnswers=sqliteTable('evening_answers',{
- checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),value:text('value'),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),firstActor:text('first_actor'),firstDevice:text('first_device'),firstSequence:integer('first_sequence'),supersededBy:text('superseded_by'),groupId:text('group_id'),
+ checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),value:text('value'),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),firstActor:text('first_actor'),firstDevice:text('first_device'),firstSequence:integer('first_sequence'),supersededBy:text('superseded_by'),groupId:text('group_id'),roundSnapshot:text('round_snapshot'),
 },t=>[primaryKey({columns:[t.checkId,t.itemId]})]);
 export const eveningVersions=sqliteTable('evening_versions',{
  checkId:text('check_id').notNull(),version:integer('version').notNull(),payload:text('payload').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),
@@ -79,3 +79,17 @@ export const teamCommands=sqliteTable('team_commands',{
 export const kitchenActivity=sqliteTable('kitchen_activity',{
  id:text('id').primaryKey(),commandId:text('command_id').notNull(),category:text('category').notNull(),action:text('action').notNull(),source:text('source').notNull(),actorId:text('actor_id').notNull(),actorEmail:text('actor_email').notNull(),actorName:text('actor_name').notNull(),recordedAt:text('recorded_at').notNull(),clientAt:text('client_at'),sessionId:text('session_id'),sequence:integer('sequence'),supersedesCommandId:text('supersedes_command_id'),checkId:text('check_id'),targetDay:text('target_day'),itemId:text('item_id'),itemName:text('item_name'),itemKind:text('item_kind'),beforeValue:text('before_value'),afterValue:text('after_value'),
 },t=>[index('activity_time').on(t.recordedAt,t.id),index('activity_check').on(t.checkId,t.recordedAt,t.id),index('activity_actor').on(t.actorId,t.recordedAt,t.id),index('activity_item').on(t.itemId,t.recordedAt,t.id)]);
+
+// Schedules and append-only effective intervals live outside Recipe Notebook.
+export const checkRounds=sqliteTable('check_rounds',{
+ id:text('id').primaryKey(),days:text('days').notNull(),revision:integer('revision').notNull().default(0),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),
+});
+export const roundState=sqliteTable('round_state',{
+ id:text('id').primaryKey(),revision:integer('revision').notNull().default(0),activatedAt:text('activated_at').notNull(),
+});
+export const roundTimeline=sqliteTable('round_timeline',{
+ seq:integer('seq').primaryKey({autoIncrement:true}),itemId:text('item_id').notNull(),roundId:text('round_id'),days:text('days').notNull(),scheduleRevision:integer('schedule_revision').notNull(),active:integer('active').notNull(),recordedAt:text('recorded_at').notNull(),source:text('source').notNull(),actor:text('actor').notNull(),
+},t=>[index('round_timeline_item').on(t.itemId,t.seq)]);
+export const roundCommands=sqliteTable('round_commands',{
+ id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),applied:integer('applied').notNull().default(0),createdAt:text('created_at').notNull(),
+});

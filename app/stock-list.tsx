@@ -8,9 +8,11 @@ import {Input} from '@/components/ui/input';
 import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter} from '@/components/ui/dialog';
 import {groupRows,groupLabel} from '@/lib/ingredient-groups';
 import {GroupSection,useCollapsedGroups} from './grouped-sections';
+import {CheckRounds} from './check-rounds';
 import {StockGroupEditor} from './stock-group-editor';
 
 export function StockList({account,active}:{account:string;active:boolean}){
+ const [roundsOpen,setRoundsOpen]=useState(false);
  const controller=useRef<StockController|null>(null);
  const [state,setState]=useState<StockState>({snapshot:null,loading:false,saving:false,error:'',unauthorized:false,pending:null,notice:''});
  const [search,setSearch]=useState(''),[searchCollapsed,setSearchCollapsed]=useState<string[]>([]),[filter,setFilter]=useState<StockFilter>('all'),[typeFilter,setTypeFilter]=useState<StockTypeFilter>('all'),[addOpen,setAddOpen]=useState(false),[addSearch,setAddSearch]=useState(''),[selected,setSelected]=useState<string[]>([]);
@@ -50,10 +52,12 @@ export function StockList({account,active}:{account:string;active:boolean}){
    {state.unauthorized&&<a href="/signin-with-chatgpt?return_to=/" target="_blank" rel="noreferrer" className="click-link">Sign in in a new tab, then retry</a>}
   </div>
  </div>;
+ if(roundsOpen&&state.snapshot?.canManageGroups)return <CheckRounds account={account} onBack={()=>{setRoundsOpen(false);refresh();}}/>;
  return <section className="stock-view" aria-labelledby="stock-heading">
-  <div className="view-heading"><h1 id="stock-heading">Manage list</h1><p className="muted">Choose which items to check each evening. Track does not mean an item is available.</p></div>
+  <div className="view-heading"><h1 id="stock-heading">Manage list</h1><p className="muted">Choose which items to check. Track does not mean an item is available. Newly tracked items without a round use Daily check. Existing assignments are kept.</p></div>
   {!addOpen&&status}
   {state.snapshot&&<>
+   {state.snapshot.canManageGroups&&<Button variant="outline" disabled={blocked} onClick={()=>setRoundsOpen(true)}>Check rounds</Button>}
    <p ref={summary} tabIndex={-1} className="stock-counts">{counts.total} items in list <span>·</span> {counts.tracked} tracked <span>·</span> {counts.untracked} not tracked</p>
    <div className="toolbar"><Input aria-label="Search stock items" placeholder="Search names or alternative names…" value={search} onChange={e=>{setSearch(e.target.value);setSearchCollapsed([]);}}/><div className="actions"><Button variant="outline" disabled={state.loading||state.saving} onClick={refresh}>Refresh</Button><Button disabled={blocked} onClick={()=>{setSelected([]);setAddSearch('');setAddOpen(true);}}>Add items</Button></div></div>
    <div className="actions stock-filters" role="group" aria-label="Ingredient type"><span className="muted small">Type</span>{([['all','All types'],['bought','Bought ingredients'],['prep','House-made prep']] as const).map(([value,label])=><Button key={value} variant={typeFilter===value?'default':'outline'} aria-pressed={typeFilter===value} onClick={()=>setTypeFilter(value)}>{label}</Button>)}</div>

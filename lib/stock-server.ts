@@ -1,3 +1,4 @@
+import {initializeRounds} from './round-store';
 import {activeMember,eventStatement} from './activity-server';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
@@ -23,6 +24,7 @@ async function initialize(user:ChatGPTUser){
  WHERE n.id='kitchen' AND stock_items.item_id=json_extract(seed.value,'$.itemId') AND stock_items.group_source IS NULL
  AND json_extract(item.value,'$.id')=stock_items.item_id AND json_extract(item.value,'$.name')=json_extract(seed.value,'$.expectedName')
  AND json_extract(item.value,'$.kind')=json_extract(seed.value,'$.expectedKind')`).bind(new Date().toISOString(),seed).run();
+ await initializeRounds();
 }
 export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
  await initialize(user);

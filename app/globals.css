@@ -195,3 +195,33 @@
 .team-success{color:#165c43;background:#eaf5ef;border-radius:8px;padding:12px 16px;margin:12px 0}
 .team-empty{padding:24px 0;color:#505c6d}.team-recovery{padding:10px 0;border-bottom:1px solid #dce0e5;margin-bottom:12px}
 @media(max-width:640px){.team-heading>.actions{width:100%}.team-heading>.actions button{flex:1}.team-heading h1{font-size:1.65rem;margin-bottom:4px}.team-access-note{padding:14px}.team-person{align-items:stretch;flex-direction:column;gap:14px}.team-person-actions{max-width:none;justify-content:flex-start}.team-person-actions small{text-align:left}.team-form{padding:14px}.team-filters{gap:10px}.team-filters label{flex:1 1 100%}.team-filters span{padding:0}.team-workspace{margin-top:16px}.team-workspace .section-top{align-items:start;gap:8px}}
+
+/* Shared rounds: explicit grouped selection, full names and reachable mobile actions. */
+.rounds-view { max-width: 850px; margin: 0 auto; }
+.rounds-view h1 { margin: 18px 0 10px; font-size: 1.65rem; font-weight: 700; overflow-wrap: anywhere; }
+.round-cards { display: grid; gap: 16px; margin-top: 20px; }
+.round-cards article, .round-group { border: 1px solid #cbd0d7; border-radius: 10px; background: white; }
+.round-cards article { padding: 16px; }
+.round-cards h2 { font-size: 1.2rem; font-weight: 700; }
+.round-filter-grid { display: grid; gap: 14px; padding: 14px; border: 1px solid #cbd0d7; border-radius: 8px; }
+.round-filter-grid label { display: grid; gap: 5px; min-width: 0; }
+.round-filter-grid select { width: 100%; min-height: 44px; padding: 7px; background: white; border: 1px solid #727984; border-radius: 6px; }
+.round-group { margin: 16px 0; overflow: hidden; }
+.round-group-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 12px; background: #f0f1f3; border-bottom: 2px solid #cbd0d7; }
+.round-group-heading button:first-child { white-space: normal; height: auto; min-height: 44px; text-align: left; justify-content: start; }
+.round-group ul { list-style: none; margin: 0; padding: 0; }
+.round-group li { display: flex; flex-wrap: wrap; align-items: center; border-bottom: 1px solid #d9dce1; padding: 8px 12px; gap: 8px; }
+.round-group label { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 180px; cursor: pointer; min-height: 64px; }
+.round-group input { width: 24px; height: 24px; flex: 0 0 24px; margin: 10px; accent-color: #be202b; }
+.round-group span { min-width: 0; overflow-wrap: anywhere; }
+.round-group small { display: block; color: #515966; line-height: 1.5; }
+.round-review-bar { padding: 16px 0; }
+.rounds-view .actions { flex-wrap: wrap; margin: 10px 0; }
+.rounds-view button { min-height: 44px; max-width: 100%; }
+.round-dialog[data-slot="dialog-content"] { display: flex; flex-direction: column; max-height: calc(100dvh - 24px); overflow-y: auto; width: min(680px,calc(100vw - 24px)); max-width: calc(100vw - 24px); padding: 20px; }
+.round-dialog ul { overflow-wrap: anywhere; padding-left: 18px; }
+.round-dialog li { margin-bottom: 14px; }
+.round-dialog [data-slot="dialog-footer"] { flex-shrink: 0; }
+.rounds-view input[type="text"] { min-height: 44px; }
+.round-overdue { display: block; font-size: 11px; font-weight: 500; color: #854709; }
+@media (max-width: 430px) { .rounds-view h1 { font-size: 1.35rem; } .round-group-heading { padding: 8px; } .round-dialog[data-slot="dialog-content"] { padding: 16px; } }
