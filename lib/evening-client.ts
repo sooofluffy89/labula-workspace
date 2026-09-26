@@ -4,7 +4,8 @@ import {eveningCommandSchema,selectionQuery,type EveningCommand,type EveningSele
 type Storage=Pick<globalThis.Storage,'length'|'key'|'getItem'|'setItem'|'removeItem'>;
 type Requester=(url:string,init?:RequestInit)=>Promise<{res:Response;body:unknown}>;
 export type PendingEvening={accountId:string;account:string;command:EveningCommand;created:number;sent:boolean;rejected:boolean};
-export type EveningState={snapshot:EveningSnapshot|null;pending:PendingEvening[];loading:boolean;saving:boolean;error:string;unauthorized:boolean;notice:string;recoveryBlocked?:boolean;lastVerifiedAt?:number;freshnessError?:string;refreshing?:boolean;conflictReview?:string|null};
+export type SaveReceipt={accountId:string;command:EveningCommand};
+export type EveningState={snapshot:EveningSnapshot|null;pending:PendingEvening[];loading:boolean;saving:boolean;error:string;unauthorized:boolean;notice:string;recoveryBlocked?:boolean;lastVerifiedAt?:number;freshnessError?:string;refreshing?:boolean;conflictReview?:string|null;acknowledged?:Record<string,SaveReceipt>;settledSave?:SaveReceipt|null};
 type Resolution={before:string[];next:PendingEvening[]};
 const prefix='labula-evening-v1:';
 export class EveningController {
@@ -74,7 +75,7 @@ export class EveningController {
   // Millisecond ties must not reorder rapid Ready/Undo on reload (legacy records still load).
   const created=Math.max(Date.now(),this.lastCreated+1);const p:PendingEvening={accountId:this.accountId,account:this.account,command,created,sent:false,rejected:false};
   try{this.persist(p);}catch{this.emit({error:'This browser cannot keep a recovery copy. No change was accepted. Free device storage or use another browser.'});return false;}
-  this.lastCreated=created;this.emit({pending:[...this.state.pending,p],notice:'',error:''});void this.drain();return true;
+  this.lastCreated=created;this.emit({pending:[...this.state.pending,p],notice:'',error:'',settledSave:null});void this.drain();return true;
  }
  answer(itemId:string,value:Availability){const check=this.visibleCheck();if(!check||check.stage!=='draft'||this.state.loading||this.state.error||this.state.recoveryBlocked||this.state.pending.some(p=>p.rejected||p.command.kind!=='answer'))return false;const a=check.answers.find(a=>a.itemId===itemId);if(!a||a.value===value)return !!a;return this.enqueue({id:crypto.randomUUID(),scope:'kitchen',actorId:this.accountId,kind:'answer',checkId:check.id,itemId,revision:a.revision,generation:check.version,value,deviceId:this.deviceId,sequence:++this.sequence});}
  ready(itemId:string,value:boolean){
@@ -86,7 +87,7 @@ export class EveningController {
  toggleReady(itemId:string){const task=this.visibleCheck()?.tasks.find(t=>t.itemId===itemId);return task?this.ready(itemId,!task.ready):false;}
  async action(command:EveningCommand){if(this.busy||this.state.pending.length||this.disposed||this.state.error||this.state.recoveryBlocked)return false;if(!this.enqueue(command))return false;return this.inflight??false;}
  private drain():Promise<boolean>{if(this.inflight)return this.inflight;if(this.disposed||this.busy||this.state.recoveryBlocked||!this.state.pending.length||this.state.pending[0].rejected)return Promise.resolve(false);this.inflight=this.run().finally(()=>{this.inflight=null;});return this.inflight;}
- private async run(){this.busy=true;this.emit({saving:true,error:'',unauthorized:false});try{
+ private async run(){let lastReceipt:SaveReceipt|null=null;let succeeded=false;this.busy=true;this.emit({saving:true,error:'',unauthorized:false});try{
   while(this.state.pending.length&&!this.disposed){let p=this.state.pending[0];if(p.rejected)return false;
    if(!p.sent){p={...p,sent:true};this.persist(p);this.emit({pending:[p,...this.state.pending.slice(1)]});}
    const {res,body}=await this.request('/api/evening',{method:'POST',headers:{'Content-Type':'application/json','If-Match':'0'},body:JSON.stringify(p.command)});
@@ -94,10 +95,14 @@ export class EveningController {
    const reply=body as {operationId?:string;snapshot?:EveningSnapshot;error?:string};
    if(!res.ok){if(res.status===409||res.status===400||res.status===404){const rejected={...p,rejected:true};this.persist(rejected);this.emit({pending:[rejected,...this.state.pending.slice(1)],conflictReview:null});try{const latest=await this.read();if(this.disposed)return false;this.acceptSnapshot(latest);this.emit({conflictReview:this.conflictFingerprint(latest)});}catch{this.emit({conflictReview:null});}}this.emit({unauthorized:res.status===401||res.status===403});throw Error(reply.error??'Could not confirm this save. Retry safely.');}
    if(reply.operationId!==p.command.id||!reply.snapshot||reply.snapshot.check?.id!==(p.command.kind==='start'?p.command.day:p.command.checkId))throw Error('The save response was incomplete. Retry to check its result.');
-   this.verify(reply.snapshot);this.storage.removeItem(this.key(p));this.acceptSnapshot(reply.snapshot);this.emit({pending:this.state.pending.slice(1)});
+   this.verify(reply.snapshot);this.storage.removeItem(this.key(p));this.acceptSnapshot(reply.snapshot);// Receipts are memory-only presentation signals, never restored from a snapshot or recovery journal.
+   const receipt={accountId:this.accountId,command:p.command};lastReceipt=receipt;
+   const key=p.command.kind+('itemId' in p.command?':'+p.command.itemId:'');
+   const acknowledged=Object.fromEntries(Object.entries(this.state.acknowledged??{}).filter(([,r])=>r.accountId===this.accountId&&'checkId' in r.command&&r.command.checkId===reply.snapshot!.check!.id));
+   this.emit({pending:this.state.pending.slice(1),acknowledged:{...acknowledged,[key]:receipt}});
   }
-  this.emit({notice:'Shared changes saved.'});return !this.disposed;
- }catch(e){this.emit({error:e instanceof Error?e.message:'Connection failed. Changes are kept on this device.'});return false;}finally{this.busy=false;this.emit({saving:false});}}
+  succeeded=!this.disposed;this.emit({notice:'Shared changes saved.'});return succeeded;
+ }catch(e){this.emit({error:e instanceof Error?e.message:'Connection failed. Changes are kept on this device.'});return false;}finally{this.busy=false;this.emit({saving:false,...(succeeded?{settledSave:lastReceipt}:{})});}}
  async retry(){
   if(this.busy||this.disposed)return false;this.busy=true;this.emit({loading:true,error:'',unauthorized:false});let verified=false;
   try{const snapshot=await this.read();if(this.disposed)return false;this.acceptSnapshot(snapshot);if(this.state.recoveryBlocked||!this.loadedRecovery){this.loadedRecovery=false;this.restore();}if(this.state.pending[0]?.rejected)this.emit({conflictReview:this.conflictFingerprint(snapshot)});verified=true;}
