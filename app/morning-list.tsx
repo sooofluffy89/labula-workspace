@@ -1,4 +1,7 @@
 'use client';
+import {useRef,useState} from 'react';
+import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription} from '@/components/ui/dialog';
+import {PrepInstructionLine,ServiceFeedback,noteContext} from './prep-notes';
 import {useInformation} from './information-context';
 import {StockRow,StockProgress,useSavePulse} from './stock-motion';
 import {settledReceipt} from '@/lib/stock-feedback';
@@ -10,16 +13,19 @@ import {groupRows} from '@/lib/ingredient-groups';
 import {GroupSection,useCollapsedGroups} from './grouped-sections';
 
 export function MorningList({state,day,now=0,onReady,onContinue,onCorrect,onManage,correctDisabled,correcting=false}:{state:EveningState;day:string;now?:number;onReady:(itemId:string)=>void;onContinue:(day:string)=>void;onCorrect:()=>void;onManage?:()=>void;correctDisabled:boolean;correcting?:boolean}){
+ const opener=useRef<HTMLElement|null>(null);
+ const [selected,setSelected]=useState<string|null>(null),[feedbackOpen,setFeedbackOpen]=useState(false);
  const information=useInformation();const check=state.snapshot?.check,{tasks,ready,remaining,complete}=morningProgress(state,now);
  const completedPulse=useSavePulse(settledReceipt(state,'ready'),complete,`${state.snapshot?.accountId}:${check?.id}`);
  const pending=new Set(state.pending.flatMap(p=>p.command.kind==='ready'&&p.command.checkId===check?.id?[p.command.itemId]:[]));
  const drafts=state.snapshot?.checks.filter(c=>c.targetDay===day&&c.stage==='draft')??[];
  const grouping=useCollapsedGroups(state.snapshot?.accountId??'pending','morning',check?.id??day);
  const renderRows=(rows:typeof tasks)=>rows.map(t=><StockRow state={state} kind="ready" itemId={t.itemId} className={'morning-row'+(t.ready&&t.mappingValid?' is-ready':'')+(!t.mappingValid?' morning-invalid':'')} key={t.itemId} data-item-id={t.itemId} data-pending={pending.has(t.itemId)}>
-      <button type="button" className="morning-name morning-detail" aria-label={`Details for ${t.name}`} onClick={()=>{if(check)information?.({kind:'source',id:check.id,version:check.version,item:t.itemId});}}>{t.name}{!t.mappingValid&&<small>Catalog link needs review. Use Correct check.</small>}</button>
+      <div className="prep-row-content"><button type="button" className="morning-name morning-detail" aria-label={`Details for ${t.name}`} onClick={()=>{opener.current=document.activeElement as HTMLElement;setSelected(t.itemId);setFeedbackOpen(false);}}>{t.name}{!t.mappingValid&&<small>Catalog link needs review. Use Correct check.</small>}</button><PrepInstructionLine instruction={t.instruction} count={t.feedbackCount} name={t.name} onDetails={()=>{opener.current=document.activeElement as HTMLElement;setSelected(t.itemId);setFeedbackOpen(false);}} onComments={()=>{opener.current=document.activeElement as HTMLElement;setSelected(t.itemId);setFeedbackOpen(true);}}/></div>
       <div className="morning-control"><Checkbox className="morning-toggle" checked={t.ready&&t.mappingValid} disabled={readyBlocked(state,t.itemId)||!t.mappingValid} aria-label={`Ready: ${t.name}`} aria-describedby="stock-save-status" onCheckedChange={()=>onReady(t.itemId)}/></div>
      </StockRow>);
- return <div className="morning-list">
+ const selectedTask=tasks.find(t=>t.itemId===selected);
+ return <div className="morning-list"><Dialog open={!!selectedTask} onOpenChange={open=>{if(!open)setSelected(null);}}><DialogContent className="prep-service-dialog" onCloseAutoFocus={e=>{e.preventDefault();if(opener.current?.isConnected)opener.current.focus({preventScroll:true});}}><DialogHeader><DialogTitle>{selectedTask?.name??'Preparation details'}</DialogTitle><DialogDescription>Instruction and optional feedback for this morning.</DialogDescription></DialogHeader>{selectedTask&&check&&<><ServiceFeedback key={`${check.id}:${selectedTask.itemId}:${selectedTask.catalogId}:${check.version}`} context={noteContext(check.id,check.version,selectedTask,'morning')} instruction={selectedTask.instruction} count={selectedTask.feedbackCount} expanded={feedbackOpen}/><Button variant="outline" onClick={()=>{setSelected(null);information?.({kind:'source',id:check.id,version:check.version,item:selectedTask.itemId});}}>View confirmed evening answer</Button></>}</DialogContent></Dialog>
   <div className="evening-meta"><strong>{displayDay(check?.targetDay??day)}</strong>{check&&check.version>0&&<span>{ready} ready · {remaining} remaining</span>}</div>
   {check&&check.version>0&&<StockProgress key={`${state.snapshot?.accountId}:${check.id}`} value={ready} total={tasks.length} label="Morning items marked ready"/>}
   {!check&&state.snapshot&&!state.loading&&!state.error&&<div className="empty-panel"><h2>{drafts.length?'Evening check is still in progress':state.snapshot.trackedCount===0?'No items selected for checking':'No confirmed evening check for this date'}</h2><p>{drafts.length?'Continue the existing evening check to create Morning prep.':state.snapshot.trackedCount===0?(onManage?'Choose items in Manage list, then finish an evening check to create Morning prep.':'Ask the owner to select items, then finish an evening check to create Morning prep.'):'Morning prep will appear after an evening check for this date is confirmed.'}</p>{!drafts.length&&state.snapshot.trackedCount===0&&onManage&&<Button onClick={onManage}>Choose items in Manage list</Button>}{drafts.map(c=><Button key={c.id} onClick={()=>onContinue(c.id)}>Continue check · {displayDay(c.id)}</Button>)}</div>}

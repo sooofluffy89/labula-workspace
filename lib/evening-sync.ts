@@ -10,12 +10,13 @@ export function mergeEveningSnapshot(current:EveningSnapshot|null,next:EveningSn
  const a=current.check,b=next.check;
  if(!a||!b)return next;
  if(a.revision>b.revision||a.planRevision>b.planRevision)return current;
- return next;
+ const counts=<T extends {itemId:string;catalogId:string;feedbackCount?:number}>(old:T[],rows:T[])=>rows.map(r=>({...r,feedbackCount:Math.max(r.feedbackCount??0,old.find(o=>o.itemId===r.itemId&&o.catalogId===r.catalogId)?.feedbackCount??0)}));
+ return {...next,check:{...b,answers:counts(a.answers,b.answers),tasks:counts(a.tasks,b.tasks)}};
 }
 export function applyEveningDelta(snapshot:EveningSnapshot,delta:EveningDelta):EveningSnapshot{
  const current=snapshot.check,next=delta.check;
  if(delta.reset||!current||!next||current.id!==next.id)return snapshot;
- const merge=<T extends {itemId:string;revision:number;mappingValid:boolean}>(rows:T[],updates:T[])=>rows.map(row=>{const update=updates.find(x=>x.itemId===row.itemId);return update&&update.revision>=row.revision?{...update,mappingValid:row.mappingValid,...('currentName' in row?{currentName:row.currentName}:{})}:row;});
+ const merge=<T extends {itemId:string;revision:number;mappingValid:boolean;feedbackCount?:number;catalogId?:string}>(rows:T[],updates:T[])=>rows.map(row=>{const update=updates.find(x=>x.itemId===row.itemId);return update&&update.revision>=row.revision?{...update,feedbackCount:row.catalogId===update.catalogId?Math.max(row.feedbackCount??0,update.feedbackCount??0):update.feedbackCount,mappingValid:row.mappingValid,...('currentName' in row?{currentName:row.currentName}:{})}:row;});
  const header=next.revision>=current.revision&&next.planRevision>=current.planRevision?next:current;
  return {...snapshot,sync:{version:1,cursor:delta.cursor},checks:snapshot.checks.map(c=>c.id===next.id?{...c,...header}:c),check:{...current,...header,answers:merge(current.answers,delta.answers),tasks:merge(current.tasks,delta.tasks)}};
 }

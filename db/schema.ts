@@ -56,13 +56,13 @@ export const eveningChecks=sqliteTable('evening_checks',{
  id:text('id').primaryKey(),calendarRevision:integer('calendar_revision'),targetDay:text('target_day').notNull(),planDay:text('plan_day').unique(),stage:text('stage').notNull(),revision:integer('revision').notNull(),planRevision:integer('plan_revision').notNull(),version:integer('version').notNull(),startOperation:text('start_operation').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),updatedAt:text('updated_at').notNull(),confirmedAt:text('confirmed_at'),confirmedBy:text('confirmed_by'),grouped:integer('grouped').notNull().default(0),roundsVersion:integer('rounds_version').notNull().default(0),
 });
 export const eveningAnswers=sqliteTable('evening_answers',{
- checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),value:text('value'),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),firstActor:text('first_actor'),firstDevice:text('first_device'),firstSequence:integer('first_sequence'),supersededBy:text('superseded_by'),groupId:text('group_id'),roundSnapshot:text('round_snapshot'),
+ checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),value:text('value'),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),firstActor:text('first_actor'),firstDevice:text('first_device'),firstSequence:integer('first_sequence'),supersededBy:text('superseded_by'),groupId:text('group_id'),roundSnapshot:text('round_snapshot'),instructionSnapshot:text('instruction_snapshot'),
 },t=>[primaryKey({columns:[t.checkId,t.itemId]})]);
 export const eveningVersions=sqliteTable('evening_versions',{
  checkId:text('check_id').notNull(),version:integer('version').notNull(),payload:text('payload').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),
 },t=>[primaryKey({columns:[t.checkId,t.version]})]);
 export const morningTasks=sqliteTable('morning_tasks',{
- checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),ready:integer('ready').notNull(),cancelled:integer('cancelled').notNull(),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),groupId:text('group_id'),
+ checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),ready:integer('ready').notNull(),cancelled:integer('cancelled').notNull(),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),groupId:text('group_id'),instructionSnapshot:text('instruction_snapshot'),
 },t=>[primaryKey({columns:[t.checkId,t.itemId]})]);
 export const eveningCommands=sqliteTable('evening_commands',{
  id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),result:text('result').notNull(),applied:integer('applied').notNull(),createdAt:text('created_at').notNull(),
@@ -103,3 +103,17 @@ export const operatingCommands=sqliteTable('operating_commands',{
 export const operatingOutcomes=sqliteTable('operating_outcomes',{
  id:text('id').primaryKey(),checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),version:integer('version').notNull(),outcome:text('outcome').notNull(),note:text('note').notNull(),reportedReadyAt:text('reported_ready_at'),supersedesId:text('supersedes_id'),actorId:text('actor_id').notNull(),actorName:text('actor_name').notNull(),createdAt:text('created_at').notNull(),
 },t=>[index('operating_outcomes_task').on(t.checkId,t.itemId,t.createdAt)]);
+
+// Owner guidance and service feedback remain outside Recipe Notebook.
+export const prepInstructions=sqliteTable('prep_instructions',{
+ itemId:text('item_id').primaryKey(),text:text('text').notNull(),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),actorId:text('actor_id').notNull(),
+});
+export const prepInstructionVersions=sqliteTable('prep_instruction_versions',{
+ id:text('id').primaryKey(),itemId:text('item_id').notNull(),text:text('text').notNull(),revision:integer('revision').notNull(),actorId:text('actor_id').notNull(),actorName:text('actor_name').notNull(),createdAt:text('created_at').notNull(),
+},t=>[uniqueIndex('prep_instruction_revision').on(t.itemId,t.revision)]);
+export const prepNoteCommands=sqliteTable('prep_note_commands',{
+ id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),applied:integer('applied').notNull().default(0),createdAt:text('created_at').notNull(),
+});
+export const prepFeedback=sqliteTable('prep_feedback',{
+ id:text('id').primaryKey(),checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),version:integer('version').notNull(),instructionRevision:integer('instruction_revision'),phase:text('phase').notNull(),text:text('text').notNull(),actorId:text('actor_id').notNull(),actorName:text('actor_name').notNull(),actorEmail:text('actor_email').notNull(),createdAt:text('created_at').notNull(),clientAt:text('client_at'),
+},t=>[index('prep_feedback_service').on(t.checkId,t.itemId,t.catalogId),index('prep_feedback_catalog').on(t.catalogId,t.createdAt,t.id)]);

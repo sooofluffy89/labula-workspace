@@ -18,7 +18,7 @@ export function activityLabel(e:Pick<ActivityEvent,'category'|'action'|'after_va
  const a=JSON.parse(e.after_value??'null');
  if(e.action==='answer')return answerActivityLabel(a?.value);
  if(e.action==='ready')return a?.ready?'Marked Ready':'Undid Ready';
- const labels:Record<string,string>={start:'Started evening check',confirm:'Confirmed evening check',correct:'Reopened check for correction',dates:'Changed morning date',resolve:'Changed catalog link',supersede:'Linked merged item',created:'Task created from check',reopened:'Task reopened by check correction',cancelled:'Task removed by check correction',settings:'Changed stock settings',group:'Changed ingredient group',add:'Added team profile',edit:'Updated team profile',merge:'Catalog merge affected stock',undo:'Catalog undo affected stock'};
+ const labels:Record<string,string>={'prep-instruction':'Changed prep instruction','prep-feedback':'Added service feedback',start:'Started evening check',confirm:'Confirmed evening check',correct:'Reopened check for correction',dates:'Changed morning date',resolve:'Changed catalog link',supersede:'Linked merged item',created:'Task created from check',reopened:'Task reopened by check correction',cancelled:'Task removed by check correction',settings:'Changed stock settings',group:'Changed ingredient group',add:'Added team profile',edit:'Updated team profile',merge:'Catalog merge affected stock',undo:'Catalog undo affected stock'};
  return labels[e.action]??e.action;
 }
 export function csvCell(value:unknown){const text=value==null?'':String(value);return '"'+(/^[\s]*[=+\-@]/.test(text)?"'"+text:text).replaceAll('"','""')+'"';}

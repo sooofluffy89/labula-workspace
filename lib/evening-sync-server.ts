@@ -1,3 +1,4 @@
+import {noteColumns} from './prep-notes-server';
 import {z} from 'zod';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
@@ -32,12 +33,12 @@ export async function readEveningDelta(user:ChatGPTUser,selection:EveningSelecti
  const r=await db.batch([
   db.prepare(syncMetadataSql),db.prepare(`SELECT * FROM evening_checks WHERE ${checkWhere}`).bind(selected),
   db.prepare(eventsSql).bind(cursor.after,bound),
-  db.prepare(`SELECT a.*,1 AS mapping_valid,NULL AS current_name FROM evening_answers a WHERE a.check_id=(SELECT id FROM evening_checks WHERE ${checkWhere}) AND a.item_id IN (${ids}) ORDER BY a.position`).bind(selected,cursor.after,bound),
-  db.prepare(`SELECT a.*,1 AS mapping_valid FROM morning_tasks a WHERE a.check_id=(SELECT id FROM evening_checks WHERE ${checkWhere}) AND a.item_id IN (${ids}) ORDER BY a.position`).bind(selected,cursor.after,bound),
+  db.prepare(`SELECT ${noteColumns('a')},1 AS mapping_valid,NULL AS current_name FROM evening_answers a WHERE a.check_id=(SELECT id FROM evening_checks WHERE ${checkWhere}) AND a.item_id IN (${ids}) ORDER BY a.position`).bind(selected,cursor.after,bound),
+  db.prepare(`SELECT ${noteColumns('a')},1 AS mapping_valid FROM morning_tasks a WHERE a.check_id=(SELECT id FROM evening_checks WHERE ${checkWhere}) AND a.item_id IN (${ids}) ORDER BY a.position`).bind(selected,cursor.after,bound),
  ]);
  const meta=r[0].results[0] as Metadata,row=r[1].results[0] as CheckRow|undefined,events=r[2].results as {seq:number;check_id:string;item_id:string|null;action:string;category:string}[];
  const through=cursor.through??meta.through,last=events.at(-1)?.seq??through,more=events.length===pageSize&&last<through;
- const reset=cursor.after>meta.through||cursor.notebook!==meta.notebook||cursor.rounds!==meta.rounds||cursor.calendar!==meta.calendar||events.some(e=>!['answer','ready'].includes(e.action));
+ const reset=cursor.after>meta.through||cursor.notebook!==meta.notebook||cursor.rounds!==meta.rounds||cursor.calendar!==meta.calendar||events.some(e=>!['answer','ready','prep-feedback','prep-instruction'].includes(e.action));
  const next={...cursor,after:more?last:through,through:more?through:null};
  // Catalog changes force a complete read; unchanged catalog means existing mapping/name data stay valid.
  return {accountId:user.userId,account:user.email,cursor:JSON.stringify(next),reset,more,check:row?summary(row):null,answers:(r[3].results as AnswerRow[]).map(a=>answerView(a)),tasks:(r[4].results as TaskRow[]).map(t=>taskView(t))};
@@ -70,7 +71,7 @@ export async function eveningBatch(user:ChatGPTUser,raw:unknown):Promise<Evening
   priorByItem.set(c.kind+':'+c.checkId+':'+c.itemId,[...prior,c]);
  }
  const changesIndex=statements.length,checkId=commands[0].checkId,itemIds=JSON.stringify(commands.map(c=>c.itemId));
- statements.push(db.prepare('SELECT * FROM evening_checks WHERE id=?').bind(checkId),db.prepare('SELECT * FROM evening_answers WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))').bind(checkId,itemIds),db.prepare('SELECT * FROM morning_tasks WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))').bind(checkId,itemIds));
+ statements.push(db.prepare('SELECT * FROM evening_checks WHERE id=?').bind(checkId),db.prepare(`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))`).bind(checkId,itemIds),db.prepare(`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))`).bind(checkId,itemIds));
  // A technical failure rolls back the whole D1 transaction. Logical CAS failures are per command.
  const r=await db.batch(statements),blocked=new Set<string>();
  const results:BatchResult[]=commands.map((c,i)=>{

@@ -50,7 +50,7 @@ export async function readInformation(user:ChatGPTUser,target:InformationTarget)
   const saved=JSON.parse(row.payload) as {targetDay:string;answers:SourceInformation['answers']};
   if(!Array.isArray(saved.answers))throw new RequestError('Answers were not recorded in this historical version.',404);
   if(target.item&&!saved.answers.some(a=>a.itemId===target.item))throw new RequestError('This item is not in the selected confirmed check version.',404);
-  return {kind:'source',id:target.id,version:row.version,targetDay:saved.targetDay,confirmedAt:row.created_at,confirmedBy:row.created_by,answers:saved.answers.map(a=>({itemId:a.itemId,catalogId:a.catalogId,name:a.name,kind:a.kind,value:a.value,updatedAt:a.updatedAt,updatedBy:a.updatedBy,supersededBy:a.supersededBy??null,groupId:validGroup(a.groupId),round:a.round??null})),latestVersion:current.version,correcting:current.stage==='draft',item:target.item};
+  return {kind:'source',id:target.id,version:row.version,targetDay:saved.targetDay,confirmedAt:row.created_at,confirmedBy:row.created_by,answers:saved.answers.map(a=>({itemId:a.itemId,catalogId:a.catalogId,name:a.name,kind:a.kind,value:a.value,updatedAt:a.updatedAt,updatedBy:a.updatedBy,supersededBy:a.supersededBy??null,groupId:validGroup(a.groupId),round:a.round??null,instruction:a.instruction??null,feedbackCount:a.feedbackCount??0})),latestVersion:current.version,correcting:current.stage==='draft',item:target.item};
  }
  if(target.kind==='review')return readReview(target.id);
  if(target.kind==='history')throw new RequestError('Use the filtered activity view.');

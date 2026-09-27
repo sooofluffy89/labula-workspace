@@ -1,3 +1,4 @@
+import {instructionSnapshotSql,noteColumns} from './prep-notes-server';
 import {initialSyncCursor,syncMetadataSql} from './evening-sync-server';
 import {readCalendarVersions,validateTarget} from './calendar-server';
 import {readPlanning} from './round-store';
@@ -12,7 +13,7 @@ import {dateSchema,eveningCommandSchema,operationalDay,type CheckSummary,type Ch
 import {validGroup} from './ingredient-groups';
 
 export type CheckRow={calendar_revision:number|null;id:string;target_day:string;plan_day:string|null;stage:'draft'|'confirmed';revision:number;plan_revision:number;version:number;confirmed_at:string|null;confirmed_by:string|null;grouped:number;rounds_version:number};
-export type AnswerRow={check_id:string;item_id:string;catalog_id:string;name:string;kind:'bought'|'prep';position:number;value:'have'|'missing'|null;revision:number;updated_at:string;updated_by:string;first_actor:string|null;first_device:string|null;first_sequence:number|null;superseded_by:string|null;group_id:string|null;round_snapshot:string|null};
+export type AnswerRow={instruction_snapshot?:string|null;feedback_count?:number;check_id:string;item_id:string;catalog_id:string;name:string;kind:'bought'|'prep';position:number;value:'have'|'missing'|null;revision:number;updated_at:string;updated_by:string;first_actor:string|null;first_device:string|null;first_sequence:number|null;superseded_by:string|null;group_id:string|null;round_snapshot:string|null};
 export type TaskRow=Omit<AnswerRow,'value'|'first_actor'|'first_device'|'first_sequence'|'superseded_by'>&{ready:number;cancelled:number};
 type Receipt={id:string;actor_id:string;request:string;result:string;applied:number};
 export const summary=(r:CheckRow):CheckSummary=>({calendarRevision:r.calendar_revision,roundsVersion:r.rounds_version,id:r.id,targetDay:r.target_day,stage:r.stage,revision:r.revision,planRevision:r.plan_revision,version:r.version,confirmedAt:r.confirmed_at,confirmedBy:r.confirmed_by});
@@ -23,8 +24,8 @@ export async function readEvening(user:ChatGPTUser,selection:EveningSelection={d
  const results=await db.batch([
   db.prepare("SELECT payload,revision FROM notebooks WHERE id='kitchen'"),
   db.prepare('SELECT * FROM evening_checks ORDER BY id DESC'),
-  db.prepare('day' in selection?'SELECT * FROM evening_answers WHERE check_id=? ORDER BY position':'SELECT a.* FROM evening_answers a JOIN evening_checks c ON c.id=a.check_id WHERE c.plan_day=? ORDER BY a.position').bind(selected),
-  db.prepare('day' in selection?'SELECT * FROM morning_tasks WHERE check_id=? ORDER BY position':'SELECT t.* FROM morning_tasks t JOIN evening_checks c ON c.id=t.check_id WHERE c.plan_day=? ORDER BY t.position').bind(selected),
+  db.prepare('day' in selection?`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? ORDER BY position`:`SELECT ${noteColumns('a')} FROM evening_answers a JOIN evening_checks c ON c.id=a.check_id WHERE c.plan_day=? ORDER BY a.position`).bind(selected),
+  db.prepare('day' in selection?`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? ORDER BY position`:`SELECT ${noteColumns('a')} FROM morning_tasks a JOIN evening_checks c ON c.id=a.check_id WHERE c.plan_day=? ORDER BY a.position`).bind(selected),
   db.prepare('SELECT item_id FROM stock_items WHERE included=1 AND track=1'),
   db.prepare('SELECT check_id,catalog_id,superseded_by FROM evening_answers'),
   db.prepare(syncMetadataSql),
@@ -35,7 +36,7 @@ export async function readEvening(user:ChatGPTUser,selection:EveningSelection={d
  const tasks=(results[3].results as TaskRow[]).map(t=>taskView(t,byId));
  const planning=await readPlanning(selected),calendar=await readCalendarVersions();
  const summaries=checks.map(c=>{const base=summary(c);if(c.stage==='draft'&&c.version===0){const originals=(results[5].results as AnswerRow[]).filter(a=>a.check_id===c.id&&!a.superseded_by);if(originals.length&&originals.every(a=>(planning.coverage.get(a.catalog_id)??'')>c.id))base.coveredBy=originals.map(a=>planning.coverage.get(a.catalog_id)!).sort().at(-1)!;}return base;});
- return {sync:{version:1,cursor:initialSyncCursor(user,selection,results[6].results[0] as {through:number;notebook:number;rounds:number;calendar:number})},calendar:{versions:calendar,revision:Math.max(0,...calendar.map(v=>v.revision)),accountId:user.userId,isOwner:false},planning:{day:selected,revision:planning.revision,dueCount:planning.due.length,rounds:planning.rounds,items:planning.items},scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:notebook.revision,catalog,trackedCount:(results[4].results as {item_id:string}[]).filter(s=>byId.has(s.item_id)).length,checks:summaries,check:row?{...summaries.find(s=>s.id===row.id)!,answers,tasks,grouped:!!row.grouped}:null};
+ return {prepNotes:1,sync:{version:1,cursor:initialSyncCursor(user,selection,results[6].results[0] as {through:number;notebook:number;rounds:number;calendar:number})},calendar:{versions:calendar,revision:Math.max(0,...calendar.map(v=>v.revision)),accountId:user.userId,isOwner:false},planning:{day:selected,revision:planning.revision,dueCount:planning.due.length,rounds:planning.rounds,items:planning.items},scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:notebook.revision,catalog,trackedCount:(results[4].results as {item_id:string}[]).filter(s=>byId.has(s.item_id)).length,checks:summaries,check:row?{...summaries.find(s=>s.id===row.id)!,answers,tasks,grouped:!!row.grouped}:null};
 }
 
 export async function eveningCommand(user:ChatGPTUser,raw:unknown){
@@ -68,8 +69,8 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
    condition+=" AND EXISTS(SELECT 1 FROM evening_checks WHERE id=? AND stage='draft' AND revision=?)";conditionArgs.push(checkId,c.revision);
    updateCheck('revision=revision+1',[]);
   }
-  writes.push(db.prepare(`INSERT INTO evening_answers(check_id,item_id,catalog_id,name,kind,position,value,revision,updated_at,updated_by,group_id,round_snapshot)
-   SELECT ?,json_extract(j.value,'$.itemId'),json_extract(j.value,'$.itemId'),json_extract(j.value,'$.name'),json_extract(j.value,'$.kind'),json_extract(j.value,'$.position'),NULL,0,?,?,json_extract(j.value,'$.groupId'),json_extract(j.value,'$.round') FROM json_each(?) j
+  writes.push(db.prepare(`INSERT INTO evening_answers(check_id,item_id,catalog_id,name,kind,position,value,revision,updated_at,updated_by,group_id,round_snapshot,instruction_snapshot)
+   SELECT ?,json_extract(j.value,'$.itemId'),json_extract(j.value,'$.itemId'),json_extract(j.value,'$.name'),json_extract(j.value,'$.kind'),json_extract(j.value,'$.position'),NULL,0,?,?,json_extract(j.value,'$.groupId'),json_extract(j.value,'$.round'),${instructionSnapshotSql("json_extract(j.value,'$.itemId')")} FROM json_each(?) j
    WHERE ${c.kind==='start'?'EXISTS(SELECT 1 FROM evening_checks WHERE id=? AND start_operation=?) AND ':''}${gate} ON CONFLICT(check_id,item_id) DO NOTHING`).bind(checkId,now,user.email,JSON.stringify(roster),...(c.kind==='start'?[checkId,c.id]:[]),...args));
  }else if(c.kind==='answer'||c.kind==='resolve'){
   condition="EXISTS (SELECT 1 FROM evening_checks c JOIN evening_answers a ON a.check_id=c.id WHERE c.id=? AND c.stage='draft' AND c.version=? AND a.item_id=? AND a.revision=?)";conditionArgs=[checkId,c.generation,c.itemId,c.revision];
@@ -81,7 +82,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
    const item=snapshot.catalog.find(i=>i.id===c.catalogId),old=check!.answers.find(a=>a.itemId===c.itemId);
    if(!item||!old||item.kind!==old.kind)throw conflict('Choose an existing catalog item of the same type.','mapping_conflict');
    condition+=" AND EXISTS (SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') j WHERE n.id='kitchen' AND json_extract(j.value,'$.id')=? AND json_extract(j.value,'$.kind')=?) AND NOT EXISTS (SELECT 1 FROM evening_answers WHERE check_id=? AND item_id!=? AND catalog_id=?)";conditionArgs.push(c.catalogId,old.kind,checkId,c.itemId,c.catalogId);
-   writes.push(db.prepare(`UPDATE evening_answers SET catalog_id=?,group_id=(SELECT group_id FROM stock_items WHERE item_id=?),round_snapshot=NULL,superseded_by=NULL,value=NULL,revision=revision+1,updated_at=?,updated_by=? WHERE check_id=? AND item_id=? AND ${gate}`).bind(c.catalogId,c.catalogId,now,user.email,checkId,c.itemId,...args));
+   writes.push(db.prepare(`UPDATE evening_answers SET instruction_snapshot=${instructionSnapshotSql('?')},catalog_id=?,group_id=(SELECT group_id FROM stock_items WHERE item_id=?),round_snapshot=NULL,superseded_by=NULL,value=NULL,revision=revision+1,updated_at=?,updated_by=? WHERE check_id=? AND item_id=? AND ${gate}`).bind(c.catalogId,c.catalogId,c.catalogId,c.catalogId,c.catalogId,now,user.email,checkId,c.itemId,...args));
   }
   updateCheck('revision=revision+1',[]);
  }else if(c.kind==='supersede'){
@@ -116,9 +117,9 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
   const payload=JSON.stringify({calendarRevision:check!.calendarRevision??null,checkId,targetDay:check!.targetDay,answers:check!.answers,priorTasks:check!.tasks,actor:user.email,confirmedAt:now});
   writes.push(db.prepare(`INSERT INTO evening_versions (check_id,version,payload,created_at,created_by) SELECT ?,version+1,?,?,? FROM evening_checks WHERE id=? AND ${gate}`).bind(checkId,payload,now,user.email,checkId,...args));
   // Existing unchanged Missing rows retain Ready and its authorship. Cancelled/re-mapped rows reopen.
-  writes.push(db.prepare(`INSERT INTO morning_tasks (check_id,item_id,catalog_id,name,kind,position,ready,cancelled,revision,updated_at,updated_by,group_id)
-   SELECT check_id,item_id,catalog_id,name,kind,position,0,0,0,?,?,group_id FROM evening_answers WHERE check_id=? AND value='missing' AND ${gate}
-   ON CONFLICT(check_id,item_id) DO UPDATE SET catalog_id=excluded.catalog_id,group_id=excluded.group_id,ready=0,cancelled=0,revision=morning_tasks.revision+1,updated_at=excluded.updated_at,updated_by=excluded.updated_by
+  writes.push(db.prepare(`INSERT INTO morning_tasks (check_id,item_id,catalog_id,name,kind,position,ready,cancelled,revision,updated_at,updated_by,group_id,instruction_snapshot)
+   SELECT check_id,item_id,catalog_id,name,kind,position,0,0,0,?,?,group_id,instruction_snapshot FROM evening_answers WHERE check_id=? AND value='missing' AND ${gate}
+   ON CONFLICT(check_id,item_id) DO UPDATE SET catalog_id=excluded.catalog_id,instruction_snapshot=excluded.instruction_snapshot,group_id=excluded.group_id,ready=0,cancelled=0,revision=morning_tasks.revision+1,updated_at=excluded.updated_at,updated_by=excluded.updated_by
    WHERE morning_tasks.cancelled=1 OR morning_tasks.catalog_id!=excluded.catalog_id`).bind(now,user.email,checkId,...args));
   writes.push(db.prepare(`UPDATE morning_tasks SET cancelled=1,revision=revision+1,updated_at=?,updated_by=? WHERE check_id=? AND cancelled=0 AND item_id IN (SELECT item_id FROM evening_answers WHERE check_id=? AND value='have') AND ${gate}`).bind(now,user.email,checkId,checkId,...args));
   writes.push(db.prepare(`UPDATE round_state SET revision=revision+1 WHERE id='kitchen' AND ${gate}`).bind(...args));
@@ -132,8 +133,8 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  throw conflict(c.kind==='confirm'?'Answers, morning tasks or the catalog changed. Refresh the summary and confirm again.':undefined);
 }
 
-export function answerView(a:AnswerRow,byId?:Map<string,{name:string;kind:string}>):CheckAnswer{return {itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||!byId||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId?.get(a.catalog_id)?.name??null,groupId:validGroup(a.group_id),round:a.round_snapshot?JSON.parse(a.round_snapshot):null};}
-export function taskView(t:TaskRow,byId?:Map<string,{name:string;kind:string}>):MorningTask{return {itemId:t.item_id,catalogId:t.catalog_id,name:t.name,kind:t.kind,position:t.position,ready:!!t.ready,cancelled:!!t.cancelled,revision:t.revision,updatedAt:t.updated_at,updatedBy:t.updated_by,mappingValid:!byId||byId.get(t.catalog_id)?.kind===t.kind,groupId:validGroup(t.group_id)};}
+export function answerView(a:AnswerRow,byId?:Map<string,{name:string;kind:string}>):CheckAnswer{return {instruction:a.instruction_snapshot?JSON.parse(a.instruction_snapshot):null,feedbackCount:a.feedback_count??0,itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||!byId||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId?.get(a.catalog_id)?.name??null,groupId:validGroup(a.group_id),round:a.round_snapshot?JSON.parse(a.round_snapshot):null};}
+export function taskView(t:TaskRow,byId?:Map<string,{name:string;kind:string}>):MorningTask{return {instruction:t.instruction_snapshot?JSON.parse(t.instruction_snapshot):null,feedbackCount:t.feedback_count??0,itemId:t.item_id,catalogId:t.catalog_id,name:t.name,kind:t.kind,position:t.position,ready:!!t.ready,cancelled:!!t.cancelled,revision:t.revision,updatedAt:t.updated_at,updatedBy:t.updated_by,mappingValid:!byId||byId.get(t.catalog_id)?.kind===t.kind,groupId:validGroup(t.group_id)};}
 
 // Confirmation needs the selected answers/tasks, catalog links and competing target,
 // not bootstrap, all historical answers, round coverage or preparation profiles.
@@ -141,8 +142,8 @@ async function readConfirmation(user:ChatGPTUser,day:string):Promise<EveningSnap
  const db=getRawDb(),r=await db.batch([
   db.prepare("SELECT revision,(SELECT json_group_array(json_object('id',json_extract(j.value,'$.id'),'name',json_extract(j.value,'$.name'),'kind',json_extract(j.value,'$.kind'))) FROM json_each(n.payload,'$.items') j) AS catalog FROM notebooks n WHERE id='kitchen'"),
   db.prepare('SELECT * FROM evening_checks WHERE id=? OR plan_day=(SELECT target_day FROM evening_checks WHERE id=?)').bind(day,day),
-  db.prepare('SELECT * FROM evening_answers WHERE check_id=? ORDER BY position').bind(day),
-  db.prepare('SELECT * FROM morning_tasks WHERE check_id=? ORDER BY position').bind(day),
+  db.prepare(`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? ORDER BY position`).bind(day),
+  db.prepare(`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? ORDER BY position`).bind(day),
  ]);
  const n=r[0].results[0] as {revision:number;catalog:string},rows=r[1].results as CheckRow[],row=rows.find(c=>c.id===day),catalog=JSON.parse(n.catalog) as EveningSnapshot['catalog'],byId=new Map(catalog.map(i=>[i.id,i]));
  return {scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:n.revision,catalog,trackedCount:0,checks:rows.map(summary),check:row?{...summary(row),grouped:!!row.grouped,answers:(r[2].results as AnswerRow[]).map(a=>answerView(a,byId)),tasks:(r[3].results as TaskRow[]).map(t=>taskView(t,byId))}:null};

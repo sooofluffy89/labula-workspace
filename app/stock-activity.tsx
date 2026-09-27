@@ -11,7 +11,7 @@ import {activityLabel,activityTime,csvCell,type ActivityEvent,type ActivityPage,
 const parseState=(value:string|null)=>value?JSON.parse(value):null;
 function SavedState({value}:{value:string|null}){
  const state=parseState(value);if(state==null)return <span>—</span>;
- const labels:Record<string,string>={value:'Answer',ready:'Ready',cancelled:'Removed from plan',included:'In stock list',track:'Track',groupId:'Practical group',active:'Stock edits enabled',name:'Kitchen name',stage:'Check',targetDay:'Morning date',version:'Confirmed version'};
+ const labels:Record<string,string>={text:'Text',instructionRevision:'Instruction revision',value:'Answer',ready:'Ready',cancelled:'Removed from plan',included:'In stock list',track:'Track',groupId:'Practical group',active:'Stock edits enabled',name:'Kitchen name',stage:'Check',targetDay:'Morning date',version:'Confirmed version'};
  return <span>{Object.entries(state).filter(([key])=>key in labels).map(([key,v])=>`${labels[key]}: ${key==='groupId'?groupLabel(typeof v==='string'?v:null):v===null?'Unchecked':key==='value'?historicalAnswerLabel(v):['ready','cancelled','included','track','active'].includes(key)?(v?'Yes':'No'):String(v)}`).join(' · ')||'Catalog link updated'}</span>;
 }
 
