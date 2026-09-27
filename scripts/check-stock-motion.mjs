@@ -38,7 +38,7 @@ try{
   const res=await m.api.GET(new Request('http://test.local'+url));return {res,body:await res.json()};
  };
  const waitRelease=async()=>{for(let i=0;!release&&i<100;i++)await new Promise(r=>setImmediate(r));assert.ok(release)};
- const makeClient=()=>new m.EveningController(chef.email,storage,{morningDay:'2026-09-24'},adapter);
+ const makeClient=()=>new m.EveningController(chef.email,storage,{morningDay:'2026-09-24'},adapter,false);
  let client=makeClient();await client.refresh();const ids=client.state.snapshot.check.tasks.map(t=>t.itemId);
 
  const feedback=(id=ids[0])=>m.rowFeedback(client.state,'ready',id);

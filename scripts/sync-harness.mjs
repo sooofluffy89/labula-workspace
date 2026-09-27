@@ -1,0 +1,34 @@
+import {build} from 'esbuild';
+import {mkdtemp,readFile,writeFile,readdir} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {DatabaseSync} from 'node:sqlite';
+export const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+export async function harness({httpDelay=0,sqlDelay=0,bundlePath=null,saturday=false}={}){
+ const dir=await mkdtemp(tmpdir()+'/labula-sync-');
+ const db=new DatabaseSync(':memory:');
+ for(const f of(await readdir('drizzle')).filter(f=>f.endsWith('.sql')).sort())db.exec(await readFile('drizzle/'+f,'utf8'));
+ const metrics={http:0,bytes:0,trips:0,queries:0,rows:0,receipts:[],commits:[]};let failSql=null;
+ const stmt=(sql,args=[])=>({sql,args,bind(...v){return stmt(sql,v)},async first(){metrics.trips++;if(sqlDelay)await sleep(sqlDelay);return this.exec().results[0]??null},async all(){metrics.trips++;if(sqlDelay)await sleep(sqlDelay);return this.exec()},async run(){return this.all()},exec(){metrics.queries++;if(failSql?.(sql)){failSql=null;throw Error('Synthetic transaction failure')}const q=db.prepare(sql);const r=q.columns().length?{results:q.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(q.run(...args).changes)}};metrics.rows+=r.results.length;return r;}});
+ globalThis.syncDb={prepare:stmt,async batch(ss){metrics.trips++;if(sqlDelay)await sleep(sqlDelay);db.exec('BEGIN');try{const r=ss.map(s=>s.exec());db.exec('COMMIT');const ids=ss.flatMap((s,i)=>/^INSERT INTO evening_commands/.test(s.sql)&&r[i].meta.changes?[s.args[0]]:[]);if(ids.length)metrics.commits.push({at:performance.now(),ids});return r}catch(e){db.exec('ROLLBACK');throw e}}};
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.syncDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.syncUser;');
+ const hasSync=(await readdir('lib')).includes('evening-sync-server.ts');
+ const path=bundlePath??dir+'/test.mjs';
+ if(!bundlePath)await build({stdin:{contents:`export * as api from './app/api/evening/route';export * as stock from './app/api/stock/route';export * from './lib/notebook';export * from './lib/evening-client';export * from './lib/evening';${hasSync?"export * as sync from './app/api/evening/sync/route';export * as batch from './app/api/evening/batch/route';":''}`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:path,alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
+ const m=await import(path+'?'+crypto.randomUUID()),owner={userId:'owner',email:'jan@bananasport.cz'},cook={userId:'cook',email:'cook@example.test'};globalThis.syncUser=owner;
+ const post=(api,c)=>api.POST(new Request('http://test.local/api',{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':'0'},body:JSON.stringify(c)}));
+ const command=c=>({id:crypto.randomUUID(),scope:'kitchen',actorId:globalThis.syncUser.userId,...c});
+ const send=async c=>{const r=await post(m.api,command(c)),b=await r.json();if(!r.ok)throw Error(JSON.stringify(b));return b.snapshot};
+ await m.stock.GET();const n=m.initialNotebook();n.items=Array.from({length:80},(_,i)=>({...m.newItem('Synthetic '+String(i).padStart(2,'0'),i%2?'bought':'prep'),id:'item-'+i}));db.prepare("UPDATE notebooks SET payload=?,revision=1 WHERE id='kitchen'").run(JSON.stringify(n));await m.stock.GET();db.prepare('UPDATE stock_items SET track=1,revision=revision+1').run();
+ db.prepare("INSERT INTO kitchen_team(id,user_id,email,name,access_role,active,revision,created_at) VALUES('cook','cook','cook@example.test','Synthetic Cook','cook',1,0,?)").run(new Date().toISOString());
+ if(saturday){
+  db.prepare("UPDATE check_rounds SET days='[3,6]' WHERE id='twice-weekly'").run();db.prepare("UPDATE check_rounds SET days='[6]' WHERE id='weekly'").run();
+  for(let i=40;i<80;i++)db.prepare("UPDATE stock_items SET round_revision=round_revision+1,round_id=?,round_source='owner:synthetic' WHERE item_id=?").run(i<60?'twice-weekly':'weekly','item-'+i);
+  db.prepare("UPDATE round_state SET activated_at='2026-09-20T12:00:00.000Z'").run();
+  db.prepare("UPDATE round_timeline SET recorded_at='2026-09-20T12:00:00.000Z'").run();
+ }
+ const day='2026-09-26',targetDay='2026-09-27';await send({kind:'start',day,targetDay});
+ const storage=()=>{const records=new Map();return{records,get length(){return records.size},key:i=>[...records.keys()][i],getItem:k=>records.get(k)??null,setItem:(k,v)=>records.set(k,v),removeItem:k=>records.delete(k)}};
+ const requester=async(url,init={})=>{metrics.http++;metrics.bytes+=Buffer.byteLength(init.body??'');if(httpDelay)await sleep(httpDelay/2);const parsed=new URL(url,'http://test.local');const api=parsed.pathname.endsWith('/batch')?m.batch:parsed.pathname.endsWith('/sync')?m.sync:m.api;const res=init.method==='POST'?await post(api,JSON.parse(init.body)):await api.GET(new Request(parsed));const body=await res.json();metrics.bytes+=Buffer.byteLength(JSON.stringify(body));if(init.method==='POST'&&res.ok)metrics.receipts.push({at:performance.now(),kind:JSON.parse(init.body).kind??JSON.parse(init.body).commands?.[0]?.kind,ids:body.results?.filter(r=>r.status==='saved').map(r=>r.operationId)??[body.operationId]});if(httpDelay)await sleep(httpDelay/2);return{res,body};};
+ const reset=()=>{for(const k of Object.keys(metrics))metrics[k]=['receipts','commits'].includes(k)?[]:0;};
+ return{m,db,metrics,owner,cook,day,targetDay,storage,requester,send,post,command,reset,bundle:path,fail:fn=>{failSql=fn}};
+}

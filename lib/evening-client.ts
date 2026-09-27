@@ -1,21 +1,22 @@
 import {requestJson} from './request-json';
+import {EVENING_BATCH_LIMIT,applyEveningDelta,mergeEveningSnapshot,type EveningBatchReply,type EveningDelta} from './evening-sync';
 import {eveningCommandSchema,selectionQuery,type EveningCommand,type EveningSelection,type EveningSnapshot,type Availability} from './evening';
 
 type Storage=Pick<globalThis.Storage,'length'|'key'|'getItem'|'setItem'|'removeItem'>;
 type Requester=(url:string,init?:RequestInit)=>Promise<{res:Response;body:unknown}>;
 export type PendingEvening={accountId:string;account:string;command:EveningCommand;created:number;sent:boolean;rejected:boolean};
 export type SaveReceipt={accountId:string;command:EveningCommand};
-export type EveningState={snapshot:EveningSnapshot|null;pending:PendingEvening[];loading:boolean;saving:boolean;error:string;unauthorized:boolean;notice:string;errorKind?:'network'|'conflict'|'blocked';recoveryBlocked?:boolean;lastVerifiedAt?:number;freshnessError?:string;refreshing?:boolean;conflictReview?:string|null;acknowledged?:Record<string,SaveReceipt>;settledSave?:SaveReceipt|null};
+export type EveningState={snapshot:EveningSnapshot|null;pending:PendingEvening[];loading:boolean;saving:boolean;error:string;unauthorized:boolean;notice:string;finishing?:boolean;finishPhase?:'saving'|'summary'|'publishing';errorKind?:'network'|'conflict'|'blocked';recoveryBlocked?:boolean;lastVerifiedAt?:number;freshnessError?:string;refreshing?:boolean;conflictReview?:string|null;acknowledged?:Record<string,SaveReceipt>;settledSave?:SaveReceipt|null};
 type Resolution={before:string[];next:PendingEvening[]};
 const prefix='labula-evening-v1:';
 export class EveningController {
  state:EveningState={snapshot:null,pending:[],loading:false,saving:false,error:'',unauthorized:false,notice:''};
  private listeners=new Set<()=>void>();private disposed=false;private busy=false;private polling=false;private snapshotSerial=0;private loadedRecovery=false;private accountId='';private deviceId=crypto.randomUUID();private sequence=0;private inflight:Promise<boolean>|null=null;private lastCreated=0;private actionSequence=0;private retryTimer:ReturnType<typeof setTimeout>|null=null;private retryCount=0;
- constructor(private account:string,private storage:Storage,private selection:EveningSelection,private request:Requester=requestJson){}
+ constructor(private account:string,private storage:Storage,private selection:EveningSelection,private request:Requester=requestJson,private fastSync=true){}
  subscribe(fn:()=>void){this.listeners.add(fn);return()=>{this.listeners.delete(fn);};}
  getSnapshot=()=>this.state;
  private emit(patch:Partial<EveningState>){if(this.disposed)return;this.state={...this.state,...patch};for(const f of this.listeners)f();}
- private acceptSnapshot(snapshot:EveningSnapshot){this.snapshotSerial++;this.emit({snapshot,lastVerifiedAt:Date.now(),freshnessError:'',conflictReview:null});}
+ private acceptSnapshot(snapshot:EveningSnapshot){this.snapshotSerial++;this.emit({snapshot:mergeEveningSnapshot(this.state.snapshot,snapshot),lastVerifiedAt:Date.now(),freshnessError:'',conflictReview:null});}
  private conflictFingerprint(snapshot:EveningSnapshot,pending=this.state.pending){const check=snapshot.check;return JSON.stringify({id:check?.id,planRevision:check?.planRevision,notebookRevision:snapshot.notebookRevision,items:pending.filter(p=>p.rejected||p.command.kind==='answer'||p.command.kind==='ready').map(p=>{const c=p.command;if(c.kind==='answer'){const a=check?.answers.find(a=>a.itemId===c.itemId);return [c.itemId,a?.value,a?.revision,a?.mappingValid];}if(c.kind==='ready'){const t=check?.tasks.find(t=>t.itemId===c.itemId);return [c.itemId,t?.ready,t?.revision,t?.cancelled,t?.mappingValid];}return [c.kind];})});}
  dispose(){if(this.retryTimer)clearTimeout(this.retryTimer);this.disposed=true;this.listeners.clear();}
  private accountPrefix(){return prefix+encodeURIComponent(this.accountId)+':kitchen:';}
@@ -61,11 +62,53 @@ export class EveningController {
  }
  // Background reads never replace an accepted local intent or a newer save response.
  async refreshVisible(){
+  if(this.fastSync&&this.state.snapshot?.sync)return this.syncVisible();
   if(this.disposed||this.busy||this.polling||this.state.pending.length||this.state.error||this.state.recoveryBlocked)return false;
   this.polling=true;const serial=this.snapshotSerial,selected=JSON.stringify(this.selection);this.emit({refreshing:true});
   try{const snapshot=await this.read(this.selection,false);if(this.disposed||this.busy||this.state.pending.length||serial!==this.snapshotSerial||selected!==JSON.stringify(this.selection))return false;this.acceptSnapshot(snapshot);return true;}
   catch(e){if(!this.disposed&&!this.busy&&!this.state.pending.length&&serial===this.snapshotSerial)this.emit({freshnessError:e instanceof Error?e.message:'Could not refresh the shared check.'});return false;}
   finally{this.polling=false;this.emit({refreshing:false});}
+ }
+ async syncVisible(force=false){
+  if(this.disposed||this.state.unauthorized||!this.state.snapshot?.sync)return false;
+  if(this.polling){if(!force)return false;while(this.polling&&!this.disposed)await new Promise(r=>setTimeout(r,10));if(this.disposed)return false;}
+  this.polling=true;const selected=JSON.stringify(this.selection),accountId=this.accountId;this.emit({refreshing:true});
+  try{for(let page=0;page<100;page++){
+   const snapshot:EveningSnapshot=this.state.snapshot!;
+   const {res,body}=await this.request('/api/evening/sync?'+selectionQuery(this.selection)+'&cursor='+encodeURIComponent(snapshot.sync!.cursor),{cache:'no-store'});
+   if(this.disposed||selected!==JSON.stringify(this.selection)||accountId!==this.accountId)return false;
+   if(!res.ok){if(res.status===401||res.status===403)this.emit({unauthorized:true,errorKind:'blocked'});throw Error((body as {error?:string}).error??'Shared changes could not be refreshed.');}
+   const delta=body as EveningDelta;
+   if(delta.accountId!==this.accountId||delta.account.toLowerCase()!==this.account.toLowerCase())throw Error('The signed-in account changed. Sign in again.');
+   // A full read or structural write completed while this read was in flight. Start at its new cursor.
+   if(snapshot.sync!.cursor!==this.state.snapshot?.sync?.cursor)continue;
+   if(delta.reset||delta.check?.id!==this.state.snapshot?.check?.id){const fresh=await this.read(this.selection);if(this.disposed||selected!==JSON.stringify(this.selection))return false;this.acceptSnapshot(fresh);return true;}
+   const updated=applyEveningDelta(this.state.snapshot!,delta);this.emit({snapshot:updated,lastVerifiedAt:Date.now(),freshnessError:'',...(this.state.pending.some(p=>p.rejected)?{conflictReview:this.conflictFingerprint(updated)}:{})});
+   if(!delta.more)return true;
+  }throw Error('More shared changes are waiting. Refresh to continue safely.');}
+  catch(e){this.emit({freshnessError:e instanceof Error?e.message:'Could not refresh shared changes.'});return false;}
+  finally{this.polling=false;this.emit({refreshing:false});}
+ }
+ private async sendBatch(){
+  const blocked=new Set<string>(),batch:PendingEvening[]=[];
+  for(const p of this.state.pending){const c=p.command;if(c.kind!=='answer'&&c.kind!=='ready')break;if(p.rejected){blocked.add(c.itemId);continue;}if(blocked.has(c.itemId))continue;if(batch.length&&c.checkId!==(batch[0].command as Extract<EveningCommand,{kind:'answer'}>).checkId)break;batch.push({...p,sent:true});if(batch.length===EVENING_BATCH_LIMIT)break;}
+  if(!batch.length)throw Error('Review the conflicting change before continuing.');
+  for(const p of batch)this.persist(p);
+  const sentIds=new Set(batch.map(p=>p.command.id));this.emit({pending:this.state.pending.map(p=>sentIds.has(p.command.id)?{...p,sent:true}:p)});
+  const {res,body}=await this.request('/api/evening/batch',{method:'POST',headers:{'Content-Type':'application/json','If-Match':'0'},body:JSON.stringify({commands:batch.map(p=>p.command)})}).catch(e=>{if(!this.state.recoveryBlocked&&!this.state.unauthorized)this.emit({errorKind:'network'});throw e;});
+  if(this.disposed)return null;
+  if(!res.ok){this.emit({unauthorized:res.status===401||res.status===403,errorKind:res.status===401||res.status===403?'blocked':'network'});throw Error((body as {error?:string}).error??'Could not confirm these changes. Retry safely.');}
+  const reply=body as EveningBatchReply;
+  if(reply.accountId!==this.accountId||reply.account.toLowerCase()!==this.account.toLowerCase()){this.emit({unauthorized:true,errorKind:'blocked'});throw Error('The signed-in account changed. Return to the original account.');}
+  if(!reply.changes||reply.results?.length!==batch.length||batch.some(p=>!reply.results.some(r=>r.operationId===p.command.id&&r.checkId===(p.command as Extract<EveningCommand,{kind:'answer'}>).checkId&&['saved','conflict','blocked'].includes(r.status))))throw Error('The save response was incomplete. Retry its original requests.');
+  const saved=new Set(reply.results.filter(r=>r.status==='saved').map(r=>r.operationId));
+  for(const p of batch){if(saved.has(p.command.id)){try{this.storage.removeItem(this.key(p));}catch{this.emit({recoveryBlocked:true,errorKind:'blocked'});throw Error('The save succeeded but local receipts could not be cleared. Free storage and retry.');}}else this.persist({...p,rejected:true});}
+  const snapshot=this.state.snapshot!,updated=applyEveningDelta(snapshot,{...reply.changes,account:reply.account,accountId:reply.accountId,cursor:snapshot.sync!.cursor,reset:false,more:false});
+  const acknowledged={...this.state.acknowledged};let last:SaveReceipt|null=null;
+  for(const p of batch)if(saved.has(p.command.id)){last={accountId:this.accountId,command:p.command};acknowledged[p.command.kind+':'+('itemId' in p.command?p.command.itemId:'')]=last;}
+  const pending=this.state.pending.filter(p=>!saved.has(p.command.id)).map(p=>sentIds.has(p.command.id)?{...p,rejected:true}:p);
+  this.emit({snapshot:updated,pending,acknowledged,...(pending.some(p=>p.rejected)?{errorKind:'conflict' as const,error:'Some changes need review. Independent items can still be saved.',conflictReview:this.conflictFingerprint(updated,pending)}:{})});
+  return last;
  }
  // Shared snapshots remain authoritative; pending intents are a separate visible overlay.
  visibleCheck(){return visibleEveningCheck(this.state);}
@@ -77,7 +120,7 @@ export class EveningController {
   try{this.persist(p);}catch{this.emit({errorKind:'blocked',error:'This browser cannot keep a recovery copy. No change was accepted. Free device storage or use another browser.'});return false;}
   this.lastCreated=created;const waiting=this.state.errorKind==='network';this.emit({pending:[...this.state.pending,p],notice:waiting?'Saved on this device — waiting to sync':'',...(waiting||this.state.pending.some(x=>x.rejected)?{}:{error:'',errorKind:undefined}),settledSave:null});if(!waiting)void this.drain();else this.scheduleRetry();return true;
  }
- answer(itemId:string,value:Availability){const check=this.visibleCheck();if(!check||check.stage!=='draft'||this.state.loading||this.state.error||this.state.recoveryBlocked||this.state.pending.some(p=>p.rejected||p.command.kind!=='answer'))return false;const a=check.answers.find(a=>a.itemId===itemId);if(!a||a.value===value)return !!a;return this.enqueue({id:crypto.randomUUID(),scope:'kitchen',actorId:this.accountId,kind:'answer',checkId:check.id,itemId,revision:a.revision,generation:check.version,value,deviceId:this.deviceId,sequence:++this.sequence});}
+ answer(itemId:string,value:Availability){const check=this.visibleCheck();if(!check||check.stage!=='draft'||answerBlocked(this.state,itemId))return false;const a=check.answers.find(a=>a.itemId===itemId);if(!a||a.value===value)return !!a;return this.enqueue({id:crypto.randomUUID(),scope:'kitchen',actorId:this.accountId,kind:'answer',checkId:check.id,itemId,revision:a.revision,generation:check.version,value,deviceId:this.deviceId,sequence:++this.sequence});}
  ready(itemId:string,value:boolean){
   const check=this.visibleCheck();
   if(!check||readyBlocked(this.state,itemId))return false;
@@ -85,19 +128,20 @@ export class EveningController {
   return this.enqueue({id:crypto.randomUUID(),scope:'kitchen',actorId:this.accountId,kind:'ready',checkId:check.id,itemId,revision:task.revision,value});
  }
  toggleReady(itemId:string){const task=this.visibleCheck()?.tasks.find(t=>t.itemId===itemId);return task?this.ready(itemId,!task.ready):false;}
- async action(command:EveningCommand){if(this.busy||this.state.pending.length||this.disposed||this.state.error||this.state.recoveryBlocked)return false;if(!this.enqueue(command))return false;return this.inflight??false;}
+ async action(command:EveningCommand){if(this.busy||this.state.pending.length||this.disposed||this.state.error||this.state.recoveryBlocked||this.state.finishing&&command.kind!=='confirm')return false;if(command.kind==='confirm')this.emit({finishPhase:'publishing'});if(!this.enqueue(command))return false;return this.inflight??false;}
  private scheduleRetry(){if(this.retryTimer||this.retryCount>=3||this.disposed||this.state.unauthorized||!this.state.pending.length)return;const delay=2000*2**this.retryCount++;this.retryTimer=setTimeout(()=>{this.retryTimer=null;void this.retry(false);},delay);}
- private runnable(){const blocked=new Set<string>();for(let i=0;i<this.state.pending.length;i++){const p=this.state.pending[i],c=p.command;if(p.rejected){if(c.kind!=='ready')return -1;blocked.add(c.itemId);continue;}if(c.kind==='ready'&&blocked.has(c.itemId))continue;return i;}return -1;}
+ private runnable(){const blocked=new Set<string>();for(let i=0;i<this.state.pending.length;i++){const p=this.state.pending[i],c=p.command;if(p.rejected){if(c.kind!=='ready'&&c.kind!=='answer')return -1;blocked.add(c.itemId);continue;}if((c.kind==='ready'||c.kind==='answer')&&blocked.has(c.itemId))continue;return i;}return -1;}
  private drain():Promise<boolean>{if(this.inflight)return this.inflight;if(this.disposed||this.busy||this.state.recoveryBlocked||!this.state.pending.length||this.runnable()<0)return Promise.resolve(false);this.inflight=this.run().finally(()=>{this.inflight=null;});return this.inflight;}
  private async run(){let lastReceipt:SaveReceipt|null=null;let succeeded=false;this.busy=true;this.emit({saving:true,...(this.state.pending.some(p=>p.rejected)?{}:{error:'',errorKind:undefined}),unauthorized:false});try{
   while(this.state.pending.length&&!this.disposed){const index=this.runnable();if(index<0)return false;let p=this.state.pending[index];
+   if(this.fastSync&&this.state.snapshot?.sync&&(p.command.kind==='answer'||p.command.kind==='ready')){const receipt=await this.sendBatch();if(receipt)lastReceipt=receipt;continue;}
    if(!p.sent){p={...p,sent:true};this.persist(p);this.emit({pending:this.state.pending.map(x=>x.command.id===p.command.id?p:x)});}
    const {res,body}=await this.request('/api/evening',{method:'POST',headers:{'Content-Type':'application/json','If-Match':'0'},body:JSON.stringify(p.command)}).catch(error=>{if(!this.state.recoveryBlocked&&!this.state.unauthorized)this.emit({errorKind:'network'});throw error;});
    if(this.disposed)return false;
    const reply=body as {operationId?:string;snapshot?:EveningSnapshot;error?:string};
    if(!res.ok){if(res.status===409||res.status===400||res.status===404){const rejected={...p,rejected:true};this.persist(rejected);this.emit({pending:this.state.pending.map(x=>x.command.id===p.command.id?rejected:x),conflictReview:null,errorKind:'conflict'});try{const latest=await this.read();if(this.disposed)return false;this.acceptSnapshot(latest);this.emit({conflictReview:this.conflictFingerprint(latest)});}catch{this.emit({conflictReview:null});}}this.emit({unauthorized:res.status===401||res.status===403,errorKind:res.status===401||res.status===403?'blocked':res.status>=500?'network':'conflict',error:reply.error??'Could not confirm this save. Retry safely.'});if(p.command.kind==='ready'&&[400,404,409].includes(res.status))continue;throw Error(reply.error??'Could not confirm this save. Retry safely.');}
    if(reply.operationId!==p.command.id||!reply.snapshot||reply.snapshot.check?.id!==(p.command.kind==='start'?p.command.day:p.command.checkId))throw Error('The save response was incomplete. Retry to check its result.');
-   this.verify(reply.snapshot);try{this.storage.removeItem(this.key(p));}catch{this.emit({errorKind:'blocked',recoveryBlocked:true});throw Error('The save succeeded, but its local receipt could not be cleared. Free device storage and retry safely.');}this.acceptSnapshot(reply.snapshot);// Receipts are memory-only presentation signals, never restored from a snapshot or recovery journal.
+   this.verify(reply.snapshot);if(this.fastSync)this.selection={day:reply.snapshot.check!.id};try{this.storage.removeItem(this.key(p));}catch{this.emit({errorKind:'blocked',recoveryBlocked:true});throw Error('The save succeeded, but its local receipt could not be cleared. Free device storage and retry safely.');}this.acceptSnapshot(reply.snapshot);// Receipts are memory-only presentation signals, never restored from a snapshot or recovery journal.
    const receipt={accountId:this.accountId,command:p.command};lastReceipt=receipt;
    const key=p.command.kind+('itemId' in p.command?':'+p.command.itemId:'');
    const acknowledged=Object.fromEntries(Object.entries(this.state.acknowledged??{}).filter(([,r])=>r.accountId===this.accountId&&'checkId' in r.command&&r.command.checkId===reply.snapshot!.check!.id));
@@ -114,10 +158,16 @@ export class EveningController {
   return verified?(this.state.pending.length?this.drain():true):false;
  }
  async flush(){if(this.state.error||this.state.recoveryBlocked||this.state.pending.some(p=>p.rejected))return false;if(this.inflight&&!await this.inflight)return false;if(this.state.pending.length&&!await this.drain())return false;return this.state.pending.length===0&&!this.busy&&!this.state.error;}
- async summary(){if(!await this.flush())return null;if(!await this.refresh())return null;return this.state.pending.length===0?this.state.snapshot:null;}
+ async summary(){
+  if(this.state.finishing||this.disposed||this.state.loading)return null;this.emit({finishing:true,finishPhase:'saving'});let complete=false;
+  try{if(!await this.flush())return null;this.emit({finishPhase:'summary'});if(this.fastSync&&this.state.snapshot?.sync){if(!await this.syncVisible(true))return null;}else if(!await this.refresh())return null;complete=this.state.pending.length===0&&!!this.state.snapshot?.check&&!this.disposed;return complete?this.state.snapshot:null;}
+  finally{if(!complete)this.endFinish();}
+ }
+ endFinish(){this.emit({finishing:false,finishPhase:undefined});}
+
  async resolveRejected(useLocal:boolean){
   if(this.busy||this.state.recoveryBlocked||!this.state.pending[0]?.rejected)return false;
-  const before=this.state.pending,reviewedFingerprint=this.state.conflictReview;if(before.slice(1).some(p=>p.sent))return false;
+  const before=this.state.pending,reviewedFingerprint=this.state.conflictReview;if(before.slice(1).some(p=>p.sent&&!p.rejected)){this.emit({error:'Some original saves still have an unknown result. Retry remaining saves before resolving the conflict.'});return false;}
   if(!reviewedFingerprint){this.emit({error:'Refresh the shared result before choosing how to resolve this change.'});return false;}
   if(!await this.refresh())return false;
   const kind=before[0].command.kind,check=this.state.snapshot?.check;
@@ -149,4 +199,6 @@ export function visibleEveningCheck(state:EveningState){
 }
 export function morningProgress(state:EveningState,now=Date.now()){const check=visibleEveningCheck(state),tasks=check?.version?check.tasks.filter(t=>!t.cancelled):[],ready=tasks.filter(t=>t.ready&&t.mappingValid).length;return {tasks,ready,remaining:tasks.length-ready,complete:tasks.length>0&&ready===tasks.length&&!state.loading&&!state.saving&&!state.pending.length&&!state.error&&!state.unauthorized&&!state.recoveryBlocked&&!state.freshnessError&&!!state.lastVerifiedAt&&now-state.lastVerifiedAt<75000};}
 
-export function readyBlocked(state:EveningState,itemId:string){const check=state.snapshot?.check;return !check||check.version<1||state.loading||state.unauthorized||state.recoveryBlocked||!!state.error&&state.errorKind!=='network'&&state.errorKind!=='conflict'||state.pending.some(p=>p.command.kind!=='ready'||p.command.checkId!==check.id||p.rejected&&p.command.itemId===itemId);}
+export function readyBlocked(state:EveningState,itemId:string){const check=state.snapshot?.check;return !check||check.version<1||state.finishing||state.loading||state.unauthorized||state.recoveryBlocked||!!state.error&&state.errorKind!=='network'&&state.errorKind!=='conflict'||state.pending.some(p=>p.command.kind!=='ready'||p.command.checkId!==check.id||p.rejected&&p.command.itemId===itemId);}
+
+export function answerBlocked(state:EveningState,itemId:string){const check=state.snapshot?.check;return !check||state.finishing||state.loading||state.unauthorized||state.recoveryBlocked||!!state.error&&state.errorKind!=='network'&&state.errorKind!=='conflict'||state.pending.some(p=>p.command.kind!=='answer'||p.command.checkId!==check.id||p.rejected&&p.command.itemId===itemId);}

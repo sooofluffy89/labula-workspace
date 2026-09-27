@@ -38,7 +38,7 @@ try{
   const res=await m.api.GET(new Request('http://test.local'+url));return {res,body:await res.json()};
  };
  const waitRelease=async()=>{for(let i=0;!release&&i<100;i++)await new Promise(r=>setImmediate(r));assert.ok(release)};
- const makeClient=()=>new m.EveningController(chef.email,storage,{morningDay:'2026-09-24'},adapter);
+ const makeClient=()=>new m.EveningController(chef.email,storage,{morningDay:'2026-09-24'},adapter,false);
  let client=makeClient();await client.refresh();const ids=client.state.snapshot.check.tasks.map(t=>t.itemId);const positions=client.visibleCheck().tasks.map(t=>t.itemId);
  // Multiple pending rows, rapid same-row transitions and captured revisions.
  fault='slow';assert.ok(client.toggleReady(ids[0]));assert.ok(client.toggleReady(ids[0]));assert.ok(client.toggleReady(ids[0]));for(const id of ids.slice(1))assert.ok(client.ready(id,true));
@@ -66,7 +66,7 @@ try{
  assert.equal(await client.resolveRejected(true),false);assert.match(client.state.error,/Shared result changed again/);assert.equal(client.state.snapshot.check.tasks[0].ready,true);
  assert.equal(await client.resolveRejected(true),true);assert.equal(client.visibleCheck().tasks[1].ready,false);
  // Two clients editing unrelated rows coexist; same-row edits are never rebased automatically.
- const other=new m.EveningController(chef.email,{...storage,get length(){return 0},key:()=>null,setItem(){},removeItem(){}},{morningDay:'2026-09-24'},adapter);await other.refresh();assert.ok(other.toggleReady(ids[2]));assert.ok(await other.flush());assert.ok(client.toggleReady(ids[3]));assert.ok(await client.flush());assert.equal(client.visibleCheck().tasks[2].ready,false);other.dispose();
+ const other=new m.EveningController(chef.email,{...storage,get length(){return 0},key:()=>null,setItem(){},removeItem(){}},{morningDay:'2026-09-24'},adapter,false);await other.refresh();assert.ok(other.toggleReady(ids[2]));assert.ok(await other.flush());assert.ok(client.toggleReady(ids[3]));assert.ok(await client.flush());assert.equal(client.visibleCheck().tasks[2].ready,false);other.dispose();
  // Correction publish guards concurrent Ready and preserves unchanged Ready tasks.
  s=await read();await send(cmd({kind:'correct',checkId:day,revision:s.check.revision,planRevision:s.check.planRevision}));s=await read();const staleConfirm=confirm(s);client.toggleReady(ids[4]);await client.flush();await send(staleConfirm,409);s=await read();await send(confirm(s));const preserved=(await read()).check.tasks[4];assert.equal(preserved.ready,false);
  // Cancellation during pending Ready cannot revive an obsolete task.
@@ -88,7 +88,7 @@ try{
  const empty={...client.state,snapshot:{...client.state.snapshot,check:{...client.state.snapshot.check,tasks:[]}}};assert.ok(render(empty).includes('No tasks planned'));assert.ok(!render(empty).includes('All morning items ready'));
  const draft={...client.state,snapshot:{...client.state.snapshot,check:{...client.state.snapshot.check,version:0}}};assert.ok(!render(draft).includes('role="checkbox"'));
  // Active morning reads update another cook's Ready state without touching local recovery.
- const viewer=new m.EveningController(chef.email,{length:0,key:()=>null,getItem:()=>null,setItem(){},removeItem(){}},{morningDay:'2026-09-24'},adapter);
+ const viewer=new m.EveningController(chef.email,{length:0,key:()=>null,getItem:()=>null,setItem(){},removeItem(){}},{morningDay:'2026-09-24'},adapter,false);
  await viewer.refresh();s=await read();task=s.check.tasks[9];await send(cmd({kind:'ready',checkId:day,itemId:task.itemId,revision:task.revision,value:!task.ready}));
  assert.equal(viewer.state.snapshot.check.tasks[9].ready,task.ready);assert.ok(await viewer.refreshVisible());assert.equal(viewer.state.snapshot.check.tasks[9].ready,!task.ready);
  fault='get';assert.equal(await viewer.refreshVisible(),false);assert.match(viewer.state.freshnessError,/offline/);assert.equal(m.morningProgress(viewer.state).complete,false);

@@ -1,3 +1,4 @@
+import {initialSyncCursor,syncMetadataSql} from './evening-sync-server';
 import {readCalendarVersions,validateTarget} from './calendar-server';
 import {readPlanning} from './round-store';
 import {activeMember} from './activity-server';
@@ -10,11 +11,11 @@ import {readStock} from './stock-server';
 import {dateSchema,eveningCommandSchema,operationalDay,type CheckSummary,type CheckAnswer,type MorningTask,type EveningSnapshot,type EveningCommand,type EveningSelection} from './evening';
 import {validGroup} from './ingredient-groups';
 
-type CheckRow={calendar_revision:number|null;id:string;target_day:string;plan_day:string|null;stage:'draft'|'confirmed';revision:number;plan_revision:number;version:number;confirmed_at:string|null;confirmed_by:string|null;grouped:number;rounds_version:number};
-type AnswerRow={check_id:string;item_id:string;catalog_id:string;name:string;kind:'bought'|'prep';position:number;value:'have'|'missing'|null;revision:number;updated_at:string;updated_by:string;first_actor:string|null;first_device:string|null;first_sequence:number|null;superseded_by:string|null;group_id:string|null;round_snapshot:string|null};
-type TaskRow=Omit<AnswerRow,'value'|'first_actor'|'first_device'|'first_sequence'|'superseded_by'>&{ready:number;cancelled:number};
+export type CheckRow={calendar_revision:number|null;id:string;target_day:string;plan_day:string|null;stage:'draft'|'confirmed';revision:number;plan_revision:number;version:number;confirmed_at:string|null;confirmed_by:string|null;grouped:number;rounds_version:number};
+export type AnswerRow={check_id:string;item_id:string;catalog_id:string;name:string;kind:'bought'|'prep';position:number;value:'have'|'missing'|null;revision:number;updated_at:string;updated_by:string;first_actor:string|null;first_device:string|null;first_sequence:number|null;superseded_by:string|null;group_id:string|null;round_snapshot:string|null};
+export type TaskRow=Omit<AnswerRow,'value'|'first_actor'|'first_device'|'first_sequence'|'superseded_by'>&{ready:number;cancelled:number};
 type Receipt={id:string;actor_id:string;request:string;result:string;applied:number};
-const summary=(r:CheckRow):CheckSummary=>({calendarRevision:r.calendar_revision,roundsVersion:r.rounds_version,id:r.id,targetDay:r.target_day,stage:r.stage,revision:r.revision,planRevision:r.plan_revision,version:r.version,confirmedAt:r.confirmed_at,confirmedBy:r.confirmed_by});
+export const summary=(r:CheckRow):CheckSummary=>({calendarRevision:r.calendar_revision,roundsVersion:r.rounds_version,id:r.id,targetDay:r.target_day,stage:r.stage,revision:r.revision,planRevision:r.plan_revision,version:r.version,confirmedAt:r.confirmed_at,confirmedBy:r.confirmed_by});
 const conflict=(message='This check changed. Refresh, review the shared answers and try again.',code='evening_conflict')=>new RequestError(message,409,code);
 export async function readEvening(user:ChatGPTUser,selection:EveningSelection={day:operationalDay()}):Promise<EveningSnapshot>{
  const selected='day' in selection?dateSchema.parse(selection.day):dateSchema.parse(selection.morningDay);
@@ -26,14 +27,15 @@ export async function readEvening(user:ChatGPTUser,selection:EveningSelection={d
   db.prepare('day' in selection?'SELECT * FROM morning_tasks WHERE check_id=? ORDER BY position':'SELECT t.* FROM morning_tasks t JOIN evening_checks c ON c.id=t.check_id WHERE c.plan_day=? ORDER BY t.position').bind(selected),
   db.prepare('SELECT item_id FROM stock_items WHERE included=1 AND track=1'),
   db.prepare('SELECT check_id,catalog_id,superseded_by FROM evening_answers'),
+  db.prepare(syncMetadataSql),
  ]);
  const notebook=results[0].results[0] as {payload:string;revision:number},catalog=(JSON.parse(notebook.payload) as Notebook).items.map(i=>({id:i.id,name:i.name,kind:i.kind})),byId=new Map(catalog.map(i=>[i.id,i]));
  const checks=results[1].results as CheckRow[],row=checks.find(c=>'day' in selection?c.id===selected:c.plan_day===selected);
- const answers:CheckAnswer[]=(results[2].results as AnswerRow[]).map(a=>({itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId.get(a.catalog_id)?.name??null,groupId:validGroup(a.group_id),round:a.round_snapshot?JSON.parse(a.round_snapshot):null}));
- const tasks:MorningTask[]=(results[3].results as TaskRow[]).map(t=>({itemId:t.item_id,catalogId:t.catalog_id,name:t.name,kind:t.kind,position:t.position,ready:!!t.ready,cancelled:!!t.cancelled,revision:t.revision,updatedAt:t.updated_at,updatedBy:t.updated_by,mappingValid:byId.get(t.catalog_id)?.kind===t.kind,groupId:validGroup(t.group_id)}));
+ const answers=(results[2].results as AnswerRow[]).map(a=>answerView(a,byId));
+ const tasks=(results[3].results as TaskRow[]).map(t=>taskView(t,byId));
  const planning=await readPlanning(selected),calendar=await readCalendarVersions();
  const summaries=checks.map(c=>{const base=summary(c);if(c.stage==='draft'&&c.version===0){const originals=(results[5].results as AnswerRow[]).filter(a=>a.check_id===c.id&&!a.superseded_by);if(originals.length&&originals.every(a=>(planning.coverage.get(a.catalog_id)??'')>c.id))base.coveredBy=originals.map(a=>planning.coverage.get(a.catalog_id)!).sort().at(-1)!;}return base;});
- return {calendar:{versions:calendar,revision:Math.max(0,...calendar.map(v=>v.revision)),accountId:user.userId,isOwner:false},planning:{day:selected,revision:planning.revision,dueCount:planning.due.length,rounds:planning.rounds,items:planning.items},scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:notebook.revision,catalog,trackedCount:(results[4].results as {item_id:string}[]).filter(s=>byId.has(s.item_id)).length,checks:summaries,check:row?{...summaries.find(s=>s.id===row.id)!,answers,tasks,grouped:!!row.grouped}:null};
+ return {sync:{version:1,cursor:initialSyncCursor(user,selection,results[6].results[0] as {through:number;notebook:number;rounds:number;calendar:number})},calendar:{versions:calendar,revision:Math.max(0,...calendar.map(v=>v.revision)),accountId:user.userId,isOwner:false},planning:{day:selected,revision:planning.revision,dueCount:planning.due.length,rounds:planning.rounds,items:planning.items},scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:notebook.revision,catalog,trackedCount:(results[4].results as {item_id:string}[]).filter(s=>byId.has(s.item_id)).length,checks:summaries,check:row?{...summaries.find(s=>s.id===row.id)!,answers,tasks,grouped:!!row.grouped}:null};
 }
 
 export async function eveningCommand(user:ChatGPTUser,raw:unknown){
@@ -43,7 +45,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  const prior=await replay();if(prior)return prior;
  const member=await activeMember(user);
  const checkId=c.kind==='start'?c.day:c.checkId;
- const snapshot=await readEvening(user,{day:checkId}),check=snapshot.check,now=new Date().toISOString();
+ const snapshot=c.kind==='confirm'?await readConfirmation(user,checkId):await readEvening(user,{day:checkId}),check=snapshot.check,now=new Date().toISOString();
  if(c.kind!=='start'&&!check)throw new RequestError('This kitchen check does not exist.',404);
  if((c.kind==='start'&&!check)||c.kind==='dates')validateTarget(checkId,c.targetDay,await readCalendarVersions(),c.calendarRevision);
  if(c.kind==='start'&&c.targetDay<=c.day)throw new RequestError('Morning prep must be after the evening check date.');
@@ -128,4 +130,20 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  const saved=await replay();if(saved)return saved;
  if(c.kind==='start')throw conflict('No items selected for checking. Choose items in Manage list.','empty_roster');
  throw conflict(c.kind==='confirm'?'Answers, morning tasks or the catalog changed. Refresh the summary and confirm again.':undefined);
+}
+
+export function answerView(a:AnswerRow,byId?:Map<string,{name:string;kind:string}>):CheckAnswer{return {itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||!byId||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId?.get(a.catalog_id)?.name??null,groupId:validGroup(a.group_id),round:a.round_snapshot?JSON.parse(a.round_snapshot):null};}
+export function taskView(t:TaskRow,byId?:Map<string,{name:string;kind:string}>):MorningTask{return {itemId:t.item_id,catalogId:t.catalog_id,name:t.name,kind:t.kind,position:t.position,ready:!!t.ready,cancelled:!!t.cancelled,revision:t.revision,updatedAt:t.updated_at,updatedBy:t.updated_by,mappingValid:!byId||byId.get(t.catalog_id)?.kind===t.kind,groupId:validGroup(t.group_id)};}
+
+// Confirmation needs the selected answers/tasks, catalog links and competing target,
+// not bootstrap, all historical answers, round coverage or preparation profiles.
+async function readConfirmation(user:ChatGPTUser,day:string):Promise<EveningSnapshot>{
+ const db=getRawDb(),r=await db.batch([
+  db.prepare("SELECT revision,(SELECT json_group_array(json_object('id',json_extract(j.value,'$.id'),'name',json_extract(j.value,'$.name'),'kind',json_extract(j.value,'$.kind'))) FROM json_each(n.payload,'$.items') j) AS catalog FROM notebooks n WHERE id='kitchen'"),
+  db.prepare('SELECT * FROM evening_checks WHERE id=? OR plan_day=(SELECT target_day FROM evening_checks WHERE id=?)').bind(day,day),
+  db.prepare('SELECT * FROM evening_answers WHERE check_id=? ORDER BY position').bind(day),
+  db.prepare('SELECT * FROM morning_tasks WHERE check_id=? ORDER BY position').bind(day),
+ ]);
+ const n=r[0].results[0] as {revision:number;catalog:string},rows=r[1].results as CheckRow[],row=rows.find(c=>c.id===day),catalog=JSON.parse(n.catalog) as EveningSnapshot['catalog'],byId=new Map(catalog.map(i=>[i.id,i]));
+ return {scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:n.revision,catalog,trackedCount:0,checks:rows.map(summary),check:row?{...summary(row),grouped:!!row.grouped,answers:(r[2].results as AnswerRow[]).map(a=>answerView(a,byId)),tasks:(r[3].results as TaskRow[]).map(t=>taskView(t,byId))}:null};
 }
