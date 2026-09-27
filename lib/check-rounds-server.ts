@@ -1,3 +1,5 @@
+import {readCalendarVersions} from './calendar-server';
+import {calendarVersion} from './operating-calendar';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {owner,RequestError} from './notebook-server';
@@ -13,7 +15,7 @@ export async function readRounds(user:ChatGPTUser):Promise<RoundsSnapshot>{
   const stock=await readStock(user),p=await readPlanning(operationalDay());
   const rows=p.stockRows as {item_id:string;round_id:RoundId|null;revision:number;group_revision:number}[];
   if(p.notebookRevision!==stock.notebookRevision||stock.items.some(i=>{const r=rows.find(r=>r.item_id===i.itemId);return !r||r.revision!==i.revision||r.group_revision!==i.groupRevision;}))continue;
-  return {accountId:user.userId,account:user.email,revision:p.revision,activatedAt:p.activatedAt,rounds:p.rounds,items:stock.items.map(i=>({...i,roundId:rows.find(r=>r.item_id===i.itemId)?.round_id??null}))};
+  return {calendar:await readCalendarVersions(),accountId:user.userId,account:user.email,revision:p.revision,activatedAt:p.activatedAt,rounds:p.rounds,items:stock.items.map(i=>({...i,roundId:rows.find(r=>r.item_id===i.itemId)?.round_id??null}))};
  }
  throw new RequestError('The shared list is changing. Retry loading the latest settings.',409,'round_conflict');
 }
@@ -22,11 +24,12 @@ export async function roundCommand(user:ChatGPTUser,raw:unknown){
  if(c.actorId!==user.userId)throw new RequestError('The signed-in account changed. Return to the original account to retry.',403,'account_changed');
  const replay=async()=>{const r=await db.prepare('SELECT * FROM round_commands WHERE id=?').bind(c.id).first<{actor_id:string;request:string;applied:number}>();if(!r)return null;if(r.actor_id!==user.userId||r.request!==request)throw new RequestError('This request ID belongs to another change.',409,'command_mismatch');if(!r.applied)throw Error('Incomplete round receipt');return {operationId:c.id,replayed:true};};
  const prior=await replay();if(prior)return prior;
- const member=await activeMember(user);await readStock(user);const now=new Date().toISOString();
- let condition='1',extra:unknown[]=[];
+ const member=await activeMember(user);await readStock(user);const now=new Date().toISOString(),calendar=await readCalendarVersions(),config=calendarVersion(operationalDay(),calendar)?.config;
+ if(c.kind==='days'&&c.roundId!=='daily'&&config&&c.days.some(d=>!config.openDays.includes(d)))throw new RequestError('Choose distinct open weekdays. Closed weekdays need an operating calendar change first.',409,'closed_round_day');
+ let condition='(SELECT coalesce(max(revision),0) FROM operating_calendar_versions)=?';const extra:unknown[]=[Math.max(0,...calendar.map(v=>v.revision))];
  if(c.kind==='members'){
-  condition=`NOT EXISTS(SELECT 1 FROM json_each(?) j LEFT JOIN stock_items s ON s.item_id=j.value WHERE s.item_id IS NULL OR (? IS NULL AND s.track=1 AND s.included=1) OR NOT EXISTS(SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id))`;
-  extra=[JSON.stringify(c.itemIds),c.roundId];
+  condition+=` AND NOT EXISTS(SELECT 1 FROM json_each(?) j LEFT JOIN stock_items s ON s.item_id=j.value WHERE s.item_id IS NULL OR (? IS NULL AND s.track=1 AND s.included=1) OR NOT EXISTS(SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id))`;
+  extra.push(JSON.stringify(c.itemIds),c.roundId);
  }
  const args=[c.id,user.userId,request],gate='EXISTS(SELECT 1 FROM round_commands WHERE id=? AND actor_id=? AND request=? AND applied=0)';
  const receipt=db.prepare(`INSERT INTO round_commands(id,actor_id,request,applied,created_at) SELECT ?,?,?,0,? WHERE EXISTS(SELECT 1 FROM round_state WHERE id='kitchen' AND revision=?) AND EXISTS(SELECT 1 FROM kitchen_owner WHERE id='owner' AND user_id=?) AND EXISTS(SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) AND ${condition} ON CONFLICT(id) DO NOTHING`).bind(...args,now,c.revision,user.userId,user.userId,...extra);

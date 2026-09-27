@@ -53,7 +53,7 @@ export const stockCatalogEffects = sqliteTable('stock_catalog_effects', {
 
 // A date identifies one shared kitchen check. planDay is set only at confirmation.
 export const eveningChecks=sqliteTable('evening_checks',{
- id:text('id').primaryKey(),targetDay:text('target_day').notNull(),planDay:text('plan_day').unique(),stage:text('stage').notNull(),revision:integer('revision').notNull(),planRevision:integer('plan_revision').notNull(),version:integer('version').notNull(),startOperation:text('start_operation').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),updatedAt:text('updated_at').notNull(),confirmedAt:text('confirmed_at'),confirmedBy:text('confirmed_by'),grouped:integer('grouped').notNull().default(0),roundsVersion:integer('rounds_version').notNull().default(0),
+ id:text('id').primaryKey(),calendarRevision:integer('calendar_revision'),targetDay:text('target_day').notNull(),planDay:text('plan_day').unique(),stage:text('stage').notNull(),revision:integer('revision').notNull(),planRevision:integer('plan_revision').notNull(),version:integer('version').notNull(),startOperation:text('start_operation').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),updatedAt:text('updated_at').notNull(),confirmedAt:text('confirmed_at'),confirmedBy:text('confirmed_by'),grouped:integer('grouped').notNull().default(0),roundsVersion:integer('rounds_version').notNull().default(0),
 });
 export const eveningAnswers=sqliteTable('evening_answers',{
  checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),value:text('value'),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),firstActor:text('first_actor'),firstDevice:text('first_device'),firstSequence:integer('first_sequence'),supersededBy:text('superseded_by'),groupId:text('group_id'),roundSnapshot:text('round_snapshot'),
@@ -93,3 +93,13 @@ export const roundTimeline=sqliteTable('round_timeline',{
 export const roundCommands=sqliteTable('round_commands',{
  id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),applied:integer('applied').notNull().default(0),createdAt:text('created_at').notNull(),
 });
+
+export const operatingCalendarVersions=sqliteTable('operating_calendar_versions',{
+ revision:integer('revision').primaryKey(),effectiveDay:text('effective_day').notNull(),payload:text('payload').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),operationId:text('operation_id').notNull().unique(),
+},t=>[index('operating_calendar_effective').on(t.effectiveDay,t.revision)]);
+export const operatingCommands=sqliteTable('operating_commands',{
+ id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),createdAt:text('created_at').notNull(),
+});
+export const operatingOutcomes=sqliteTable('operating_outcomes',{
+ id:text('id').primaryKey(),checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),version:integer('version').notNull(),outcome:text('outcome').notNull(),note:text('note').notNull(),reportedReadyAt:text('reported_ready_at'),supersedesId:text('supersedes_id'),actorId:text('actor_id').notNull(),actorName:text('actor_name').notNull(),createdAt:text('created_at').notNull(),
+},t=>[index('operating_outcomes_task').on(t.checkId,t.itemId,t.createdAt)]);

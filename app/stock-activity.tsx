@@ -31,18 +31,18 @@ export function ActivityList({team,initialActor='',initialItem='',initialCheck='
  </div>;
 }
 
-export function StockPeople({account,active,onAccess,onTeam,operationsOnly=false}:{account:string;active:boolean;onAccess:(active:boolean)=>void;onTeam?:()=>void;operationsOnly?:boolean}){
+export function StockPeople({account,active,onAccess,onTeam,onOwner,onHistory,operationsOnly=false}:{account:string;active:boolean;onAccess:(active:boolean)=>void;onTeam?:()=>void;onOwner?:(owner:boolean)=>void;onHistory?:()=>void;operationsOnly?:boolean}){
  const [team,setTeam]=useState<TeamSnapshot|null>(null),[open,setOpen]=useState(false),[error,setError]=useState('');
  const mounted=useRef(true);useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
  const refresh=useCallback(async()=>{
   try{const r=await requestJson<TeamSnapshot&{error?:string}>('/api/team',{cache:'no-store'});
    if(!r.res.ok)throw Error(r.body.error??'Could not load your identity.');
    if(r.body.self.email.toLowerCase()!==account.toLowerCase())throw Error('The signed-in account changed. Reload before continuing.');
-   if(mounted.current){setTeam(r.body);setError('');onAccess(r.body.self.active);}
+   if(mounted.current){setTeam(r.body);setError('');onAccess(r.body.self.active);onOwner?.(r.body.isOwner);}
   }catch(e){if(mounted.current){setTeam(null);setError((e as Error).message);onAccess(false);}}
- },[account,onAccess]);
+ },[account,onAccess,onOwner]);
  useEffect(()=>{let live=true;if(active)queueMicrotask(()=>{if(live)void refresh();});return()=>{live=false;};},[active,refresh]);
- return <><div className="stock-identity"><span>{team?`Signed in: ${team.self.name}`:'Checking signed-in account…'}</span><div className="actions">{!operationsOnly&&<Button variant="ghost" onClick={()=>setOpen(true)}>Activity</Button>}{team?.isOwner&&onTeam&&<Button variant="ghost" onClick={onTeam}>Team &amp; access</Button>}</div></div>
+ return <><div className="stock-identity"><span>{team?`Signed in: ${team.self.name}`:'Checking signed-in account…'}</span><div className="actions">{!operationsOnly&&!onHistory&&<Button variant="ghost" onClick={()=>setOpen(true)}>Activity</Button>}{team?.isOwner&&onTeam&&<Button variant="ghost" onClick={onTeam}>Team &amp; access</Button>}</div></div>
  {error&&<p className="error" role="alert">{error} <Button variant="outline" onClick={()=>void refresh()}>Retry identity check</Button></p>}
  {team&&!team.self.active&&<p className="error">Your stock edits are paused. Ask the owner to reactivate your profile.</p>}
  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="stock-people-dialog"><DialogHeader><DialogTitle>Stock activity</DialogTitle><DialogDescription>Actions are saved with the signed-in account and time.</DialogDescription></DialogHeader><div className="stock-people-scroll">{team?<ActivityList team={team}/>:<Button variant="outline" onClick={()=>void refresh()}>Retry identity check</Button>}</div></DialogContent></Dialog>

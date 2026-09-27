@@ -1,5 +1,7 @@
+import {readCalendarVersions} from './calendar-server';
+import {calendarVersion} from './operating-calendar';
 import {getRawDb} from '@/db';
-import {roundIds,type RoundId,type Timeline,obligation,type RoundReason} from './check-rounds';
+import {roundIds,type RoundId,type Timeline,calendarObligation,type RoundReason} from './check-rounds';
 import {operationalDay} from './evening';
 import type {Notebook} from './notebook';
 export async function initializeRounds(){
@@ -12,7 +14,7 @@ export async function initializeRounds(){
 }
 export type PlanningItem={itemId:string;name:string;kind:'bought'|'prep';groupId:string|null;roundId:RoundId|null;track:boolean;included:boolean;round:RoundReason};
 export async function readPlanning(day:string){
- const db=getRawDb();const r=await db.batch([
+ const db=getRawDb(),calendar=await readCalendarVersions();const r=await db.batch([
   db.prepare("SELECT * FROM round_state WHERE id='kitchen'"),db.prepare('SELECT * FROM check_rounds'),db.prepare('SELECT * FROM stock_items'),
   db.prepare('SELECT * FROM round_timeline ORDER BY seq'),db.prepare("SELECT payload,revision FROM notebooks WHERE id='kitchen'"),
   db.prepare("SELECT json_extract(a.value,'$.catalogId') AS item_id,max(v.check_id) AS last_day,max(CASE WHEN v.check_id<=? THEN v.check_id ELSE NULL END) AS through_day FROM evening_versions v JOIN evening_checks c ON c.id=v.check_id AND c.version=v.version,json_each(v.payload,'$.answers') a WHERE json_extract(a.value,'$.value') IS NOT NULL AND json_extract(a.value,'$.supersededBy') IS NULL GROUP BY json_extract(a.value,'$.catalogId')").bind(day),
@@ -27,8 +29,9 @@ export async function readPlanning(day:string){
  const legacy=day<operationalDay(new Date(state.activated_at));
  const items:PlanningItem[]=catalog.flatMap<PlanningItem>(i=>{const s=stock.find(s=>s.item_id===i.id);if(!s?.included||!s.track)return [];
   const round=rounds.find(r=>r.id===s.round_id),last=coverage.get(i.id)??null;
-  const due=obligation(timeline.filter(e=>e.itemId===i.id),day,coveredThrough.get(i.id)??null);
-  return [{itemId:i.id,name:i.name,kind:i.kind,groupId:s.group_id,roundId:s.round_id,track:true,included:true,round:{roundId:s.round_id,days:round?.days??[],scheduleRevision:round?.revision??0,reason:due&&due.first<day?'overdue':'scheduled',firstDue:due?.first??(legacy?day:null),lastDue:due?.last??(legacy?day:null),lastConfirmed:last,planningRevision:state.revision}}];
+  const due=calendarObligation(timeline.filter(e=>e.itemId===i.id),day,coveredThrough.get(i.id)??null,calendar);
+  const config=calendarVersion(day,calendar)?.config;const scheduleNeedsReview=!!config&&s.round_id!=='daily'&&!!round?.days.some(d=>!config.openDays.includes(d));
+  return [{itemId:i.id,name:i.name,kind:i.kind,groupId:s.group_id,roundId:s.round_id,track:true,included:true,round:{scheduleNeedsReview,roundId:s.round_id,days:round?.days??[],scheduleRevision:round?.revision??0,reason:due&&due.first<day?'overdue':'scheduled',firstDue:due?.first??(legacy?day:null),lastDue:due?.last??(legacy?day:null),lastConfirmed:last,planningRevision:state.revision}}];
  }).sort((a,b)=>a.name.localeCompare(b.name,'en')||a.itemId.localeCompare(b.itemId));
  return {stockRows:r[2].results,revision:state.revision,activatedAt:state.activated_at,rounds,timeline,coverage,items,due:items.filter(i=>i.round.firstDue),notebookRevision:notebook.revision,legacy};
 }

@@ -6,6 +6,7 @@ export const privateBackupTables = [
   'reviewed_entities', 'review_import_chunks', 'stock_items', 'stock_commands', 'ingredient_group_commands',
   'stock_catalog_effects', 'evening_checks', 'evening_answers', 'evening_versions',
   'morning_tasks', 'evening_commands', 'kitchen_team', 'kitchen_activity',
+  'operating_calendar_versions', 'operating_commands', 'operating_outcomes',
   'team_commands', 'check_rounds', 'round_state', 'round_timeline', 'round_commands',
 ] as const;
 
@@ -31,14 +32,16 @@ export function isCompletePrivateBackup(value: unknown): value is PrivateBackup 
   );
 }
 
-// An older archive remains readable; absence of round metadata is explicitly legacy.
+// Complete historical exports stay readable, without pretending absent metadata was recorded.
 export function readPrivateBackup(value:unknown){
- if(isCompletePrivateBackup(value))return {backup:value,legacyRounds:false};
+ if(isCompletePrivateBackup(value))return {backup:value,legacyRounds:false,legacyOperations:false};
  if(typeof value!=='object'||!value)return null;
  const b=value as PrivateBackup;
- const added=['check_rounds','round_state','round_timeline','round_commands'];
- if(added.some(t=>b.tables?.[t]!==undefined))return null;
+ const rounds=['check_rounds','round_state','round_timeline','round_commands'];
+ const operations=['operating_calendar_versions','operating_commands','operating_outcomes'];
  const upgraded={...b,tables:{...b.tables},counts:{...b.counts}};
- for(const t of added){upgraded.tables[t]=[];upgraded.counts[t]=0;}
- return isCompletePrivateBackup(upgraded)?{backup:b,legacyRounds:true}:null;
+ const missingRounds=rounds.every(t=>b.tables?.[t]===undefined),missingOperations=operations.every(t=>b.tables?.[t]===undefined);
+ if(missingRounds)for(const t of rounds){upgraded.tables[t]=[];upgraded.counts[t]=0;}
+ if(missingOperations)for(const t of operations){upgraded.tables[t]=[];upgraded.counts[t]=0;}
+ return isCompletePrivateBackup(upgraded)?{backup:b,legacyRounds:missingRounds,legacyOperations:missingOperations}:null;
 }

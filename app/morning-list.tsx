@@ -5,20 +5,19 @@ import {settledReceipt} from '@/lib/stock-feedback';
 import {Checkbox} from '@/components/ui/checkbox';
 import {Button} from '@/components/ui/button';
 import {displayDay} from '@/lib/evening';
-import {morningProgress,type EveningState} from '@/lib/evening-client';
+import {morningProgress,readyBlocked,type EveningState} from '@/lib/evening-client';
 import {groupRows} from '@/lib/ingredient-groups';
 import {GroupSection,useCollapsedGroups} from './grouped-sections';
 
 export function MorningList({state,day,now=0,onReady,onContinue,onCorrect,onManage,correctDisabled}:{state:EveningState;day:string;now?:number;onReady:(itemId:string)=>void;onContinue:(day:string)=>void;onCorrect:()=>void;onManage?:()=>void;correctDisabled:boolean}){
  const information=useInformation();const check=state.snapshot?.check,{tasks,ready,remaining,complete}=morningProgress(state,now);
  const completedPulse=useSavePulse(settledReceipt(state,'ready'),complete,`${state.snapshot?.accountId}:${check?.id}`);
- const locked=state.loading||!!state.error||state.unauthorized||state.recoveryBlocked||state.pending.some(p=>p.rejected||p.command.kind!=='ready');
  const pending=new Set(state.pending.flatMap(p=>p.command.kind==='ready'&&p.command.checkId===check?.id?[p.command.itemId]:[]));
  const drafts=state.snapshot?.checks.filter(c=>c.targetDay===day&&c.stage==='draft')??[];
  const grouping=useCollapsedGroups(state.snapshot?.accountId??'pending','morning',check?.id??day);
  const renderRows=(rows:typeof tasks)=>rows.map(t=><StockRow state={state} kind="ready" itemId={t.itemId} className={'morning-row'+(t.ready&&t.mappingValid?' is-ready':'')+(!t.mappingValid?' morning-invalid':'')} key={t.itemId} data-item-id={t.itemId} data-pending={pending.has(t.itemId)}>
       <button type="button" className="morning-name morning-detail" aria-label={`Details for ${t.name}`} onClick={()=>{if(check)information?.({kind:'source',id:check.id,version:check.version,item:t.itemId});}}>{t.name}{!t.mappingValid&&<small>Catalog link needs review. Use Correct check.</small>}</button>
-      <div className="morning-control"><Checkbox className="morning-toggle" checked={t.ready&&t.mappingValid} disabled={locked||!t.mappingValid} aria-label={`Ready: ${t.name}`} aria-describedby="stock-save-status" onCheckedChange={()=>onReady(t.itemId)}/>{pending.has(t.itemId)&&<span className="morning-pending" aria-hidden="true">…</span>}</div>
+      <div className="morning-control"><Checkbox className="morning-toggle" checked={t.ready&&t.mappingValid} disabled={readyBlocked(state,t.itemId)||!t.mappingValid} aria-label={`Ready: ${t.name}`} aria-describedby="stock-save-status" onCheckedChange={()=>onReady(t.itemId)}/>{pending.has(t.itemId)&&<span className="morning-pending" aria-hidden="true">…</span>}</div>
      </StockRow>);
  return <div className="morning-list">
   <div className="evening-meta"><strong>{displayDay(check?.targetDay??day)}</strong>{check&&check.version>0&&<span aria-live="polite">{ready} ready · {remaining} remaining</span>}</div>

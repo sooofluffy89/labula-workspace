@@ -12,9 +12,10 @@ export function rowFeedback(state:EveningState,kind:'answer'|'ready',itemId:stri
 }
 export function savedStatus(state:EveningState,account:string,now=Date.now()){
  if(state.snapshot&&state.snapshot.account.toLowerCase()!==account.toLowerCase())return 'Verifying signed-in account…';
+ if(state.errorKind==='network'&&state.pending.length&&!state.unauthorized&&!state.recoveryBlocked)return 'Saved on this device — waiting to sync';
  if(state.error||state.unauthorized||state.recoveryBlocked)return 'Shared state could not be confirmed.';
  if(state.loading)return 'Loading shared check…';
- if(state.saving)return 'Saving changes…';
+ if(state.saving)return `Saving ${state.pending.length} change${state.pending.length===1?'':'s'}…`;
  if(state.pending.length)return `${state.pending.length} changes waiting to sync`;
  if(!state.snapshot)return 'Loading…';
  if(state.freshnessError||!state.lastVerifiedAt||now-state.lastVerifiedAt>=75000)return 'Shared state needs a refresh.';

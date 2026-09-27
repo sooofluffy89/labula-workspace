@@ -1,3 +1,4 @@
+import {readCalendarVersions,validateTarget} from './calendar-server';
 import {readPlanning} from './round-store';
 import {activeMember} from './activity-server';
 import {eveningEvents} from './evening-activity';
@@ -9,11 +10,11 @@ import {readStock} from './stock-server';
 import {dateSchema,eveningCommandSchema,operationalDay,type CheckSummary,type CheckAnswer,type MorningTask,type EveningSnapshot,type EveningCommand,type EveningSelection} from './evening';
 import {validGroup} from './ingredient-groups';
 
-type CheckRow={id:string;target_day:string;plan_day:string|null;stage:'draft'|'confirmed';revision:number;plan_revision:number;version:number;confirmed_at:string|null;confirmed_by:string|null;grouped:number;rounds_version:number};
+type CheckRow={calendar_revision:number|null;id:string;target_day:string;plan_day:string|null;stage:'draft'|'confirmed';revision:number;plan_revision:number;version:number;confirmed_at:string|null;confirmed_by:string|null;grouped:number;rounds_version:number};
 type AnswerRow={check_id:string;item_id:string;catalog_id:string;name:string;kind:'bought'|'prep';position:number;value:'have'|'missing'|null;revision:number;updated_at:string;updated_by:string;first_actor:string|null;first_device:string|null;first_sequence:number|null;superseded_by:string|null;group_id:string|null;round_snapshot:string|null};
 type TaskRow=Omit<AnswerRow,'value'|'first_actor'|'first_device'|'first_sequence'|'superseded_by'>&{ready:number;cancelled:number};
 type Receipt={id:string;actor_id:string;request:string;result:string;applied:number};
-const summary=(r:CheckRow):CheckSummary=>({roundsVersion:r.rounds_version,id:r.id,targetDay:r.target_day,stage:r.stage,revision:r.revision,planRevision:r.plan_revision,version:r.version,confirmedAt:r.confirmed_at,confirmedBy:r.confirmed_by});
+const summary=(r:CheckRow):CheckSummary=>({calendarRevision:r.calendar_revision,roundsVersion:r.rounds_version,id:r.id,targetDay:r.target_day,stage:r.stage,revision:r.revision,planRevision:r.plan_revision,version:r.version,confirmedAt:r.confirmed_at,confirmedBy:r.confirmed_by});
 const conflict=(message='This check changed. Refresh, review the shared answers and try again.',code='evening_conflict')=>new RequestError(message,409,code);
 export async function readEvening(user:ChatGPTUser,selection:EveningSelection={day:operationalDay()}):Promise<EveningSnapshot>{
  const selected='day' in selection?dateSchema.parse(selection.day):dateSchema.parse(selection.morningDay);
@@ -30,9 +31,9 @@ export async function readEvening(user:ChatGPTUser,selection:EveningSelection={d
  const checks=results[1].results as CheckRow[],row=checks.find(c=>'day' in selection?c.id===selected:c.plan_day===selected);
  const answers:CheckAnswer[]=(results[2].results as AnswerRow[]).map(a=>({itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId.get(a.catalog_id)?.name??null,groupId:validGroup(a.group_id),round:a.round_snapshot?JSON.parse(a.round_snapshot):null}));
  const tasks:MorningTask[]=(results[3].results as TaskRow[]).map(t=>({itemId:t.item_id,catalogId:t.catalog_id,name:t.name,kind:t.kind,position:t.position,ready:!!t.ready,cancelled:!!t.cancelled,revision:t.revision,updatedAt:t.updated_at,updatedBy:t.updated_by,mappingValid:byId.get(t.catalog_id)?.kind===t.kind,groupId:validGroup(t.group_id)}));
- const planning=await readPlanning(selected);
+ const planning=await readPlanning(selected),calendar=await readCalendarVersions();
  const summaries=checks.map(c=>{const base=summary(c);if(c.stage==='draft'&&c.version===0){const originals=(results[5].results as AnswerRow[]).filter(a=>a.check_id===c.id&&!a.superseded_by);if(originals.length&&originals.every(a=>(planning.coverage.get(a.catalog_id)??'')>c.id))base.coveredBy=originals.map(a=>planning.coverage.get(a.catalog_id)!).sort().at(-1)!;}return base;});
- return {planning:{day:selected,revision:planning.revision,dueCount:planning.due.length,rounds:planning.rounds,items:planning.items},scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:notebook.revision,catalog,trackedCount:(results[4].results as {item_id:string}[]).filter(s=>byId.has(s.item_id)).length,checks:summaries,check:row?{...summaries.find(s=>s.id===row.id)!,answers,tasks,grouped:!!row.grouped}:null};
+ return {calendar:{versions:calendar,revision:Math.max(0,...calendar.map(v=>v.revision)),accountId:user.userId,isOwner:false},planning:{day:selected,revision:planning.revision,dueCount:planning.due.length,rounds:planning.rounds,items:planning.items},scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:notebook.revision,catalog,trackedCount:(results[4].results as {item_id:string}[]).filter(s=>byId.has(s.item_id)).length,checks:summaries,check:row?{...summaries.find(s=>s.id===row.id)!,answers,tasks,grouped:!!row.grouped}:null};
 }
 
 export async function eveningCommand(user:ChatGPTUser,raw:unknown){
@@ -44,6 +45,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  const checkId=c.kind==='start'?c.day:c.checkId;
  const snapshot=await readEvening(user,{day:checkId}),check=snapshot.check,now=new Date().toISOString();
  if(c.kind!=='start'&&!check)throw new RequestError('This kitchen check does not exist.',404);
+ if((c.kind==='start'&&!check)||c.kind==='dates')validateTarget(checkId,c.targetDay,await readCalendarVersions(),c.calendarRevision);
  if(c.kind==='start'&&c.targetDay<=c.day)throw new RequestError('Morning prep must be after the evening check date.');
  let condition='1',conditionArgs:unknown[]=[];
  const writes:ReturnType<typeof db.prepare>[]=[];
@@ -59,7 +61,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
   condition="EXISTS(SELECT 1 FROM round_state WHERE id='kitchen' AND revision=?) AND EXISTS(SELECT 1 FROM notebooks WHERE id='kitchen' AND revision=?)";conditionArgs=[planning.revision,planning.notebookRevision];
   if(c.kind==='start'){
    condition+=" AND (EXISTS(SELECT 1 FROM evening_checks WHERE id=?) OR ? > 0)";conditionArgs.push(checkId,roster.length);
-   writes.push(db.prepare(`INSERT INTO evening_checks(id,target_day,stage,revision,plan_revision,version,start_operation,created_at,created_by,updated_at,grouped,rounds_version) SELECT ?,?,'draft',0,0,0,?,?,?,?,1,? WHERE ${gate} ON CONFLICT(id) DO NOTHING`).bind(checkId,c.targetDay,c.id,now,user.email,now,planning.legacy?0:1,...args));
+   writes.push(db.prepare(`INSERT INTO evening_checks(id,target_day,stage,revision,plan_revision,version,start_operation,created_at,created_by,updated_at,grouped,rounds_version,calendar_revision) SELECT ?,?,'draft',0,0,0,?,?,?,?,1,?,? WHERE ${gate} ON CONFLICT(id) DO NOTHING`).bind(checkId,c.targetDay,c.id,now,user.email,now,planning.legacy?0:1,c.calendarRevision??null,...args));
   }else{
    condition+=" AND EXISTS(SELECT 1 FROM evening_checks WHERE id=? AND stage='draft' AND revision=?)";conditionArgs.push(checkId,c.revision);
    updateCheck('revision=revision+1',[]);
@@ -90,7 +92,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  }else if(c.kind==='dates'){
   if(c.targetDay<=checkId)throw new RequestError('Morning prep must be after the evening check date.');
   condition="EXISTS (SELECT 1 FROM evening_checks WHERE id=? AND revision=? AND version=0 AND stage='draft')";conditionArgs=[checkId,c.revision];
-  updateCheck('target_day=?,revision=revision+1',[c.targetDay]);
+  updateCheck('target_day=?,calendar_revision=?,revision=revision+1',[c.targetDay,c.calendarRevision??null]);
  }else if(c.kind==='correct'){
   condition="EXISTS (SELECT 1 FROM evening_checks WHERE id=? AND revision=? AND plan_revision=? AND stage='confirmed')";conditionArgs=[checkId,c.revision,c.planRevision];
   updateCheck("stage='draft',revision=revision+1",[]);
@@ -109,7 +111,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
    AND NOT EXISTS (SELECT 1 FROM evening_checks WHERE plan_day=? AND id!=?)
    AND NOT EXISTS (SELECT 1 FROM evening_answers a WHERE a.check_id=? AND (a.value IS NULL OR (a.superseded_by IS NULL AND NOT EXISTS (SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') j WHERE n.id='kitchen' AND json_extract(j.value,'$.id')=a.catalog_id AND json_extract(j.value,'$.kind')=a.kind))))`;
   conditionArgs=[checkId,c.revision,c.planRevision,c.notebookRevision,check!.targetDay,checkId,checkId];
-  const payload=JSON.stringify({checkId,targetDay:check!.targetDay,answers:check!.answers,priorTasks:check!.tasks,actor:user.email,confirmedAt:now});
+  const payload=JSON.stringify({calendarRevision:check!.calendarRevision??null,checkId,targetDay:check!.targetDay,answers:check!.answers,priorTasks:check!.tasks,actor:user.email,confirmedAt:now});
   writes.push(db.prepare(`INSERT INTO evening_versions (check_id,version,payload,created_at,created_by) SELECT ?,version+1,?,?,? FROM evening_checks WHERE id=? AND ${gate}`).bind(checkId,payload,now,user.email,checkId,...args));
   // Existing unchanged Missing rows retain Ready and its authorship. Cancelled/re-mapped rows reopen.
   writes.push(db.prepare(`INSERT INTO morning_tasks (check_id,item_id,catalog_id,name,kind,position,ready,cancelled,revision,updated_at,updated_by,group_id)
@@ -120,6 +122,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
   writes.push(db.prepare(`UPDATE round_state SET revision=revision+1 WHERE id='kitchen' AND ${gate}`).bind(...args));
   updateCheck("stage='confirmed',version=version+1,revision=revision+1,plan_revision=plan_revision+1,plan_day=target_day,confirmed_at=?,confirmed_by=?",[now,user.email]);
  }
+ if((c.kind==='start'&&!check)||c.kind==='dates'){if(snapshot.calendar?.versions.length&&checkId>=snapshot.calendar.versions[0].effectiveDay){condition+=' AND (SELECT max(revision) FROM operating_calendar_versions)=?';conditionArgs.push(c.calendarRevision);}}
  const receipt=db.prepare(`INSERT INTO evening_commands (id,actor_id,request,result,applied,created_at) SELECT ?,?,?,?,0,? WHERE (${condition}) AND EXISTS (SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) ON CONFLICT(id) DO NOTHING`).bind(c.id,user.userId,request,JSON.stringify({checkId}),now,...conditionArgs,user.userId);
  await db.batch([receipt,...eveningEvents(user,member.name,c,now,gate,args),...writes,db.prepare(`UPDATE evening_commands SET applied=1 WHERE id=? AND actor_id=? AND request=? AND applied=0`).bind(...args)]);
  const saved=await replay();if(saved)return saved;
