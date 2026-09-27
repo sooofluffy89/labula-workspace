@@ -233,8 +233,8 @@
 .stock-workflow .evening-row,.stock-workflow .morning-row { position:relative; }
 .stock-workflow .stock-sync-marker { position:absolute;inset:5px auto 5px 0;width:3px;border-radius:2px;background:light-dark(#9a6700,#efba62);opacity:0;pointer-events:none; }
 .stock-workflow [data-sync=pending] > .stock-sync-marker { opacity:1; }
-.stock-workflow [data-sync=saved] > .stock-sync-marker { background:#13734e;animation:stock-saved 180ms ease-out both; }
-@keyframes stock-saved { from {opacity:1} to {opacity:0} }
+.stock-workflow [data-sync=saved] > .stock-sync-marker { background:#13734e;opacity:1;transition:background-color 140ms ease-out; }
+
 .stock-workflow .evening-row[data-reveal=true] { outline:2px solid light-dark(#326a97,#8ebdeb);outline-offset:-2px;animation:stock-reveal 260ms ease-out; }
 @keyframes stock-reveal { from {background:light-dark(#dceafa,#223d55)} to {background:transparent} }
 .stock-workflow .morning-row { transition:background-color 120ms ease-out,border-color 120ms ease-out; }
@@ -288,3 +288,16 @@
 .operating-calendar-editor fieldset{border:0;padding:0;margin:16px 0;min-width:0}.operating-calendar-editor legend{font-weight:600;margin-bottom:8px}.operating-calendar-editor details{padding:14px 0;border-top:1px solid var(--border)}.operating-calendar-editor summary{cursor:pointer;min-height:44px;font-weight:600}.calendar-deadline-row,.calendar-exception{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;border-bottom:1px solid var(--border);padding:12px 0}.calendar-deadline-row>strong{grid-column:1/-1}.outcome-form{background:var(--muted);padding:12px;margin:8px 0;border-radius:6px}.outcome-option{display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer}.outcome-option input{width:20px;height:20px}.outcome-form fieldset{min-width:0}.outcome-form textarea{min-height:75px}.readiness-bar{display:flex;height:12px;gap:2px;margin:12px 0}.readiness-bar>span{flex:1;background:#c9cdd3}.readiness-bar .readiness-on-time{background:#267258}.readiness-bar .readiness-late-recorded,.readiness-bar .readiness-not-recorded{background:#a76b17}
 @media(max-width:480px){.operations-summary{grid-template-columns:1fr;gap:6px}.operations-summary button{flex-direction:row;align-items:center;gap:16px;padding:12px}.operations-summary strong{min-width:85px;font-size:1.2rem}.operations-filters{grid-template-columns:minmax(0,1fr)}.operations-day{padding:12px}.operations-dialog{padding:12px!important}.calendar-deadline-row,.calendar-exception{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.operations-dialog,.operations-workspace *{scroll-behavior:auto;animation:none!important;transition:none!important}}
+
+/* Calm list: reserved feedback space, one sticky status, stable touch targets. */
+.stock-sync-bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);font-size:.8125rem;line-height:1.35;box-shadow:0 2px 5px #00000008}
+.stock-sync-bar p{margin:0;overflow-wrap:anywhere}.stock-sync-bar button{min-height:44px;flex-shrink:0}.stock-sync-bar[data-attention=true]{border-color:#956524}
+.stock-workflow .evening-columns,.stock-workflow .morning-columns{top:var(--stock-status-height,48px)}
+.stock-workflow .evening-row,.stock-workflow .morning-row{scroll-margin-top:calc(var(--stock-status-height,48px) + 52px)}
+.stock-workflow .stock-row-feedback{position:absolute;left:10px;bottom:4px;max-width:calc(100% - 126px);min-height:16px;font-size:.6875rem;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted-foreground);pointer-events:none}
+.stock-workflow .morning-row .stock-row-feedback{max-width:calc(100% - 72px)}
+.stock-workflow .stock-row-feedback[data-shared=true]{color:light-dark(#17613e,#8de2b6)}
+.stock-workflow .evening-name,.stock-workflow .morning-name{padding-top:4px;padding-bottom:20px;min-height:56px}
+.stock-workflow .stock-loading-panel{padding:20px 0;min-height:140px}.stock-loading-panel h2{font-size:1rem;margin-bottom:8px}
+@media(prefers-reduced-motion:reduce){.stock-workflow [data-sync=saved]>.stock-sync-marker{transition:none;opacity:1}}
+@media(max-width:480px){.stock-workflow .stock-row-feedback{left:4px}}

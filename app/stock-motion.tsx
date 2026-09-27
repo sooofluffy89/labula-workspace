@@ -16,7 +16,7 @@ export function useSavePulse(token:string|null,eligible=true,context=''){
   // Ineligible receipts are consumed, never replayed after discard, polling or recovery.
   setPulse(!newContext&&changed&&eligible?token:null);
   if(!token||!changed||!eligible||newContext)return;
-  const timer=window.setTimeout(()=>setPulse(null),220);
+  const timer=window.setTimeout(()=>setPulse(null),1500);
   return()=>window.clearTimeout(timer);
  },[token,context,eligible]);
  return eligible&&!!token&&pulse===token;
@@ -25,7 +25,7 @@ export function StockRow({state,kind,itemId,children,...props}:ComponentProps<'d
  const feedback=rowFeedback(state,kind,itemId),pulse=useSavePulse(feedback.receiptId,feedback.ackEligible,`${state.snapshot?.accountId}:${state.snapshot?.check?.id}`);
  return <div {...props} data-sync={feedback.pending?'pending':pulse?'saved':'idle'}>
   {children}<span className="stock-sync-marker" aria-hidden="true"/>
-  {feedback.label&&<span className="sr-only">{feedback.label}</span>}
+  <span className="stock-row-feedback" data-shared={pulse}>{feedback.label||(pulse?'✓ Shared':'\u00a0')}</span>
  </div>;
 }
 export function StockProgress({value,total,label}:{value:number;total:number;label:string}){
@@ -35,6 +35,6 @@ export function StockProgress({value,total,label}:{value:number;total:number;lab
  return <div className="stock-progress" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={total} aria-valuenow={count} aria-valuetext={`${count} of ${total}; choices, not saved requests`}><span style={{transform:`scaleX(${count/total})`}}/></div>;
 }
 // Compose the existing Radix primitives to scope overlay motion without modifying the shared dialog.
-export function StockConfirmationContent({children,...props}:ComponentProps<typeof DialogPrimitive.Content>){
- return <DialogPortal><DialogOverlay className="stock-confirm-overlay"/><DialogPrimitive.Content {...props} className="stock-confirm-content evening-confirm">{children}</DialogPrimitive.Content></DialogPortal>;
+export function StockConfirmationContent({children,className='',...props}:ComponentProps<typeof DialogPrimitive.Content>){
+ return <DialogPortal><DialogOverlay className="stock-confirm-overlay"/><DialogPrimitive.Content {...props} data-slot="dialog-content" className={'stock-confirm-content evening-confirm '+className}>{children}</DialogPrimitive.Content></DialogPortal>;
 }

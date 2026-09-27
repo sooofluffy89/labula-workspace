@@ -1,4 +1,4 @@
-import type {EveningState,SaveReceipt} from './evening-client';
+import {morningProgress,type EveningState,type SaveReceipt} from './evening-client';
 
 // A matching ACK is necessary but not sufficient: a later intent or shared revision wins.
 export function rowFeedback(state:EveningState,kind:'answer'|'ready',itemId:string){
@@ -8,17 +8,24 @@ export function rowFeedback(state:EveningState,kind:'answer'|'ready',itemId:stri
  const blocked=state.loading||!!state.error||state.unauthorized||state.recoveryBlocked||!!state.freshnessError;
  const row=kind==='answer'?check?.answers.find(a=>a.itemId===itemId):check?.tasks.find(t=>t.itemId===itemId);
  const matches=receipt?.accountId===state.snapshot?.accountId&&c?.kind===kind&&c.checkId===check?.id&&row?.mappingValid&&row.revision===c.revision+1&&('value' in row?row.value===c.value:!row.cancelled&&row.ready===c.value);
- return {pending:pending.length>0,label:pending.length?(pending.some(p=>p.rejected)||blocked?'Save not confirmed — review or retry':'Waiting to sync'):'',receiptId:c?.id??null,ackEligible:!pending.length&&!blocked&&!!matches};
+ const label=pending.some(p=>p.rejected)?'Needs review':pending.length?state.verifying?'Verifying…':state.errorKind==='network'?'On this device · not shared':state.unauthorized||state.recoveryBlocked?'Not shared · action needed':pending.some(p=>state.sendingIds?.includes(p.command.id))?'Sending…':'Waiting to share':'';
+ return {pending:pending.length>0,label,receiptId:c?.id??null,ackEligible:!pending.length&&!blocked&&!!matches};
 }
 export function savedStatus(state:EveningState,account:string,now=Date.now()){
  if(state.snapshot&&state.snapshot.account.toLowerCase()!==account.toLowerCase())return 'Verifying signed-in account…';
+ if(state.verifying)return state.verifying==='finality'?'Verifying the complete morning plan…':'Verifying shared changes…';
+ if(state.loading)return 'Loading shared check…';
+ if(state.notice&&/Please wait|before this action|before opening|cannot be changed|no longer available|Finish needs|Open Correct/.test(state.notice))return state.notice;
+ if(state.finishPhase==='summary')return 'Checking the shared summary…';
+ if(state.finishPhase==='publishing')return 'Publishing morning prep…';
  if(state.errorKind==='network'&&state.pending.length&&!state.unauthorized&&!state.recoveryBlocked)return 'Saved on this device — waiting to sync';
  if(state.error||state.unauthorized||state.recoveryBlocked)return 'Shared state could not be confirmed.';
- if(state.loading)return 'Loading shared check…';
  if(state.saving)return `Saving ${state.pending.length} change${state.pending.length===1?'':'s'}…`;
  if(state.pending.length)return `${state.pending.length} changes waiting to sync`;
  if(!state.snapshot)return 'Loading…';
  if(state.freshnessError||!state.lastVerifiedAt||now-state.lastVerifiedAt>=75000)return 'Shared state needs a refresh.';
+ if(state.needsVerification)return 'Changes shared · complete plan needs verification.';
+ if(morningProgress(state,now).complete)return '✓ All morning items ready · shared';
  return 'Changes saved.';
 }
 export function settledReceipt(state:EveningState,kind:SaveReceipt['command']['kind']){
