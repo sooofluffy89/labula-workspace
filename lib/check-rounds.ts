@@ -14,6 +14,7 @@ export const roundIdSchema=z.enum(roundIds);
 const base={id:z.string().uuid(),actorId:z.string().min(1).max(160),revision:z.number().int().nonnegative()};
 export const roundCommandSchema=z.discriminatedUnion('kind',[
  z.object({...base,kind:z.literal('days'),roundId:roundIdSchema,days:z.array(z.number().int().min(0).max(6)).min(1).max(7)}).strict(),
+ z.object({...base,kind:z.literal('track'),itemId:z.string().min(1).max(100),itemRevision:z.number().int().nonnegative(),track:z.boolean()}).strict(),
  z.object({...base,kind:z.literal('members'),roundId:roundIdSchema.nullable(),itemIds:z.array(z.string().min(1).max(100)).min(1).max(1000)}).strict(),
 ]).superRefine((v,c)=>{
  if(v.kind==='days'&&(new Set(v.days).size!==v.days.length||v.days.length!==(v.roundId==='daily'?7:v.roundId==='weekly'?1:2)))c.addIssue({code:'custom',message:'Choose exactly the required number of different weekdays.'});
@@ -28,6 +29,7 @@ export function filteredRoundItems(items:RoundItem[],target:RoundId,f:RoundFilte
  const ids=new Set(stockRows(items,f.search,f.tracking,true,f.type,f.menu).map(i=>i.itemId));
  return items.filter(i=>ids.has(i.itemId)&&(f.group==='all'||(i.groupId??'none')===f.group)&&(f.current==='all'||(f.current==='this'?i.roundId===target:f.current==='other'?!!i.roundId&&i.roundId!==target:f.current==='none'?!i.roundId:i.roundId===f.current))).sort((a,b)=>a.name.localeCompare(b.name,'en')||a.itemId.localeCompare(b.itemId));
 }
+export function roundCounts(items:RoundItem[]){return {active:items.filter(i=>i.included&&i.track).length,off:items.filter(i=>i.included&&!i.track).length,outside:items.filter(i=>!i.included).length};}
 export function toggleCandidates(selected:string[],candidates:string[]){const all=candidates.every(id=>selected.includes(id));return all?selected.filter(id=>!candidates.includes(id)):[...new Set([...selected,...candidates])];}
 export type Timeline={seq:number;itemId:string;roundId:RoundId|null;days:number[];scheduleRevision:number;active:boolean;recordedAt:string;source:string};
 export type RoundReason={scheduleNeedsReview?:boolean;roundId:RoundId|null;days:number[];scheduleRevision:number;reason:'scheduled'|'overdue'|'extra';firstDue:string|null;lastDue:string|null;lastConfirmed:string|null;planningRevision:number};

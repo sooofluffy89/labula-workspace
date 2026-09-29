@@ -8,7 +8,7 @@ export function matchesInstruction(id:string,filter:InstructionFilter,index:Prep
  return filter==='with'?present:!present;
 }
 export type RoundView={filters:RoundFilters;instruction:InstructionFilter;collapsed:string[];filterOpen:boolean;showSelected:boolean;scroll:number;sort?:'asc'|'desc';tableScroll?:number};
-export const initialRoundView=():RoundView=>({filters:{...emptyRoundFilters,current:'this'},instruction:'all',collapsed:[],filterOpen:false,showSelected:false,scroll:0});
+export const initialRoundView=():RoundView=>({filters:{...emptyRoundFilters,current:'this',tracking:'tracked'},instruction:'all',collapsed:[],filterOpen:false,showSelected:false,scroll:0});
 const views=new Map<string,RoundView>();
 export function roundViewKey(account:string,round:string){return `labula.round-view.v1.${encodeURIComponent(account)}.${round}`;}
 export function keepRoundView(key:string,value:RoundView,storage:Pick<Storage,'setItem'>){views.set(key,value);try{storage.setItem(key,JSON.stringify(value));}catch{/* Navigation preferences stay in memory; operational drafts have separate error handling. */}}

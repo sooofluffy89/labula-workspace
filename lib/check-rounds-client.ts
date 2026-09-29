@@ -20,7 +20,7 @@ export class RoundClient{
  async retry(){const p=this.state.pending;if(!p||p.rejected||this.state.busy||this.disposed)return false;this.emit({busy:true,error:'',notice:''});try{
   await this.read();if(this.disposed)return false;
   const r=await this.request<{operationId?:string;error?:string;code?:string}>('/api/check-rounds',{method:'POST',headers:{'Content-Type':'application/json','If-Match':'0'},body:JSON.stringify(p.command)});
-  if(!r.res.ok){if(r.res.status===409){const rejected={...p,rejected:true};this.store.setItem(this.key(p),JSON.stringify(rejected));this.emit({pending:rejected,reviewReady:false});}throw Error(r.body.error??'Save could not be confirmed. Retry the same request.');}
+  if(!r.res.ok){if([400,403,409].includes(r.res.status)){const rejected={...p,rejected:true};this.store.setItem(this.key(p),JSON.stringify(rejected));this.emit({pending:rejected,reviewReady:false});}throw Error(r.body.error??'Save could not be confirmed. Retry the same request.');}
   if(r.body.operationId!==p.command.id)throw Error('The save result is uncertain. Retry the original request.');
   this.store.removeItem(this.key(p));this.emit({pending:null,notice:'Saved. Applies to new checks. Existing checks keep their list.'});
   const snapshot=await this.read();this.emit({snapshot});this.restore();return true;

@@ -383,3 +383,10 @@
 .manage-mobile-row .manage-mobile-instruction{grid-row:3}
 @media(max-width:360px){.manage-mobile-schedule{grid-template-columns:minmax(105px,1fr) minmax(0,1fr);gap:6px}.manage-mobile-row .stock-row-actions{gap:6px}.manage-frequency-control select{font-size:13px;padding:6px 2px}.manage-next-check{font-size:12px}}
 @media(max-width:767px){.stock-management:has(.manage-frequency-counts)>.stock-identity{flex-wrap:wrap}.manage-mobile-schedule .manage-next-check:before{content:'Next check';display:block;color:#58616e;font-size:11px;margin-bottom:2px}}
+
+/* Round tracking stays distinct from membership and quantity instructions. */
+.round-tracking-filter{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}
+.round-tracking-filter label{display:flex;align-items:center;gap:8px}
+.round-tracking-filter select{min-height:44px;max-width:100%}
+.rounds-view .round-group li>button[aria-pressed]{min-height:44px;min-width:100px}
+@media(max-width:600px){.rounds-view .round-group li{flex-wrap:wrap}.rounds-view .round-group li>label{min-width:0;flex-basis:100%}.rounds-view .round-group li strong{overflow-wrap:anywhere}.round-tracking-filter{align-items:flex-start;flex-direction:column}}
