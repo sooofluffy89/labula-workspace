@@ -33,5 +33,5 @@ export async function readPlanning(day:string){
   const config=calendarVersion(day,calendar)?.config;const scheduleNeedsReview=!!config&&s.round_id!=='daily'&&!!round?.days.some(d=>!config.openDays.includes(d));
   return [{itemId:i.id,name:i.name,kind:i.kind,groupId:s.group_id,roundId:s.round_id,track:true,included:true,round:{scheduleNeedsReview,roundId:s.round_id,days:round?.days??[],scheduleRevision:round?.revision??0,reason:due&&due.first<day?'overdue':'scheduled',firstDue:due?.first??(legacy?day:null),lastDue:due?.last??(legacy?day:null),lastConfirmed:last,planningRevision:state.revision}}];
  }).sort((a,b)=>a.name.localeCompare(b.name,'en')||a.itemId.localeCompare(b.itemId));
- return {stockRows:r[2].results,revision:state.revision,activatedAt:state.activated_at,rounds,timeline,coverage,items,due:items.filter(i=>i.round.firstDue),notebookRevision:notebook.revision,legacy};
+ return {stockRows:r[2].results,revision:state.revision,activatedAt:state.activated_at,rounds,timeline,coverage,coveredThrough,items,due:items.filter(i=>i.round.firstDue),notebookRevision:notebook.revision,legacy};
 }

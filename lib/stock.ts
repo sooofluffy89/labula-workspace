@@ -8,7 +8,7 @@ export const stockChangeSchema=z.object({itemId:z.string().min(1).max(100),revis
 export const stockCommandSchema=z.object({id:z.string().uuid(),meta:actionMetaSchema.optional(),changes:z.array(stockChangeSchema).min(1).max(1000)}).strict().refine(v=>new Set(v.changes.map(c=>c.itemId)).size===v.changes.length,'Each item can only appear once.');
 export type StockCommand=z.infer<typeof stockCommandSchema>;
 export type StockItem={itemId:string;name:string;aliases:string[];kind:'bought'|'prep';categories?:Category[];included:boolean;track:boolean;revision:number;updatedAt:string;updatedBy:string;groupId:IngredientGroupId|null;groupRevision:number;groupSource:string|null};
-export type StockSnapshot={accountId:string;account:string;scope:'kitchen';items:StockItem[];notebookRevision:number;canManageGroups:boolean;groupConflicts:{sourceId:string;sourceName:string;targetId:string;targetName:string;sourceGroupId:IngredientGroupId|null;targetGroupId:IngredientGroupId|null}[]};
+export type StockSnapshot={settings?:import('./stock-frequency').FrequencySettings;accountId:string;account:string;scope:'kitchen';items:StockItem[];notebookRevision:number;canManageGroups:boolean;groupConflicts:{sourceId:string;sourceName:string;targetId:string;targetName:string;sourceGroupId:IngredientGroupId|null;targetGroupId:IngredientGroupId|null}[]};
 export type StockFilter='all'|'tracked'|'untracked';
 export type StockTypeFilter='all'|StockItem['kind'];
 export type StockCategoryFilter=readonly Category[];

@@ -1,5 +1,5 @@
 import {z} from 'zod';
-export const preferenceSchema=z.object({search:z.string().max(500),type:z.enum(['all','bought','prep']),tracking:z.enum(['all','tracked','untracked']),menu:z.array(z.enum(['Starters','Main Dishes','Specials'])).max(3),group:z.string().max(100),current:z.string().max(50),instruction:z.enum(['all','with','without']),sort:z.enum(['asc','desc'])});
+export const preferenceSchema=z.object({search:z.string().max(500),type:z.enum(['all','bought','prep']),tracking:z.enum(['all','tracked','untracked']),menu:z.array(z.enum(['Starters','Main Dishes','Specials'])).max(3),group:z.string().max(100),current:z.string().max(50),instruction:z.enum(['all','with','without']),sort:z.enum(['asc','desc']),frequency:z.enum(['all','tracked','off','daily','twice-weekly','weekly']).optional()});
 export type ListPreference=z.infer<typeof preferenceSchema>;
 export const defaultPreference:ListPreference={search:'',type:'all',tracking:'all',menu:[],group:'all',current:'all',instruction:'all',sort:'asc'};
 const viewSchema=z.object({id:z.string().max(100),name:z.string().trim().min(1).max(50),value:preferenceSchema});
