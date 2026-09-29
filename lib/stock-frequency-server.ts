@@ -8,12 +8,13 @@ import {readCalendarVersions} from './calendar-server';
 import {operationalDay} from './evening';
 import {frequencyCommandSchema,nextCheck,type FrequencySettings} from './stock-frequency';
 import type {RoundId} from './check-rounds';
-const boundarySql="SELECT (SELECT revision FROM round_state WHERE id='kitchen') r,(SELECT revision FROM notebooks WHERE id='kitchen') n,(SELECT coalesce(max(revision),0) FROM operating_calendar_versions) c,(SELECT coalesce(max(rowid),0) FROM kitchen_activity) a";
+// Stock/round changes and published check coverage advance round_state; unrelated chef clicks do not invalidate this read.
+const boundarySql="SELECT (SELECT revision FROM round_state WHERE id='kitchen') r,(SELECT revision FROM notebooks WHERE id='kitchen') n,(SELECT coalesce(max(revision),0) FROM operating_calendar_versions) c";
 export async function readStockSettings(user:ChatGPTUser){
  if(!await canManage(user))return readStock(user);
  const db=getRawDb();
  for(let attempt=0;attempt<3;attempt++){
-  const stock=await readStock(user),before=await db.prepare(boundarySql).first<{r:number;n:number;c:number;a:number}>();
+  const stock=await readStock(user),before=await db.prepare(boundarySql).first<{r:number;n:number;c:number}>();
   const day=operationalDay(),calendar=await readCalendarVersions(),p=await readPlanning(day);
   const result=await db.batch([db.prepare(boundarySql),db.prepare('SELECT id FROM evening_checks WHERE id=?').bind(day),db.prepare('SELECT catalog_id FROM evening_answers WHERE check_id=? AND superseded_by IS NULL').bind(day),db.prepare("SELECT DISTINCT json_extract(a.value,'$.catalogId') AS item_id,v.check_id AS day FROM evening_versions v JOIN evening_checks c ON c.id=v.check_id AND c.version=v.version,json_each(v.payload,'$.answers') a WHERE v.check_id>? AND json_extract(a.value,'$.value') IS NOT NULL AND json_extract(a.value,'$.supersededBy') IS NULL").bind(day)]);
   const after=result[0].results[0] as typeof before,rows=p.stockRows as {item_id:string;revision:number;group_revision:number;round_revision:number;round_id:RoundId|null}[];
