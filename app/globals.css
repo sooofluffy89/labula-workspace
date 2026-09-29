@@ -133,9 +133,16 @@
 .evening-dates{border:1px solid var(--border);padding:12px;margin:8px 0;display:flex;gap:8px;align-items:end;flex-wrap:wrap}.evening-dates label{display:grid;gap:4px;font-size:.875rem;min-width:0}.evening-dates input{padding:8px;border:1px solid var(--border);max-width:100%;min-width:0;min-height:44px;background:var(--background)}.evening-dates p{width:100%;font-size:.875rem;margin:0}.evening-dates button{min-height:44px;height:auto;white-space:normal}
 .evening-confirm{max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));display:flex!important;flex-direction:column;gap:12px!important;max-width:460px!important;padding:20px!important}
 .evening-confirm-list{overflow-y:auto;min-height:0;flex:1;overscroll-behavior:contain}.evening-confirm-list ul{padding-left:22px;list-style:disc}.evening-confirm-list li{overflow-wrap:anywhere;margin-bottom:5px}.evening-confirm [data-slot=dialog-footer]{flex-shrink:0}.evening-confirm button{min-height:48px;white-space:normal;height:auto}
-/* Morning A: compact stable rows, only the right-hand target changes readiness. */
+/* Morning prep: accepted Ready stays under the user's finger until input is quiet, then joins the lower section. */
 .morning-source,.morning-instruction{font-size:.875rem;line-height:1.4;margin:6px 0;color:var(--muted-foreground)}
 .morning-completion{min-height:2.5rem;font-size:.8125rem;line-height:1.4;padding:4px 0;color:var(--muted-foreground)}
+.morning-list-heading{font-size:1rem;line-height:1.35;margin:14px 0 8px}.morning-list-heading span{font-size:.875rem;font-weight:500;color:var(--muted-foreground)}
+.morning-ready-section{margin:16px 0 8px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--background)}
+.morning-ready-heading{width:100%;min-height:48px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;text-align:left;padding:8px 12px;border:0;background:light-dark(#e6f4eb,#193829);color:var(--foreground);font:inherit;cursor:pointer}
+.morning-ready-heading strong{flex:1;min-width:80px}.morning-ready-heading small{font-size:.75rem;color:var(--muted-foreground)}
+.morning-ready-heading:focus-visible{outline:3px solid var(--ring);outline-offset:-3px}.morning-ready-section .morning-columns{position:static}
+.morning-ready-section .morning-group+.morning-group{border-top:1px solid var(--border)}
+.morning-review{color:light-dark(#8b4200,#ffd290)!important;font-weight:600!important}.morning-row.morning-conflicted{border-left-color:light-dark(#a35913,#e0a14f)}
 .morning-columns,.morning-row{display:grid;grid-template-columns:minmax(0,1fr) max(56px,3.5rem);gap:8px;align-items:center;padding:0 4px 0 10px}
 .morning-columns{position:sticky;top:0;z-index:5;background:var(--muted);border-bottom:1px solid var(--border);min-height:36px;padding-top:6px;padding-bottom:6px}
 .morning-columns h2{font-size:.875rem;line-height:1.35;font-weight:600;margin:0;overflow-wrap:anywhere}.morning-columns>span{text-align:center;font-size:.875rem}
@@ -292,6 +299,8 @@
 /* Calm list: reserved feedback space, one sticky status, stable touch targets. */
 .stock-sync-bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);font-size:.8125rem;line-height:1.35;box-shadow:0 2px 5px #00000008}
 .stock-sync-bar p{margin:0;overflow-wrap:anywhere}.stock-sync-bar button{min-height:44px;flex-shrink:0}.stock-sync-bar[data-attention=true]{border-color:#956524}
+.stock-sync-bar[data-morning=true]{flex-wrap:wrap}.stock-sync-bar[data-morning=true]>p{flex:1;min-width:9rem}
+.morning-sticky-progress{flex-basis:100%;min-width:0}.morning-sticky-counts{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-variant-numeric:tabular-nums}.morning-sticky-counts strong{font-size:.9375rem}.morning-sticky-progress .stock-progress{margin:6px 0 0}
 .stock-workflow .evening-columns,.stock-workflow .morning-columns{top:var(--stock-status-height,48px)}
 .stock-workflow .evening-row,.stock-workflow .morning-row{scroll-margin-top:calc(var(--stock-status-height,48px) + 52px)}
 .stock-workflow .stock-row-feedback{position:absolute;left:10px;bottom:4px;max-width:calc(100% - 126px);min-height:16px;font-size:.6875rem;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted-foreground);pointer-events:none}

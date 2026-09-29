@@ -4,7 +4,7 @@ import {isOpenDay,nextOpenDay} from '@/lib/operating-calendar';
 import {OperationsWorkspace} from './operations-workspace';
 import {useInformation} from './information-context';
 import {useEffect,useRef,useState} from 'react';
-import {EveningController,answerBlocked,visibleEveningCheck,type EveningState} from '@/lib/evening-client';
+import {EveningController,answerBlocked,morningProgress,visibleEveningCheck,type EveningState} from '@/lib/evening-client';
 import {dateSchema,calendarDay,operationalDay,shiftDay,displayDay,correctionDiff,type EveningCommand,type EveningSnapshot,type EveningSelection} from '@/lib/evening';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogHeader,DialogTitle,DialogDescription,DialogFooter} from '@/components/ui/dialog';
@@ -68,6 +68,7 @@ export function StockWorkflow({account,active,request,onExit,onDraft,onTeam,oper
  const draft=state.snapshot?.checks.find(c=>c.stage==='draft'&&!c.coveredBy);useEffect(()=>onDraft(draft?.id??null),[draft?.id,onDraft]);
  const matching=!state.loading&&(!state.requestedSelection||state.requestedSelection===state.loadedSelection),displayState=matching?state:{...state,snapshot:null};
  const check=visibleEveningCheck(displayState),server=displayState.snapshot?.check;
+ const morningStats=view==='morning'&&check?.version?morningProgress(displayState,now):null;
  const calendar=state.snapshot?.calendar;
  useEffect(()=>{if(calendar&&!check&&!targetEdited.current)setTarget(nextOpenDay(day,calendar.versions));},[calendar,check,day]);
  useEffect(()=>{let cancelled=false;if(view==='morning'&&calendar&&!morningExplicit.current&&!state.pending.length&&!state.loading&&!state.verifying){const next=nextOpenDay(calendarDay(),calendar.versions,true);if(morningDay!==next)queueMicrotask(()=>{if(!cancelled)void navigate('morning',next);});}return()=>{cancelled=true;}; // Calendar arrival corrects only the untouched default.
@@ -111,9 +112,10 @@ export function StockWorkflow({account,active,request,onExit,onDraft,onTeam,oper
   {displayMessage&&(operationsView||view==='manage')&&<p className="notice" role="status">{displayMessage}</p>}
   {!operationsOnly&&<OperationsWorkspace account={account} active={active&&!!operationsView} mode={operationsView??'history'} isOwner={isOwner} canManage={canManage} onBack={()=>{openOperations(null);void navigate(view);}}/>}
   <div hidden={!!operationsView}>
-  {view!=='manage'&&<div className="stock-sync-bar" ref={statusRef} data-attention={!!state.error||!!state.freshnessError||state.recoveryBlocked}>
-   <p id="stock-save-status" role="status" aria-live={extraOpen||!!selected||!!summary?'off':'polite'} aria-atomic="true">{notes.state.loading?'Verifying saved notes…':(!state.loading&&!state.verifying&&!state.saving&&!state.error&&displayMessage)||savedStatus(state,account,now).replace('Changes saved.','Answers and Ready saved.')}{notes.state.pending.length>0&&` · ${notes.state.pending.length} ${notes.state.pending.length===1?'note':'notes'} not shared yet`}</p>
+  {view!=='manage'&&<div className="stock-sync-bar" ref={statusRef} data-morning={!!morningStats&&morningStats.tasks.length>0} data-attention={!!state.error||!!state.freshnessError||state.recoveryBlocked}>
+   <p id="stock-save-status" role="status" aria-live={extraOpen||!!selected||!!summary?'off':'polite'} aria-atomic="true">{notes.state.loading?'Verifying saved notes…':(!state.loading&&!state.verifying&&!state.saving&&!state.error&&displayMessage)||savedStatus(state,account,now).replace('Changes saved.','Answers and Ready saved.')}{notes.state.pending.length>0&&` · ${notes.state.pending.length} ${notes.state.pending.length===1?'note':'notes'} not shared yet`}{morningStats&&morningStats.tasks.length>0&&` · ${morningStats.remaining} remaining`}</p>
    {(!!state.error||state.recoveryBlocked||!!state.freshnessError||pending.length>0&&!state.saving)&&<Button variant="outline" disabled={state.loading||state.saving||!!state.verifying} onClick={()=>{if(first?.rejected){document.getElementById('stock-save-details')?.scrollIntoView({block:'center'});}else void controller.current?.retry();}}>{state.verifying?'Verifying…':first?.rejected?'Review':'Retry'}</Button>}
+   {morningStats&&morningStats.tasks.length>0&&<div className="morning-sticky-progress"><div className="morning-sticky-counts"><strong>{morningStats.remaining} remaining</strong><span>{morningStats.ready} of {morningStats.tasks.length} ready</span></div><StockProgress key={`${account}:${check?.id}:${check?.version}`} value={morningStats.ready} total={morningStats.tasks.length} label="Morning items marked ready"/></div>}
   </div>}
 
   <PrepNotesStatus/><fieldset disabled={!memberActive} className="stock-access-fieldset">{manageVisited&&!operationsOnly&&<div hidden={view!=='manage'}><p className="muted">Track selects items for future checks. Existing checks keep their original list.</p><StockList account={account} active={active&&view==='manage'} openRounds={request.rounds?request.serial:0}/></div>}{view!=='manage'&&<>
