@@ -1,6 +1,6 @@
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
-import {owner,RequestError,workspaceRole} from './notebook-server';
+import {owner,RequestError,workspaceRole,canManage,managementUsersSql} from './notebook-server';
 import {activeMember} from './activity-server';
 import {readCalendarVersions,readOperationalAccess} from './calendar-server';
 import {dateSchema,operationalDay,calendarDay,shiftDay,type CheckAnswer,type MorningTask} from './evening';
@@ -9,7 +9,7 @@ import {calendarObligation,type Timeline} from './check-rounds';
 import {measureDay,outcomeCommandSchema,summarizeDays,type HistoryBundle,type HistoryEvent,type PublishedCheck,type Outcome,type DayMeasure,type OperationsFilters,type OperationsPage,jsonState} from './operations';
 import {csvCell} from './activity';
 
-async function archiveAccess(user:ChatGPTUser,analytics=false){await readOperationalAccess(user);if(await workspaceRole(user)==='cook')throw new RequestError('Your Cook role includes operational check details only.',403);if(analytics&&!await owner(user))throw new RequestError('Only the owner can view Operations overview.',403);}
+async function archiveAccess(user:ChatGPTUser,analytics=false){await readOperationalAccess(user);if(await workspaceRole(user)==='cook')throw new RequestError('Your Cook role includes operational check details only.',403);if(analytics&&!await canManage(user))throw new RequestError('Only the owner or a Manager can view Operations overview.',403);}
 const answer=(a:Record<string,unknown>)=>({itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,value:a.value,position:a.position,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,groupId:a.group_id,round:a.round_snapshot?JSON.parse(String(a.round_snapshot)):null,supersededBy:a.superseded_by} as CheckAnswer);
 function bounded<T>(rows:T[],what:string){if(rows.length>100000)throw new RequestError(`This ${what} is too large. Choose a shorter date range. No partial results were returned.`,413);return rows;}
 async function loadBundles(from:string,to:string,asOf:string,checkId?:string):Promise<HistoryBundle[]>{
@@ -44,7 +44,7 @@ async function loadBundles(from:string,to:string,asOf:string,checkId?:string):Pr
 }
 export async function readHistoryDetail(user:ChatGPTUser,id:string,asOf=new Date().toISOString()){
  await archiveAccess(user);dateSchema.parse(id);const bundle=(await loadBundles(id,id,asOf,id))[0];if(!bundle)throw new RequestError('This check was not recorded.',404);
- const calendar=await readCalendarVersions();return {accountId:user.userId,isOwner:await owner(user),bundle,measure:measureDay(bundle,calendar,asOf),capturedThrough:asOf};
+ const calendar=await readCalendarVersions();return {accountId:user.userId,isOwner:await owner(user),canManage:await canManage(user),bundle,measure:measureDay(bundle,calendar,asOf),capturedThrough:asOf};
 }
 function parseFilters(q:URLSearchParams,defaults:{from:string;to:string}):OperationsFilters{
  const from=dateSchema.parse(q.get('from')||defaults.from),to=dateSchema.parse(q.get('to')||defaults.to);
@@ -98,12 +98,12 @@ export async function readOperations(user:ChatGPTUser,q:URLSearchParams):Promise
   return [{...d,tasks}];
  }).sort((a,b)=>b.targetDay.localeCompare(a.targetDay)||b.id.localeCompare(a.id));
  const recurring=new Map<string,OperationsPage['recurring'][number]>();for(const d of days)for(const t of d.tasks){let r=recurring.get(t.catalogId);if(!r){r={id:t.catalogId,name:t.name,kind:t.kind,groupIds:[],currentGroupId:groups.find(g=>g.item_id===successor(t.catalogId))?.group_id??null,currentName:items.find(i=>i.id===successor(t.catalogId))?.name??null,mergedInto:successor(t.catalogId)!==t.catalogId?successor(t.catalogId):null,count:0,evaluable:0,onTime:0,missing:0,missed:0,changes:0};recurring.set(t.catalogId,r);}r.count++;if(!r.groupIds.includes(t.groupId))r.groupIds.push(t.groupId);if(['on-time','late-recorded','not-recorded'].includes(t.status)){r.evaluable++;if(t.status==='on-time')r.onTime++;else r.missing++;}if(t.outcome&&['late','not_prepared'].includes(t.outcome.outcome))r.missed++;if(t.addedAfterDeadline||t.removedAfterDeadline)r.changes++;}
- const isOwner=await owner(user),people=isOwner?(await getRawDb().prepare('SELECT user_id AS id,name FROM kitchen_team WHERE user_id IS NOT NULL ORDER BY name').all<{id:string;name:string}>()).results:[];
- const limit=exporting?10000:20;return {accountId:user.userId,account:user.email,isOwner,capturedThrough:asOf,next:offset+limit<days.length?String(offset+limit):null,days:days.slice(offset,offset+limit),summary:summarizeDays(days),recurring:[...recurring.values()].sort((a,b)=>b.missed-a.missed||b.missing-a.missing||a.name.localeCompare(b.name)),calendar,people,total:days.length,range:{from:f.from,to:f.to},...(exporting?{sources:bundles.filter(b=>days.some(d=>d.id===b.check.id))}:{})};
+ const isOwner=await owner(user),manage=await canManage(user),people=manage?(await getRawDb().prepare('SELECT user_id AS id,name FROM kitchen_team WHERE user_id IS NOT NULL ORDER BY name').all<{id:string;name:string}>()).results:[];
+ const limit=exporting?10000:20;return {accountId:user.userId,account:user.email,isOwner,canManage:manage,capturedThrough:asOf,next:offset+limit<days.length?String(offset+limit):null,days:days.slice(offset,offset+limit),summary:summarizeDays(days),recurring:[...recurring.values()].sort((a,b)=>b.missed-a.missed||b.missing-a.missing||a.name.localeCompare(b.name)),calendar,people,total:days.length,range:{from:f.from,to:f.to},...(exporting?{sources:bundles.filter(b=>days.some(d=>d.id===b.check.id))}:{})};
 }
 function zDateTime(s:string){return /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/.test(s)&&Number.isFinite(Date.parse(s));}
 export async function outcomeCommand(user:ChatGPTUser,raw:unknown){
- const c=outcomeCommandSchema.parse(raw);if(c.actorId!==user.userId)throw new RequestError('The signed-in account changed.',403);const member=await activeMember(user);if(!await owner(user))throw new RequestError('Only the owner can clarify historical outcomes.',403);
+ const c=outcomeCommandSchema.parse(raw);if(c.actorId!==user.userId)throw new RequestError('The signed-in account changed.',403);const member=await activeMember(user);if(!await canManage(user))throw new RequestError('Only the owner or a Manager can clarify historical outcomes.',403);
  const db=getRawDb(),request=JSON.stringify(c),now=new Date().toISOString();
  const replay=async()=>{const old=await db.prepare('SELECT * FROM operating_commands WHERE id=?').bind(c.id).first<{actor_id:string;request:string}>();if(!old)return false;if(old.actor_id!==user.userId||old.request!==request)throw new RequestError('That operation belongs to another change.',409);return true;};if(await replay())return {operationId:c.id,replayed:true};
  const detail=await readHistoryDetail(user,c.checkId,now),task=detail.measure.tasks.find(t=>t.itemId===c.itemId&&t.sourceVersion===c.version);
@@ -111,7 +111,7 @@ export async function outcomeCommand(user:ChatGPTUser,raw:unknown){
  if(c.reportedReadyAt&&(c.outcome!=='late'||c.reportedReadyAt>now))throw new RequestError('A reported time must be in the past and is only used for Prepared late.');
  const args=[c.id,user.userId,request],gate='EXISTS(SELECT 1 FROM operating_commands WHERE id=? AND actor_id=? AND request=?)';
  const r=await db.batch([
-  db.prepare('INSERT INTO operating_commands(id,actor_id,request,created_at) SELECT ?,?,?,? WHERE (SELECT id FROM operating_outcomes WHERE check_id=? AND item_id=? AND version=? ORDER BY rowid DESC LIMIT 1) IS ? AND EXISTS(SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) AND EXISTS(SELECT 1 FROM kitchen_owner WHERE user_id=?) ON CONFLICT(id) DO NOTHING').bind(...args,now,c.checkId,c.itemId,c.version,c.supersedesId,user.userId,user.userId),
+  db.prepare(`INSERT INTO operating_commands(id,actor_id,request,created_at) SELECT ?,?,?,? WHERE (SELECT id FROM operating_outcomes WHERE check_id=? AND item_id=? AND version=? ORDER BY rowid DESC LIMIT 1) IS ? AND EXISTS(SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) AND EXISTS(SELECT 1 FROM ${managementUsersSql} WHERE user_id=?) ON CONFLICT(id) DO NOTHING`).bind(...args,now,c.checkId,c.itemId,c.version,c.supersedesId,user.userId,user.userId),
   db.prepare(`INSERT INTO operating_outcomes(id,check_id,item_id,version,outcome,note,reported_ready_at,supersedes_id,actor_id,actor_name,created_at) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE ${gate} ON CONFLICT(id) DO NOTHING`).bind(c.id,c.checkId,c.itemId,c.version,c.outcome,c.note,c.reportedReadyAt,c.supersedesId,user.userId,member.name,now,...args),
  ]);
  if(!r[0].meta.changes&&!await replay())throw new RequestError('Another explanation was saved. Refresh and review it before replacing it.',409);

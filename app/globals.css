@@ -345,3 +345,7 @@
 .round-instruction button { min-height: 44px; white-space: normal; }
 .round-group li:focus-visible { outline: 2px solid #b91c28; outline-offset: 2px; }
 @media(max-width:430px){ .round-instruction { padding-left: 0; } .round-inline-editor { padding: 10px; } .round-search { display: grid; grid-template-columns: minmax(0,1fr); } }
+
+/* Role choice remains separate from ordinary profile edits. */
+.team-person-actions label { display:flex; flex-direction:column; gap:4px; font-size:.85rem; }
+.team-person-actions select { min-height:42px; max-width:100%; border:1px solid var(--border); border-radius:6px; background:var(--background); color:inherit; padding:8px; font:inherit; }

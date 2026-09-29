@@ -14,7 +14,7 @@ import {validateNotebook,validationMessage,type Notebook} from '@/lib/notebook';
 import {downloadJson} from '@/lib/download';
 import {requestJson} from '@/lib/request-json';
 
-type Reply={data:unknown;revision:number;user:string;updatedAt:string;updatedBy:string;error?:string;code?:string;isOwner:boolean};
+type Reply={data:unknown;revision:number;user:string;updatedAt:string;updatedBy:string;error?:string;code?:string;isOwner:boolean;canManage?:boolean};
 type Props={notebook:Notebook;revision:number;account:string;itemId?:string;batchScope?:BatchScope;remaining?:boolean;startItemId?:string;restoreDraft?:PrepDraft|null;onRestoreHandled?:()=>void;returnFocus?:()=>void;onClose:()=>void;onSaved:(body:Reply)=>void;onDraftChange?:()=>void};
 export function PrepWorkflow(props:Props){
  const [ready,setReady]=useState<Reply|null>(null),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);

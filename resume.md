@@ -1,3 +1,5 @@
+> DOKONČENO: v51 je nasazená (03b53aa497440dcd7d9da66f290b5463cb766685). Závěrečná čtecí kontrola produkčního editoru prošla, včetně Escape a návratu focusu. Provozní data nebyla měněna. Úplný záznam: ../edit-items-release-2026-09-29/completion.md a release-receipt.json. Níže je historický checkpoint; další nasazení není potřeba.
+
 # Pozastaveno na pokyn uživatele — 2026-09-29
 
 > AKTUALIZACE: Uživatel následně výslovně požádal pokračovat. Níže je zachovaný historický checkpoint, nikoli aktuální zákaz práce. HEAD a všechny změny byly ověřeny beze změny. Poslední TypeScript i lint znovu prošly; 63 regresí zůstává platných. QA server byl znovu spuštěn na 5199. Nejnovější ověřená záloha (36), capturedAt 2026-09-29T11:59:19.167Z, má totožná data všech 29 tabulek. Nasazení a jeho konečný výsledek budou doloženy v release receipt mimo zdrojový strom.

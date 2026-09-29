@@ -1,7 +1,7 @@
 import {profileCommandSchema,applyProfileCommand} from './prep-draft';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
-import {readNotebook,owner,snapshot,RequestError,notebookPayload} from './notebook-server';
+import {readNotebook,owner,canManage,snapshot,RequestError,notebookPayload} from './notebook-server';
 import {validateNotebook,validationMessage,type Notebook} from './notebook';
 import {validateOrdinaryEdit} from './catalog';
 import {bulkCommandSchema,applyBulkCommand} from './bulk';
@@ -15,7 +15,7 @@ async function command(user:ChatGPTUser,revision:number,id:string,kind:'bulk'|'s
  const fingerprint=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');
  const db=getRawDb();
  const receipt=async()=>{const previous=await db.prepare('SELECT * FROM notebook_commands WHERE id=?').bind(id).first<Receipt>();if(!previous)return null;if(previous.actor_id!==user.userId||previous.kind!==kind||previous.fingerprint!==fingerprint||previous.before_revision!==revision)throw new RequestError('This request ID belongs to a different change.',409,'command_mismatch');return previous;};
- const respond=async(r:Receipt,replayed:boolean)=>kind!=='save'?{...snapshot(await readNotebook(user),user,await owner(user)),commandId:id,replayed}:{revision:r.after_revision,updatedAt:r.created_at,updatedBy:user.email,commandId:id,replayed};
+ const respond=async(r:Receipt,replayed:boolean)=>kind!=='save'?{...snapshot(await readNotebook(user),user,await owner(user),await canManage(user)),commandId:id,replayed}:{revision:r.after_revision,updatedAt:r.created_at,updatedBy:user.email,commandId:id,replayed};
  const previous=await receipt();if(previous)return respond(previous,true);
  const row=await readNotebook(user);
  if(row.revision!==revision){const raced=await receipt();if(raced)return respond(raced,true);throw new RequestError('The shared notebook changed. Keep your list, load the latest notebook and review it again.',409,'revision_conflict');}

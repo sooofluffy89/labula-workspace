@@ -30,8 +30,8 @@ export class TeamController{
  private async read(){
   const {res,body}=await this.transport<TeamDirectory&{error?:string}>('/api/team?management=1',{cache:'no-store'});
   if(!res.ok){if(res.status===401||res.status===403)this.emit({directory:null});throw Error(body.error??'Could not load the kitchen team.');}
-  if(!body.isOwner||body.email.toLowerCase()!==this.email.toLowerCase()||(this.accountId&&this.accountId!==body.accountId)){
-   this.emit({directory:null});throw Error('The signed-in account changed. Return to the original owner account before continuing.');
+  if(!(body.canManage??body.isOwner)||body.email.toLowerCase()!==this.email.toLowerCase()||(this.accountId&&this.accountId!==body.accountId)){
+   this.emit({directory:null});throw Error('The signed-in account changed. Return to the original managing account before continuing.');
   }
   this.accountId=body.accountId;
   if(!this.disposed)this.emit({directory:body});

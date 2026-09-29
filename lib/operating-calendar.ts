@@ -11,7 +11,7 @@ export const calendarConfigSchema=z.object({
 }).strict().superRefine((v,c)=>{for(const [key,values] of [['exceptions',v.exceptions.map(x=>x.day)],['deadlines',v.deadlines.map(x=>x.weekday)],['deadlineExceptions',v.deadlineExceptions.map(x=>x.day)]] as const)if(new Set<string|number>(values).size!==values.length)c.addIssue({code:'custom',path:[key],message:'Each day must appear only once.'});});
 export type CalendarConfig=z.infer<typeof calendarConfigSchema>;
 export type CalendarVersion={revision:number;effectiveDay:string;config:CalendarConfig;createdAt:string;createdBy:string};
-export type CalendarSnapshot={versions:CalendarVersion[];revision:number;accountId:string;account?:string;isOwner:boolean;impacts?:{id:string;targetDay:string;stage:string}[]};
+export type CalendarSnapshot={versions:CalendarVersion[];revision:number;accountId:string;account?:string;isOwner:boolean;canManage?:boolean;impacts?:{id:string;targetDay:string;stage:string}[]};
 export const defaultCalendar=():CalendarConfig=>({openDays:[0,2,3,4,5,6],exceptions:[],deadlines:Array.from({length:7},(_,weekday)=>({weekday,evening:null,eveningOffset:0,morning:null})),deadlineExceptions:[]});
 export function weekday(day:string){return new Date(day+'T12:00:00Z').getUTCDay();}
 export function calendarVersion(day:string,versions:CalendarVersion[]){return versions.filter(v=>v.effectiveDay<=day).sort((a,b)=>b.effectiveDay.localeCompare(a.effectiveDay)||b.revision-a.revision)[0]??null;}

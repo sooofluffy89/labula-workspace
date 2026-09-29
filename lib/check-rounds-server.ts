@@ -2,13 +2,13 @@ import {readCalendarVersions} from './calendar-server';
 import {calendarVersion} from './operating-calendar';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
-import {owner,RequestError} from './notebook-server';
+import {RequestError,canManage,managementUsersSql} from './notebook-server';
 import {readStock} from './stock-server';
 import {activeMember,eventStatement} from './activity-server';
 import {readPlanning} from './round-store';
 import {operationalDay} from './evening';
 import {roundCommandSchema,type RoundsSnapshot,type RoundId} from './check-rounds';
-async function requireOwner(user:ChatGPTUser){if(!await owner(user))throw new RequestError('Only the owner can manage check rounds.',403,'role_restricted');}
+async function requireOwner(user:ChatGPTUser){if(!await canManage(user))throw new RequestError('Only the owner or a Manager can manage check rounds.',403,'role_restricted');}
 export async function readRounds(user:ChatGPTUser):Promise<RoundsSnapshot>{
  await requireOwner(user);
  for(let attempt=0;attempt<3;attempt++){
@@ -32,7 +32,7 @@ export async function roundCommand(user:ChatGPTUser,raw:unknown){
   extra.push(JSON.stringify(c.itemIds),c.roundId);
  }
  const args=[c.id,user.userId,request],gate='EXISTS(SELECT 1 FROM round_commands WHERE id=? AND actor_id=? AND request=? AND applied=0)';
- const receipt=db.prepare(`INSERT INTO round_commands(id,actor_id,request,applied,created_at) SELECT ?,?,?,0,? WHERE EXISTS(SELECT 1 FROM round_state WHERE id='kitchen' AND revision=?) AND EXISTS(SELECT 1 FROM kitchen_owner WHERE id='owner' AND user_id=?) AND EXISTS(SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) AND ${condition} ON CONFLICT(id) DO NOTHING`).bind(...args,now,c.revision,user.userId,user.userId,...extra);
+ const receipt=db.prepare(`INSERT INTO round_commands(id,actor_id,request,applied,created_at) SELECT ?,?,?,0,? WHERE EXISTS(SELECT 1 FROM round_state WHERE id='kitchen' AND revision=?) AND EXISTS(SELECT 1 FROM ${managementUsersSql} WHERE user_id=?) AND EXISTS(SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) AND ${condition} ON CONFLICT(id) DO NOTHING`).bind(...args,now,c.revision,user.userId,user.userId,...extra);
  const writes:ReturnType<typeof db.prepare>[]=[];
  if(c.kind==='days'){
   writes.push(eventStatement(user,member.name,c,now,{category:'stock',action:'round-days',before:"json_object('roundId',r.id,'days',json(r.days),'revision',r.revision)",after:"json_object('roundId',r.id,'days',json(?),'revision',r.revision+1)",from:`FROM check_rounds r WHERE r.id=? AND ${gate}`,args:[JSON.stringify(c.days),c.roundId,...args]}));
