@@ -4,7 +4,7 @@ import {InformationContext,useInformation} from './information-context';
 import {informationHash,parseInformationHash,type InformationTarget,type Information,type IngredientInformation,type ReviewInformation} from '@/lib/information';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription} from '@/components/ui/dialog';
-import {PrepNotesProvider,PrepInstructionEditor,ServiceFeedback,noteContext} from './prep-notes';
+import {PrepNotesProvider,usePrepNotes,PrepInstructionEditor,ServiceFeedback,noteContext} from './prep-notes';
 import {ProfileSummary} from './prep-fields';
 import {ActivityList} from './stock-activity';
 import {groupLabel} from '@/lib/ingredient-groups';
@@ -14,7 +14,10 @@ import {stockAnswerLabel} from '@/lib/stock-wording';
 import {directUsageNote} from '@/lib/direct-usage';
 
 type Frame={key:string;target:InformationTarget;scroll:number};
-export function InformationProvider({account,operationsOnly=false,onEdit,onRounds,children}:{account:string;operationsOnly?:boolean;onEdit?:(id:string)=>void;onRounds?:()=>void;children:ReactNode}){
+type InformationProviderProps={account:string;operationsOnly?:boolean;onEdit?:(id:string)=>void;onRounds?:()=>void;children:ReactNode};
+export function InformationProvider(props:InformationProviderProps){return <PrepNotesProvider account={props.account}><InformationProviderContent {...props}/></PrepNotesProvider>;}
+function InformationProviderContent({account,operationsOnly=false,onEdit,onRounds,children}:InformationProviderProps){
+ const notes=usePrepNotes();
  const [invalid,setInvalid]=useState(false);
  const closing=useRef(false);
  const [frames,setFrames]=useState<Frame[]>([]),[current,setCurrent]=useState<string|null>(null);
@@ -22,7 +25,7 @@ export function InformationProvider({account,operationsOnly=false,onEdit,onRound
  useEffect(()=>{framesRef.current=frames;},[frames]);
  const remember=()=>{const f=framesRef.current.find(f=>f.key===current);if(f)f.scroll=panel.current?.scrollTop??0;};
  const open=(target:InformationTarget)=>{
-  if(closing.current)return;setInvalid(false);remember();if(!current){origin.current=document.activeElement instanceof HTMLElement?document.activeElement:null;baseHash.current=location.hash;depth.current=0;setFrames([]);}
+  if(closing.current||notes.controller&&!notes.controller.keepDrafts())return;setInvalid(false);remember();if(!current){origin.current=document.activeElement instanceof HTMLElement?document.activeElement:null;baseHash.current=location.hash;depth.current=0;setFrames([]);}
   const key=crypto.randomUUID();history.pushState({...history.state,labulaInformation:{key,account,depth:depth.current+1}},'',informationHash(target));depth.current++;setFrames(old=>[...(current?old:[]),{key,target,scroll:0}]);setCurrent(key);
  };
  useEffect(()=>{
@@ -30,15 +33,15 @@ export function InformationProvider({account,operationsOnly=false,onEdit,onRound
   queueMicrotask(read);window.addEventListener('popstate',read);window.addEventListener('hashchange',read);return()=>{window.removeEventListener('popstate',read);window.removeEventListener('hashchange',read);};
  },[account]);
  useEffect(()=>{if(panel.current){panel.current.scrollTop=framesRef.current.find(f=>f.key===current)?.scroll??0;panel.current.focus({preventScroll:true});}},[current]);
- const close=()=>{setInvalid(false);remember();const count=depth.current;depth.current=0;setCurrent(null);if(count){closing.current=true;history.go(-count);}else history.replaceState(history.state,'',location.pathname+location.search+baseHash.current);};
- const back=()=>{remember();if(depth.current>1){depth.current--;history.back();}else close();};
+ const close=()=>{if(notes.controller&&!notes.controller.keepDrafts())return;setInvalid(false);remember();const count=depth.current;depth.current=0;setCurrent(null);if(count){closing.current=true;history.go(-count);}else history.replaceState(history.state,'',location.pathname+location.search+baseHash.current);};
+ const back=()=>{if(notes.controller&&!notes.controller.keepDrafts())return;remember();if(depth.current>1){depth.current--;history.back();}else close();};
  const edit=(id:string)=>{editAfterClose.current=()=>onEdit?.(id);close();};
  const rounds=()=>{editAfterClose.current=onRounds??null;close();};
- return <PrepNotesProvider account={account}><InformationContext.Provider value={open}>{children}<Dialog open={!!current||invalid} onOpenChange={v=>{if(!v)close();}}><DialogContent className="information-dialog" onCloseAutoFocus={e=>{e.preventDefault();const action=editAfterClose.current;editAfterClose.current=null;if(action)action();else if(origin.current?.isConnected)origin.current.focus({preventScroll:true});else document.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus({preventScroll:true});}}>
+ return <InformationContext.Provider value={open}>{children}<Dialog open={!!current||invalid} onOpenChange={v=>{if(!v)close();}}><DialogContent className="information-dialog" onCloseAutoFocus={e=>{e.preventDefault();const action=editAfterClose.current;editAfterClose.current=null;if(action)action();else if(origin.current?.isConnected)origin.current.focus({preventScroll:true});else document.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus({preventScroll:true});}}>
   <DialogHeader><DialogTitle>Kitchen information</DialogTitle><DialogDescription>Viewing does not change answers or tasks. Instructions and feedback are saved only when you choose Save or Add.</DialogDescription></DialogHeader>
   <div className="actions"><Button variant="outline" onClick={back}>{frames.findIndex(f=>f.key===current)>0?'← Back':'← Back to list'}</Button><span className="muted small">{operationsOnly?'Operational details':'Saved records'}</span></div>
   <div className="information-scroll" tabIndex={-1} ref={panel}>{invalid&&<p role="alert">This information link is invalid. Close it to return to the workspace.</p>}{frames.map(f=><div key={f.key} hidden={current!==f.key}><InformationView active={current===f.key} target={f.target} account={account} operationsOnly={operationsOnly} onEdit={onEdit?edit:undefined} onRounds={onRounds?rounds:undefined}/></div>)}</div>
- </DialogContent></Dialog></InformationContext.Provider></PrepNotesProvider>;
+ </DialogContent></Dialog></InformationContext.Provider>;
 }
 
 export function InformationView({active,target,account,operationsOnly,onEdit,onRounds}:{active:boolean;target:InformationTarget;account:string;operationsOnly:boolean;onEdit?: (id:string)=>void;onRounds?:()=>void}){

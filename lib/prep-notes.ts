@@ -14,6 +14,7 @@ export const prepNoteCommandSchema=z.discriminatedUnion('kind',[
 export type PrepNoteCommand=z.infer<typeof prepNoteCommandSchema>;
 export type PrepComment={id:string;check_id:string;item_id:string;catalog_id:string;version:number;instruction_revision:number|null;phase:'evening'|'morning';text:string;actor_name:string;actor_id:string;actor_email:string;created_at:string;client_at:string|null};
 export type PrepInstruction={item_id:string;text:string;revision:number;updated_at:string;updated_by:string};
+export type InstructionIndex={account:string;accountId:string;supported:1;instructions:PrepInstruction[]};
 export type InstructionVersion={id:string;item_id:string;text:string;revision:number;actor_name:string;created_at:string};
 export type NotesPage={account:string;accountId:string;supported:1;canEdit:boolean;instruction?:PrepInstruction|null;comments:PrepComment[];versions:InstructionVersion[];next:string|null;versionsNext?:number|null};
 export const contextKey=(c:NoteContext)=>[c.checkId,c.itemId,c.catalogId,c.version,c.instructionRevision??'legacy',c.phase].map(encodeURIComponent).join('.');

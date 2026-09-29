@@ -329,3 +329,19 @@
 .prep-service-dialog[data-state=open]{animation:stock-dialog-in 170ms ease-out}
 .prep-service-dialog[data-state=closed]{animation:stock-dialog-out 120ms ease-out}
 @media(prefers-reduced-motion:reduce){.prep-service-dialog[data-state],.prep-service-dialog *,.stock-workflow .morning-toggle,body:has(.prep-service-dialog) [data-slot=dialog-overlay]{animation:none!important;transition:none!important;scroll-behavior:auto}}
+
+/* Round membership and instruction editing remain separate touch targets. */
+.round-search { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-block: 16px; }
+.round-search > input { flex: 1 1 240px; min-width: 0; }
+.round-search > label { display: grid; gap: 4px; flex: 1 1 200px; }
+.round-search select,.round-filter-grid select { min-height: 44px; max-width: 100%; }
+.round-instruction { width: 100%; min-width: 0; padding-left: 52px; }
+.round-instruction-preview { overflow-wrap: anywhere; }
+.round-instruction .prep-instruction-line { margin: 0; }
+.round-inline-editor { padding: 12px; border: 1px solid #cbd0d8; border-radius: 8px; background: #fafafa; margin-block: 8px; }
+.round-group .round-inline-editor label { display: block; min-height: 0; min-width: 0; cursor: auto; }
+.round-inline-editor textarea { display: block; width: 100%; min-height: 130px; margin-top: 6px; padding: 10px; border: 1px solid #777; border-radius: 6px; overflow-wrap: anywhere; }
+.round-inline-editor .actions { flex-wrap: wrap; }
+.round-instruction button { min-height: 44px; white-space: normal; }
+.round-group li:focus-visible { outline: 2px solid #b91c28; outline-offset: 2px; }
+@media(max-width:430px){ .round-instruction { padding-left: 0; } .round-inline-editor { padding: 10px; } .round-search { display: grid; grid-template-columns: minmax(0,1fr); } }

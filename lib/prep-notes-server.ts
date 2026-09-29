@@ -33,6 +33,13 @@ export async function readPrepNotes(user:ChatGPTUser,q:URLSearchParams):Promise<
  base.comments=rows.slice(0,20);const last=base.comments.at(-1);base.next=rows.length>20&&last?JSON.stringify([last.created_at,last.id]):null;
  return {...base,...(instruction!==undefined?{instruction}:{})};
 }
+// Owner-only, one read for the list. Versions and service feedback stay on the detail endpoint.
+export async function readInstructionIndex(user:ChatGPTUser){
+ await syncMember(user);
+ if(!await isOwner(user))throw new RequestError('Only the owner can manage prep instructions.',403);
+ const instructions=(await getRawDb().prepare('SELECT item_id,text,revision,updated_at,updated_by FROM prep_instructions').all<PrepInstruction>()).results;
+ return {account:user.email,accountId:user.userId,supported:1 as const,instructions};
+}
 export async function prepNoteCommand(user:ChatGPTUser,raw:unknown){
  const c:PrepNoteCommand=prepNoteCommandSchema.parse(raw),db=getRawDb(),member=await syncMember(user);
  if(c.actorId!==user.userId)throw new RequestError('Sign in with the account that wrote this note before retrying.',403);

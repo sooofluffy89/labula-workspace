@@ -7,7 +7,7 @@ const dir=await mkdtemp(tmpdir()+'/labula-operations-'),RealDate=Date;
 let clock='2026-09-26T12:00:00.000Z';
 try{
  globalThis.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[clock]));}static now(){return RealDate.parse(clock);}};
- const db=new DatabaseSync(':memory:');db.function('strftime',()=>clock);
+ const db=new DatabaseSync(':memory:');db.function('strftime',(format,value)=>{assert.equal(value,'now');assert.equal(format,'%Y-%m-%dT%H:%M:%fZ');return clock;});
  for(const f of(await readdir('drizzle')).filter(f=>f.endsWith('.sql')).sort())db.exec(await readFile('drizzle/'+f,'utf8'));
  let fail=false;
  const stmt=(sql,args=[])=>({bind(...v){return stmt(sql,v)},async first(){return db.prepare(sql).get(...args)??null},async all(){return{results:db.prepare(sql).all(...args)}},async run(){return this.exec()},exec(){if(fail&&sql.startsWith('INSERT INTO operating_outcomes')){fail=false;throw Error('Synthetic rollback')}const q=db.prepare(sql);return q.columns().length?{results:q.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(q.run(...args).changes)}}}});
