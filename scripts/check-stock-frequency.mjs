@@ -45,6 +45,10 @@ try{
  clock='2026-09-30T12:00:00.000Z';s=await read();assert.equal(s.settings.items['item-0'].next.state,'due');clock='2026-10-01T12:00:00.000Z';s=await read();assert.equal(s.settings.items['item-0'].next.state,'unconfirmed');assert.match(s.settings.items['item-0'].next.note,/2026-09-30/);
  const boundary=cmd('off');clock='2026-10-02T02:00:00.000Z';assert.equal((await post(m.frequency,boundary)).status,409);
  assert.equal(m.operationalDay(new RealDate('2026-10-25T02:59:00Z')),'2026-10-24');assert.equal(m.operationalDay(new RealDate('2026-10-25T03:00:00Z')),'2026-10-25');
+ const calVersions=[{revision:1,effectiveDay:'2026-09-27',config:m.defaultCalendar(),createdAt:clock,createdBy:'owner'}],dailyRound={id:'daily',days:[0,1,2,3,4,5,6],revision:0,updatedAt:clock,updatedBy:'owner'},event={seq:1,itemId:'test',roundId:'daily',days:dailyRound.days,scheduleRevision:0,active:true,recordedAt:'2026-09-27T12:00:00Z',source:'test'};
+ const future=dates=>m.nextCheck({item:{included:true,track:true},round:dailyRound,events:[event],calendar:calVersions,day:'2026-09-29',lastConfirmed:'2026-09-29',confirmedDays:dates,currentCheck:'included'});
+ assert.equal(future(['2026-10-02']).date,'2026-09-30','future confirmation cannot cover earlier unconfirmed date');assert.equal(future(['2026-09-30','2026-10-02']).date,'2026-10-01');assert.equal(future(['2026-09-30','2026-10-01','2026-10-02']).date,'2026-10-03');
+ assert.equal(m.nextCheck({item:{included:true,track:true},round:dailyRound,events:[event],calendar:calVersions,day:'2026-09-27',lastConfirmed:'2026-09-27',currentCheck:'included'}).date,'2026-09-29','Monday is closed; next evening Tuesday, not morning target');
  const missing=m.nextCheck({item:{included:true,track:true},round:undefined,events:[],calendar:[],day:'2026-09-27',lastConfirmed:null,currentCheck:null});assert.equal(missing.state,'review');
  console.log('PASS frequency: immutable draft/published plan/Ready, Sunday→Tuesday, calendar exceptions/closed days, unconfirmed debt, cutoff/DST, missing metadata');
  // Actual controller/handlers: local durable intent, lost reply after commit, reload, safe original retry, double click and errors.

@@ -26,14 +26,17 @@ export function makeFrequencyCommand(item:StockItem,s:FrequencySettings,frequenc
 }
 // Same immutable timeline/confirmed coverage rules as the operational planner.
 // A single horizon evaluation finds the earliest obligation; no per-day database queries.
-export function nextCheck({item,round,events,calendar,day,lastConfirmed,futureConfirmed,currentCheck}:{item:Pick<StockItem,'included'|'track'>;round:Round|undefined;events:Timeline[];calendar:CalendarVersion[];day:string;lastConfirmed:string|null;futureConfirmed?:string|null;currentCheck:'included'|'absent'|null}):NextCheck{
+export function nextCheck({item,round,events,calendar,day,lastConfirmed,confirmedDays=[],currentCheck}:{item:Pick<StockItem,'included'|'track'>;round:Round|undefined;events:Timeline[];calendar:CalendarVersion[];day:string;lastConfirmed:string|null;confirmedDays?:string[];currentCheck:'included'|'absent'|null}):NextCheck{
  const context=currentCheck==='included'?'Still in the existing check.':currentCheck==='absent'?'Not in the existing check.':'';
  if(!item.included||!item.track)return {state:'off',date:null,note:currentCheck==='included'?context:''};
  if(!round||!round.days.length||!events.length||!calendar.length)return {state:'review',date:null,note:'Ask a Manager to review the shared schedule.'};
  const due=calendarObligation(events,day,lastConfirmed&&lastConfirmed<=day?lastConfirmed:null,calendar);
  if(due){const open=isOpenDay(day,calendar);return {state:due.first<day?'unconfirmed':'due',date:open?day:nextOpenDay(day,calendar),note:[due.first<day?`Unconfirmed since ${due.first}.`:'',context,!open?'Carried to the next open day.':''].filter(Boolean).join(' ')};}
- const covered=futureConfirmed&&futureConfirmed>day?futureConfirmed:day;
- const upcoming=calendarObligation(events,shiftDay(covered,740),covered,calendar);
+ // A future published check covers only its own day and earlier dates once that day is reached.
+ // Do not let a later confirmation suppress an earlier still-due future date.
+ let covered=day,upcoming=calendarObligation(events,shiftDay(day,740),covered,calendar);
+ const published=new Set(confirmedDays);
+ while(upcoming&&published.has(upcoming.first)){covered=upcoming.first;upcoming=calendarObligation(events,shiftDay(day,740),covered,calendar);}
  const config=calendarVersion(upcoming?.first??day,calendar)?.config;
  const carried=upcoming&&round.id!=='daily'&&(!round.days.includes(weekday(upcoming.first))||config&&round.days.some(d=>!config.openDays.includes(d)));
  return upcoming?{state:'next',date:upcoming.first,note:[currentCheck==='included'?'Existing check keeps its list.':'',carried?'Closed-day checks carry to the next open day. Review Check rounds.':''].filter(Boolean).join(' ')}:{state:'review',date:null,note:'No upcoming open check could be verified.'};
