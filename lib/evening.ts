@@ -30,3 +30,7 @@ export type EveningSnapshot={prepNotes?:1;sync?:{version:1;cursor:string};calend
 export type EveningSelection={day:string}|{morningDay:string};
 export function selectionQuery(selection:EveningSelection){return new URLSearchParams(selection).toString();}
 export function correctionDiff(check:EveningCheck){const active=new Map(check.tasks.filter(t=>!t.cancelled).map(t=>[t.itemId,t]));return {added:check.answers.filter(a=>a.value==='missing'&&(!active.has(a.itemId)||active.get(a.itemId)?.catalogId!==a.catalogId)),removed:check.tasks.filter(t=>!t.cancelled&&check.answers.find(a=>a.itemId===t.itemId)?.value!=='missing')};}
+
+// Persisted with the atomic publication; this is a commit receipt, not a sync cursor.
+export type PublicationReceipt={protocol:1;actorId:string;checkId:string;targetDay:string;version:number;revision:number;planRevision:number;confirmedAt:string;confirmedBy:string};
+export type PublicationPlan={check:CheckSummary&{grouped:boolean};tasks:MorningTask[]};

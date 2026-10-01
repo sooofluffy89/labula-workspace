@@ -42,7 +42,7 @@ export async function readEvening(user:ChatGPTUser,selection:EveningSelection={d
 export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  const c:EveningCommand=eveningCommandSchema.parse(raw),db=getRawDb(),request=JSON.stringify(c);
  if(c.actorId!==user.userId)throw new RequestError('The signed-in account changed. Return to the original account before retrying.',403);
- const replay=async()=>{const r=await db.prepare('SELECT * FROM evening_commands WHERE id=?').bind(c.id).first<Receipt>();if(!r)return null;if(r.actor_id!==user.userId||r.request!==request)throw conflict('This request belongs to a different account or change.','command_mismatch');if(!r.applied)throw Error('Incomplete operation receipt');return {operationId:r.id,...JSON.parse(r.result) as {checkId:string},replayed:true};};
+ const replay=async()=>{const r=await db.prepare('SELECT * FROM evening_commands WHERE id=?').bind(c.id).first<Receipt>();if(!r)return null;if(r.actor_id!==user.userId||r.request!==request)throw conflict('This request belongs to a different account or change.','command_mismatch');if(!r.applied)throw Error('Incomplete operation receipt');return {operationId:r.id,...JSON.parse(r.result) as {checkId:string;publication?:import('./evening').PublicationReceipt},replayed:true};};
  const prior=await replay();if(prior)return prior;
  const member=await activeMember(user);
  const checkId=c.kind==='start'?c.day:c.checkId;
@@ -126,9 +126,17 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
   updateCheck("stage='confirmed',version=version+1,revision=revision+1,plan_revision=plan_revision+1,plan_day=target_day,confirmed_at=?,confirmed_by=?",[now,user.email]);
  }
  if((c.kind==='start'&&!check)||c.kind==='dates'){if(snapshot.calendar?.versions.length&&checkId>=snapshot.calendar.versions[0].effectiveDay){condition+=' AND (SELECT max(revision) FROM operating_calendar_versions)=?';conditionArgs.push(c.calendarRevision);}}
- const receipt=db.prepare(`INSERT INTO evening_commands (id,actor_id,request,result,applied,created_at) SELECT ?,?,?,?,0,? WHERE (${condition}) AND EXISTS (SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) ON CONFLICT(id) DO NOTHING`).bind(c.id,user.userId,request,JSON.stringify({checkId}),now,...conditionArgs,user.userId);
- await db.batch([receipt,...eveningEvents(user,member.name,c,now,gate,args),...writes,db.prepare(`UPDATE evening_commands SET applied=1 WHERE id=? AND actor_id=? AND request=? AND applied=0`).bind(...args)]);
- const saved=await replay();if(saved)return saved;
+ const receipt=db.prepare(`INSERT INTO evening_commands (id,actor_id,request,result,applied,created_at) SELECT ?,?,?,?,0,? WHERE (${condition}) AND EXISTS (SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) ON CONFLICT(id) DO NOTHING`).bind(c.id,user.userId,request,JSON.stringify({checkId,...(c.kind==='confirm'?{publication:{protocol:1,actorId:user.userId,checkId,targetDay:check!.targetDay,version:check!.version+1,revision:check!.revision+1,planRevision:check!.planRevision+1,confirmedAt:now,confirmedBy:user.email}}:{})}),now,...conditionArgs,user.userId);
+ const results=await db.batch([receipt,...eveningEvents(user,member.name,c,now,gate,args),...writes,db.prepare(`UPDATE evening_commands SET applied=1 WHERE id=? AND actor_id=? AND request=? AND applied=0`).bind(...args),
+  ...(c.kind==='confirm'?[db.prepare('SELECT * FROM evening_checks WHERE id=?').bind(checkId),db.prepare(`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? ORDER BY position`).bind(checkId)]:[]),
+ ]);
+ const saved=await replay();if(saved){
+  if(c.kind==='confirm'&&saved.publication&&results[0].meta.changes){
+   const row=results.at(-2)!.results[0] as CheckRow,byId=new Map(snapshot.catalog.map(i=>[i.id,i]));
+   return {...saved,plan:{check:{...summary(row),grouped:!!row.grouped},tasks:(results.at(-1)!.results as TaskRow[]).map(t=>taskView(t,byId))}};
+  }
+  return saved;
+ }
  if(c.kind==='start')throw conflict('No items selected for checking. Choose items in Manage list.','empty_roster');
  throw conflict(c.kind==='confirm'?'Answers, morning tasks or the catalog changed. Refresh the summary and confirm again.':undefined);
 }
@@ -138,8 +146,8 @@ export function taskView(t:TaskRow,byId?:Map<string,{name:string;kind:string}>):
 
 // Confirmation needs the selected answers/tasks, catalog links and competing target,
 // not bootstrap, all historical answers, round coverage or preparation profiles.
-async function readConfirmation(user:ChatGPTUser,day:string):Promise<EveningSnapshot>{
- const db=getRawDb(),r=await db.batch([
+export async function readConfirmation(user:ChatGPTUser,day:string):Promise<EveningSnapshot>{
+ day=dateSchema.parse(day);const db=getRawDb(),r=await db.batch([
   db.prepare("SELECT revision,(SELECT json_group_array(json_object('id',json_extract(j.value,'$.id'),'name',json_extract(j.value,'$.name'),'kind',json_extract(j.value,'$.kind'))) FROM json_each(n.payload,'$.items') j) AS catalog FROM notebooks n WHERE id='kitchen'"),
   db.prepare('SELECT * FROM evening_checks WHERE id=? OR plan_day=(SELECT target_day FROM evening_checks WHERE id=?)').bind(day,day),
   db.prepare(`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? ORDER BY position`).bind(day),
