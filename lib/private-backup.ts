@@ -9,11 +9,13 @@ export const privateBackupTables = [
   'operating_calendar_versions', 'operating_commands', 'operating_outcomes',
   'prep_instructions', 'prep_instruction_versions', 'prep_note_commands', 'prep_feedback',
   'team_commands', 'check_rounds', 'round_state', 'round_timeline', 'round_commands',
+  'checking_station_items', 'checking_station_commands',
 ] as const;
 
 export type PrivateBackup = {
   format: 'Labula private database backup';
   version: 1;
+  stations?: 1;
   capturedAt: string;
   tables: Record<string, unknown[]>;
   counts: Record<string, number>;
@@ -22,7 +24,7 @@ export type PrivateBackup = {
 export function isCompletePrivateBackup(value: unknown): value is PrivateBackup {
   if (typeof value !== 'object' || value === null) return false;
   const backup = value as Partial<PrivateBackup>;
-  if (backup.format !== 'Labula private database backup' || backup.version !== 1 ||
+  if (backup.format !== 'Labula private database backup' || backup.version !== 1 || backup.stations !== 1 ||
       typeof backup.capturedAt !== 'string' || !Number.isFinite(Date.parse(backup.capturedAt)) ||
       typeof backup.tables !== 'object' || backup.tables === null ||
       typeof backup.counts !== 'object' || backup.counts === null) return false;
@@ -35,10 +37,14 @@ export function isCompletePrivateBackup(value: unknown): value is PrivateBackup 
 
 // Complete historical exports stay readable, without pretending absent metadata was recorded.
 export function readPrivateBackup(value:unknown){
- if(isCompletePrivateBackup(value))return {backup:value,legacyRounds:false,legacyOperations:false,legacyNotes:false};
+ if(isCompletePrivateBackup(value))return {backup:value,legacyRounds:false,legacyOperations:false,legacyNotes:false,legacyStations:false};
  if(typeof value!=='object'||!value)return null;
  const b=value as PrivateBackup;
  const upgraded={...b,tables:{...b.tables},counts:{...b.counts}};
+ const stations=['checking_station_items','checking_station_commands'];
+ const missingStations=b.stations===undefined&&stations.every(t=>b.tables?.[t]===undefined);
+ if(b.stations===1&&stations.some(t=>b.tables?.[t]===undefined))return null;
+ if(missingStations){for(const t of stations){upgraded.tables[t]=[];upgraded.counts[t]=0;}upgraded.stations=1;}
  const notes=['prep_instructions','prep_instruction_versions','prep_note_commands','prep_feedback'];
  const missingNotes=notes.every(t=>b.tables?.[t]===undefined);
  if(missingNotes)for(const t of notes){upgraded.tables[t]=[];upgraded.counts[t]=0;}
@@ -47,5 +53,5 @@ export function readPrivateBackup(value:unknown){
  const missingRounds=rounds.every(t=>b.tables?.[t]===undefined),missingOperations=operations.every(t=>b.tables?.[t]===undefined);
  if(missingRounds)for(const t of rounds){upgraded.tables[t]=[];upgraded.counts[t]=0;}
  if(missingOperations)for(const t of operations){upgraded.tables[t]=[];upgraded.counts[t]=0;}
- return isCompletePrivateBackup(upgraded)?{backup:b,legacyRounds:missingRounds,legacyOperations:missingOperations,legacyNotes:missingNotes}:null;
+ return isCompletePrivateBackup(upgraded)?{backup:b,legacyRounds:missingRounds,legacyOperations:missingOperations,legacyNotes:missingNotes,legacyStations:missingStations}:null;
 }

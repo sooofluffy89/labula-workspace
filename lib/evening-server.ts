@@ -10,10 +10,11 @@ import type {Notebook} from './notebook';
 import {RequestError} from './notebook-server';
 import {readStock} from './stock-server';
 import {dateSchema,eveningCommandSchema,operationalDay,type CheckSummary,type CheckAnswer,type MorningTask,type EveningSnapshot,type EveningCommand,type EveningSelection} from './evening';
+import {stationIdSchema} from './checking-stations';
 import {validGroup} from './ingredient-groups';
 
 export type CheckRow={calendar_revision:number|null;id:string;target_day:string;plan_day:string|null;stage:'draft'|'confirmed';revision:number;plan_revision:number;version:number;confirmed_at:string|null;confirmed_by:string|null;grouped:number;rounds_version:number};
-export type AnswerRow={instruction_snapshot?:string|null;feedback_count?:number;check_id:string;item_id:string;catalog_id:string;name:string;kind:'bought'|'prep';position:number;value:'have'|'missing'|null;revision:number;updated_at:string;updated_by:string;first_actor:string|null;first_device:string|null;first_sequence:number|null;superseded_by:string|null;group_id:string|null;round_snapshot:string|null};
+export type AnswerRow={station_snapshot?:string|null;instruction_snapshot?:string|null;feedback_count?:number;check_id:string;item_id:string;catalog_id:string;name:string;kind:'bought'|'prep';position:number;value:'have'|'missing'|null;revision:number;updated_at:string;updated_by:string;first_actor:string|null;first_device:string|null;first_sequence:number|null;superseded_by:string|null;group_id:string|null;round_snapshot:string|null};
 export type TaskRow=Omit<AnswerRow,'value'|'first_actor'|'first_device'|'first_sequence'|'superseded_by'>&{ready:number;cancelled:number};
 type Receipt={id:string;actor_id:string;request:string;result:string;applied:number};
 export const summary=(r:CheckRow):CheckSummary=>({calendarRevision:r.calendar_revision,roundsVersion:r.rounds_version,id:r.id,targetDay:r.target_day,stage:r.stage,revision:r.revision,planRevision:r.plan_revision,version:r.version,confirmedAt:r.confirmed_at,confirmedBy:r.confirmed_by});
@@ -69,8 +70,8 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
    condition+=" AND EXISTS(SELECT 1 FROM evening_checks WHERE id=? AND stage='draft' AND revision=?)";conditionArgs.push(checkId,c.revision);
    updateCheck('revision=revision+1',[]);
   }
-  writes.push(db.prepare(`INSERT INTO evening_answers(check_id,item_id,catalog_id,name,kind,position,value,revision,updated_at,updated_by,group_id,round_snapshot,instruction_snapshot)
-   SELECT ?,json_extract(j.value,'$.itemId'),json_extract(j.value,'$.itemId'),json_extract(j.value,'$.name'),json_extract(j.value,'$.kind'),json_extract(j.value,'$.position'),NULL,0,?,?,json_extract(j.value,'$.groupId'),json_extract(j.value,'$.round'),${instructionSnapshotSql("json_extract(j.value,'$.itemId')")} FROM json_each(?) j
+  writes.push(db.prepare(`INSERT INTO evening_answers(check_id,item_id,catalog_id,name,kind,position,value,revision,updated_at,updated_by,group_id,round_snapshot,instruction_snapshot,station_snapshot)
+   SELECT ?,json_extract(j.value,'$.itemId'),json_extract(j.value,'$.itemId'),json_extract(j.value,'$.name'),json_extract(j.value,'$.kind'),json_extract(j.value,'$.position'),NULL,0,?,?,json_extract(j.value,'$.groupId'),json_extract(j.value,'$.round'),${instructionSnapshotSql("json_extract(j.value,'$.itemId')")},(SELECT json_object('stationId',t.station_id,'revision',coalesce(t.revision,0)) FROM (SELECT 1) base LEFT JOIN checking_station_items t ON t.item_id=json_extract(j.value,'$.itemId')) FROM json_each(?) j
    WHERE ${c.kind==='start'?'EXISTS(SELECT 1 FROM evening_checks WHERE id=? AND start_operation=?) AND ':''}${gate} ON CONFLICT(check_id,item_id) DO NOTHING`).bind(checkId,now,user.email,JSON.stringify(roster),...(c.kind==='start'?[checkId,c.id]:[]),...args));
  }else if(c.kind==='answer'||c.kind==='resolve'){
   condition="EXISTS (SELECT 1 FROM evening_checks c JOIN evening_answers a ON a.check_id=c.id WHERE c.id=? AND c.stage='draft' AND c.version=? AND a.item_id=? AND a.revision=?)";conditionArgs=[checkId,c.generation,c.itemId,c.revision];
@@ -141,7 +142,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  throw conflict(c.kind==='confirm'?'Answers, morning tasks or the catalog changed. Refresh the summary and confirm again.':undefined);
 }
 
-export function answerView(a:AnswerRow,byId?:Map<string,{name:string;kind:string}>):CheckAnswer{return {instruction:a.instruction_snapshot?JSON.parse(a.instruction_snapshot):null,feedbackCount:a.feedback_count??0,itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||!byId||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId?.get(a.catalog_id)?.name??null,groupId:validGroup(a.group_id),round:a.round_snapshot?JSON.parse(a.round_snapshot):null};}
+export function answerView(a:AnswerRow,byId?:Map<string,{name:string;kind:string}>):CheckAnswer{return {...(a.station_snapshot?{stationId:stationIdSchema.parse(JSON.parse(a.station_snapshot).stationId)}:{}),instruction:a.instruction_snapshot?JSON.parse(a.instruction_snapshot):null,feedbackCount:a.feedback_count??0,itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||!byId||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId?.get(a.catalog_id)?.name??null,groupId:validGroup(a.group_id),round:a.round_snapshot?JSON.parse(a.round_snapshot):null};}
 export function taskView(t:TaskRow,byId?:Map<string,{name:string;kind:string}>):MorningTask{return {instruction:t.instruction_snapshot?JSON.parse(t.instruction_snapshot):null,feedbackCount:t.feedback_count??0,itemId:t.item_id,catalogId:t.catalog_id,name:t.name,kind:t.kind,position:t.position,ready:!!t.ready,cancelled:!!t.cancelled,revision:t.revision,updatedAt:t.updated_at,updatedBy:t.updated_by,mappingValid:!byId||byId.get(t.catalog_id)?.kind===t.kind,groupId:validGroup(t.group_id)};}
 
 // Confirmation needs the selected answers/tasks, catalog links and competing target,

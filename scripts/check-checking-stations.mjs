@@ -1,0 +1,62 @@
+import assert from 'node:assert/strict';
+import {harness,sleep} from './sync-harness.mjs';
+const h=await harness(),{m,db}=h;
+const json=async r=>{const b=await r.json();assert.equal(r.status,200,JSON.stringify(b));return b;};
+const read=()=>m.stock.GET().then(json);
+const station=(c,u=h.owner)=>{globalThis.syncUser=u;return h.post(m.stations,c);};
+const item=(s,id='item-0')=>s.items.find(i=>i.itemId===id);
+const rows=table=>db.prepare('SELECT * FROM '+table+' ORDER BY rowid').all();
+try{
+ let stock=await read();assert.equal(stock.stations,1);assert.ok(stock.items.every(i=>i.stationId===null&&i.stationRevision===0));
+ const stockBefore=rows('stock_items'),notebookBefore=rows('notebooks'),roundsBefore=rows('round_timeline'),draftBefore=(await m.api.GET(new Request('http://test.local/api/evening?day='+h.day)).then(json)).check;
+ const c=m.makeStationCommand(stock.items.slice(0,3),'station-1',h.owner.userId);await json(await station(c));
+ assert.deepEqual(rows('stock_items'),stockBefore);assert.deepEqual(rows('notebooks'),notebookBefore);assert.deepEqual(rows('round_timeline'),roundsBefore);
+ assert.deepEqual((await m.api.GET(new Request('http://test.local/api/evening?day='+h.day)).then(json)).check,draftBefore,'running check stays frozen');
+ assert.equal(rows('checking_station_items').length,3);const after=rows('checking_station_items'),audits=rows('kitchen_activity');await json(await station(c));assert.deepEqual(rows('checking_station_items'),after);assert.deepEqual(rows('kitchen_activity'),audits);
+ stock=await read();const noop=m.makeStationCommand([item(stock)],'station-1','owner');await json(await station(noop));assert.deepEqual(rows('checking_station_items'),after);assert.deepEqual(rows('kitchen_activity'),audits);
+ const batch=m.makeStationCommand([item(stock,'item-0'),item(stock,'item-4')],'station-2','owner');await json(await station(m.makeStationCommand([item(stock)],'station-3','owner')));const saved=rows('checking_station_items');assert.equal((await station(batch)).status,409);assert.deepEqual(rows('checking_station_items'),saved,'whole batch conflict');
+ assert.equal(rows('checking_station_commands').some(i=>i.id===batch.id),false);
+ stock=await read();const rollback=m.makeStationCommand([item(stock,'item-4')],'station-2','owner');h.fail(sql=>sql.startsWith('INSERT INTO checking_station_items'));assert.equal((await station(rollback)).status,503);assert.deepEqual(rows('checking_station_items'),saved);assert.equal(rows('checking_station_commands').some(i=>i.id===rollback.id),false);await json(await station(rollback));
+ await json(await station(c));assert.equal(item(await read()).stationId,'station-3','old receipt does not overwrite later choice');
+ const manager={userId:'manager',email:'manager@example.test'};db.prepare("INSERT INTO kitchen_team(id,user_id,email,name,access_role,active,revision,created_at) VALUES('manager','manager','manager@example.test','Manager','manager',1,0,?)").run(new Date().toISOString());
+ globalThis.syncUser=manager;stock=await read();const mc=m.makeStationCommand([item(stock,'item-6')],'station-2','manager');await json(await station(mc,manager));assert.equal(rows('kitchen_activity').find(a=>a.command_id===mc.id).actor_id,'manager');
+ assert.equal((await station({...mc,id:crypto.randomUUID(),actorId:'cook'},h.cook)).status,403);
+ globalThis.syncUser=null;assert.equal((await h.post(m.stations,mc)).status,401);
+ db.prepare("UPDATE kitchen_team SET active=0,revision=revision+1 WHERE user_id='manager'").run();assert.equal((await station(mc,manager)).status,403);
+ globalThis.syncUser=h.owner;stock=await read();assert.equal((await station({...m.makeStationCommand([item(stock)],null,'owner'),actorId:'manager'})).status,403);
+ const stationEvents=rows('kitchen_activity').filter(a=>a.action==='station');assert.ok(stationEvents.every(a=>a.actor_id&&a.recorded_at&&JSON.parse(a.after_value).revision));
+ console.log('PASS stations: sparse defaults, independent metadata, actual atomic batch/CAS/rollback, no-op/replay, actor/Owner/Manager/Cook/paused/anonymous');
+ // Metadata is captured inside the creation transaction, not a pre-read per row.
+ const oldGlobal=h.db.prepare("SELECT station_snapshot FROM evening_answers WHERE check_id=? LIMIT 1").get(h.day).station_snapshot;
+ let v=await h.send({kind:'start',day:'2026-09-27',targetDay:'2026-09-29'});
+ assert.equal(v.check.answers.find(a=>a.itemId==='item-0').stationId,'station-3');assert.equal(v.check.answers.find(a=>a.itemId==='item-6').stationId,'station-2');
+ const frozen=structuredClone(v.check);stock=await read();await json(await station(m.makeStationCommand([item(stock)],'station-1','owner')));
+ v=(await m.api.GET(new Request('http://test.local/api/evening?day=2026-09-27')).then(json));assert.deepEqual(v.check,frozen);
+ const raw=db.prepare('SELECT station_snapshot FROM evening_answers WHERE check_id=? AND item_id=?').get('2026-09-27','item-0');assert.equal(JSON.parse(raw.station_snapshot).stationId,'station-3');
+ db.prepare('UPDATE evening_answers SET station_snapshot=NULL WHERE check_id=?').run(h.day);const legacy=(await m.api.GET(new Request('http://test.local/api/evening?day='+h.day)).then(json));assert.equal(legacy.check.answers[0].stationId,undefined);
+ const stripped=structuredClone(v);stripped.check.answers.forEach(a=>delete a.stationId);assert.equal(m.finishFingerprint(stripped),m.finishFingerprint(v),'v61 approval is unchanged by presentation metadata');
+ assert.equal(oldGlobal,JSON.stringify({stationId:null,revision:0}));
+ assert.ok(m.stationGroups(v.check.answers).every(g=>g.rows.every(a=>(a.stationId??null)===g.id)));assert.equal(m.stationGroups(v.check.answers).flatMap(g=>g.rows).length,80);
+ assert.equal(v.check.answers.filter(a=>m.matchesStation(a,'station-1')).length,2);
+ // Two clients: independent station writes sync, hidden unanswered rows still block Finish.
+ const forUser=u=>async(url,init)=>{globalThis.syncUser=u;return h.requester(url,init);};
+ const c1=new m.EveningController(h.owner.email,h.storage(),{day:'2026-09-27'},forUser(h.owner)),c2=new m.EveningController(h.cook.email,h.storage(),{day:'2026-09-27'},forUser(h.cook));
+ await c1.refresh();await c2.refresh();assert.equal(c1.answer('item-0','missing'),true);await c1.flush();assert.equal(c2.answer('item-6','missing'),true);await c2.flush();await c1.syncVisible(true);await c2.syncVisible(true);assert.equal(c1.state.snapshot.check.answers.find(a=>a.itemId==='item-6').value,'missing');assert.equal(c2.state.snapshot.check.answers.find(a=>a.itemId==='item-0').value,'missing');
+ assert.match(m.finishProblem(c1.reviewFinish()),/unchecked/);c1.endFinish();
+ for(const a of c1.visibleCheck().answers)if(a.value===null)c1.answer(a.itemId,'have');await c1.flush();
+ const approved=c1.reviewFinish();approved.check.answers.forEach(a=>delete a.stationId);assert.equal(c1.requestFinish(approved),true,'old approval shape works with new data');
+ for(let i=0;i<400&&c1.state.finish?.phase!=='complete';i++)await sleep(10);assert.equal(c1.state.finish.phase,'complete');
+ globalThis.syncUser=h.owner;const version=JSON.parse(db.prepare('SELECT payload FROM evening_versions WHERE check_id=?').get('2026-09-27').payload);assert.equal(version.answers.find(a=>a.itemId==='item-0').stationId,'station-3');assert.equal(db.prepare('SELECT count(*) n FROM morning_tasks WHERE check_id=?').get('2026-09-27').n,2);
+ const source=await m.information.GET(new Request('http://test.local/api/information?target='+encodeURIComponent(JSON.stringify({kind:'source',id:'2026-09-27',item:'item-0'})))).then(json);assert.equal(source.data.answers.find(a=>a.itemId==='item-0').stationId,'station-3');
+ const history=await m.operations.GET(new Request('http://test.local/api/operations?check=2026-09-27')).then(json);assert.equal(history.bundle.answers.find(a=>a.itemId==='item-0').stationId,'station-3');
+ const csvReply=await m.operations.GET(new Request('http://test.local/api/operations?from=2026-09-29&to=2026-09-29&export=1'));assert.equal(csvReply.status,200);const csv=await csvReply.text();assert.match(csv,/Checking stations recorded/);assert.match(csv,/Station 3/);
+ c1.dispose();c2.dispose();
+ console.log('PASS stations: frozen transaction snapshot, legacy snapshot/fingerprint, station groups, two distinct chefs/delta sync, whole-check Finish, immutable publication and unchanged Morning');
+ // Durable management request: lost committed reply, reload, same-ID retry and quota.
+ const store=h.storage();let lose=true;const req=async(url,init)=>{globalThis.syncUser=h.owner;const reply=await h.requester(url,init);if(init?.method==='POST'&&lose){lose=false;throw new TypeError('Lost ACK');}return reply;};
+ let client=new m.StockController(h.owner.email,store,req);await client.refresh();stock=client.state.snapshot;const lost=m.makeStationCommand([item(stock,'item-10')],'station-2','owner');assert.equal(await client.changeStation(lost),false);assert.ok(client.state.pending);const original=client.state.pending.command.id;client.dispose();client=new m.StockController(h.owner.email,store,req);await client.refresh();assert.equal(client.state.pending.command.id,original);assert.equal(client.state.pending.command.changes[0].beforeStationId,null);assert.equal(client.state.pending.command.changes[0].stationId,'station-2');assert.equal(await client.retry(),true);assert.equal(store.length,0);assert.equal(rows('checking_station_commands').filter(i=>i.id===original).length,1);
+ stock=client.state.snapshot;const stale=m.makeStationCommand([item(stock,'item-10')],'station-3','owner');await json(await station(m.makeStationCommand([item(stock,'item-10')],null,'owner')));assert.equal(await client.changeStation(stale),false);assert.equal(client.state.pending.rejected,true);await client.refresh();assert.equal(await client.applyReviewed(),false);assert.equal(await client.keepShared(),true);client.dispose();
+ const quota={...h.storage(),setItem(){throw Error('quota');}};client=new m.StockController(h.owner.email,quota,req);await client.refresh();assert.equal(await client.changeStation(m.makeStationCommand([item(client.state.snapshot)],null,'owner')),false);assert.equal(client.state.pending,null);assert.match(client.state.error,/Nothing was sent/);client.dispose();
+ globalThis.syncUser=h.owner;const backup=await m.backup.GET().then(json);assert.ok(m.isCompletePrivateBackup(backup));assert.equal(backup.stations,1);assert.equal(Object.keys(backup.tables).length,35);const old=structuredClone(backup);delete old.stations;for(const t of ['checking_station_items','checking_station_commands']){delete old.tables[t];delete old.counts[t];}assert.equal(m.isCompletePrivateBackup(old),false);assert.equal(m.readPrivateBackup(old).legacyStations,true);const incomplete=structuredClone(backup);delete incomplete.tables.checking_station_items;assert.equal(m.readPrivateBackup(incomplete),null);
+ console.log('PASS stations: original durable recovery, rejected shared review, storage failure and complete/legacy/incomplete backups');
+}finally{globalThis.syncUser=h.owner;db.close();}

@@ -1,3 +1,4 @@
+import {validStation} from './checking-stations';
 import {initializeRounds} from './round-store';
 import {activeMember,eventStatement} from './activity-server';
 import {getRawDb} from '@/db';
@@ -9,7 +10,7 @@ import groupSeed from './ingredient-group-seed.json';
 import {usageMap,type Notebook} from './notebook';
 import {menu,categories} from './menu';
 
-type StockRow={item_id:string;included:number;track:number;revision:number;updated_at:string;updated_by:string;group_id:string|null;group_revision:number;group_source:string|null};
+type StockRow={item_id:string;included:number;track:number;revision:number;updated_at:string;updated_by:string;group_id:string|null;group_revision:number;group_source:string|null;station_id:string|null;station_revision:number;station_updated_at:string|null;station_updated_by:string|null};
 type Receipt={id:string;actor_id:string;request:string;result:string};
 const seed=JSON.stringify(groupSeed.assignments.filter(row=>row.proposedGroupId));
 // Read the *saved* catalog inside SQL. A missing entry is new, an explicit tombstone is not.
@@ -31,7 +32,7 @@ export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
  // A single transaction prevents pairing a newer catalog with an older merge configuration.
  const results=await getRawDb().batch([
   getRawDb().prepare("SELECT payload,revision FROM notebooks WHERE id='kitchen'"),
-  getRawDb().prepare('SELECT * FROM stock_items'),
+  getRawDb().prepare('SELECT s.*,t.station_id,coalesce(t.revision,0) AS station_revision,t.updated_at AS station_updated_at,t.updated_by AS station_updated_by FROM stock_items s LEFT JOIN checking_station_items t ON t.item_id=s.item_id'),
  ]);
  const notebook=results[0].results[0] as {payload:string;revision:number};
  const rows=new Map((results[1].results as StockRow[]).map(row=>[row.item_id,row]));
@@ -41,7 +42,7 @@ export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
   const usedBy=usage.get(item.id)?.all;
   const itemCategories=categories.filter(category=>menu.some(dish=>dish.category===category&&usedBy?.has(dish.id)));
   // A newly committed catalog item may arrive between initialization and this read.
-  return {itemId:item.id,name:item.name,aliases:item.aliases,kind:item.kind,categories:itemCategories,included:row?!!row.included:true,track:row?!!row.track:false,revision:row?.revision??0,updatedAt:row?.updated_at??'',updatedBy:row?.updated_by??'',groupId:validGroup(row?.group_id),groupRevision:row?.group_revision??0,groupSource:row?.group_source??null};
+  return {itemId:item.id,name:item.name,aliases:item.aliases,kind:item.kind,categories:itemCategories,included:row?!!row.included:true,track:row?!!row.track:false,revision:row?.revision??0,updatedAt:row?.updated_at??'',updatedBy:row?.updated_by??'',groupId:validGroup(row?.group_id),groupRevision:row?.group_revision??0,groupSource:row?.group_source??null,stationId:validStation(row?.station_id),stationRevision:row?.station_revision??0,stationUpdatedAt:row?.station_updated_at??null,stationUpdatedBy:row?.station_updated_by??null};
  });
  const canManageGroups=await canManage(user);
  const byItem=new Map(items.map(item=>[item.itemId,item]));
@@ -50,7 +51,7 @@ export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
  const groupConflicts=merges.flatMap(m=>{const source=rows.get(m.source_id),target=byItem.get(m.target_id),sourceName=(JSON.parse(notebook.payload) as Notebook).items.find(i=>i.id===m.source_id)?.name;
   if(!source?.group_source||!target||source.group_id===target.groupId)return [];
   return [{sourceId:m.source_id,sourceName:sourceName??'Retired item',targetId:m.target_id,targetName:target.name,sourceGroupId:validGroup(source.group_id),targetGroupId:target.groupId}];});
- return {accountId:user.userId,account:user.email,scope:'kitchen',items,notebookRevision:notebook.revision,canManageGroups,groupConflicts};
+ return {stations:1,accountId:user.userId,account:user.email,scope:'kitchen',items,notebookRevision:notebook.revision,canManageGroups,groupConflicts};
 }
 export async function ingredientGroupCommand(user:ChatGPTUser,raw:unknown){
  const c:GroupCommand=groupCommandSchema.parse(raw),db=getRawDb(),request=JSON.stringify(c);

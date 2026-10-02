@@ -44,6 +44,13 @@ export const stockItems = sqliteTable('stock_items', {
 export const ingredientGroupCommands = sqliteTable('ingredient_group_commands', {
  id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),result:text('result').notNull(),createdAt:text('created_at').notNull(),
 });
+// Checking location is independent of stock, category and scheduling revisions.
+export const checkingStationItems=sqliteTable('checking_station_items',{
+ itemId:text('item_id').primaryKey(),stationId:text('station_id'),revision:integer('revision').notNull().default(0),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),
+});
+export const checkingStationCommands=sqliteTable('checking_station_commands',{
+ id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),applied:integer('applied').notNull().default(0),createdAt:text('created_at').notNull(),
+});
 export const stockCommands = sqliteTable('stock_commands', {
  id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),result:text('result').notNull(),createdAt:text('created_at').notNull(),
 });
@@ -56,7 +63,7 @@ export const eveningChecks=sqliteTable('evening_checks',{
  id:text('id').primaryKey(),calendarRevision:integer('calendar_revision'),targetDay:text('target_day').notNull(),planDay:text('plan_day').unique(),stage:text('stage').notNull(),revision:integer('revision').notNull(),planRevision:integer('plan_revision').notNull(),version:integer('version').notNull(),startOperation:text('start_operation').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),updatedAt:text('updated_at').notNull(),confirmedAt:text('confirmed_at'),confirmedBy:text('confirmed_by'),grouped:integer('grouped').notNull().default(0),roundsVersion:integer('rounds_version').notNull().default(0),
 });
 export const eveningAnswers=sqliteTable('evening_answers',{
- checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),value:text('value'),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),firstActor:text('first_actor'),firstDevice:text('first_device'),firstSequence:integer('first_sequence'),supersededBy:text('superseded_by'),groupId:text('group_id'),roundSnapshot:text('round_snapshot'),instructionSnapshot:text('instruction_snapshot'),
+ checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),name:text('name').notNull(),kind:text('kind').notNull(),position:integer('position').notNull(),value:text('value'),revision:integer('revision').notNull(),updatedAt:text('updated_at').notNull(),updatedBy:text('updated_by').notNull(),firstActor:text('first_actor'),firstDevice:text('first_device'),firstSequence:integer('first_sequence'),supersededBy:text('superseded_by'),groupId:text('group_id'),roundSnapshot:text('round_snapshot'),instructionSnapshot:text('instruction_snapshot'),stationSnapshot:text('station_snapshot'),
 },t=>[primaryKey({columns:[t.checkId,t.itemId]})]);
 export const eveningVersions=sqliteTable('evening_versions',{
  checkId:text('check_id').notNull(),version:integer('version').notNull(),payload:text('payload').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),

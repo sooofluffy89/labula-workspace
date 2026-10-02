@@ -10,7 +10,7 @@ try {
   const {privateBackupTables, isCompletePrivateBackup} = await import(dir + '/backup.mjs');
   const tables = Object.fromEntries(privateBackupTables.map(name => [name, []]));
   const counts = Object.fromEntries(privateBackupTables.map(name => [name, 0]));
-  const complete = {format: 'Labula private database backup', version: 1,
+  const complete = {format: 'Labula private database backup', stations: 1, version: 1,
     capturedAt: '2026-09-24T12:00:00.000Z', tables, counts};
 
   assert.equal(isCompletePrivateBackup(complete), true);
