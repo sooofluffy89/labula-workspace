@@ -13,7 +13,8 @@ export const ingredientGroups=[
 ] as const;
 export type IngredientGroupId=(typeof ingredientGroups)[number]['id'];
 export const groupIdSchema=z.enum(ingredientGroups.map(g=>g.id) as [IngredientGroupId,...IngredientGroupId[]]).nullable();
-export const groupCommandSchema=z.object({id:z.string().uuid(),itemId:z.string().min(1).max(100),revision:z.number().int().nonnegative(),groupId:groupIdSchema}).strict();
+const mergeReviewSchema=z.object({operationId:z.string().uuid(),sourceRevision:z.number().int().nonnegative()}).strict();
+export const groupCommandSchema=z.object({id:z.string().uuid(),itemId:z.string().min(1).max(100),revision:z.number().int().nonnegative(),groupId:groupIdSchema,reviewedMerges:z.array(mergeReviewSchema).min(1).max(100).refine(rows=>new Set(rows.map(r=>r.operationId)).size===rows.length,'Review each merge once.').optional()}).strict();
 export type GroupCommand=z.infer<typeof groupCommandSchema>;
 export function validGroup(id:string|null|undefined):IngredientGroupId|null{return ingredientGroups.find(g=>g.id===id)?.id??null;}
 export function groupLabel(id:string|null|undefined){return ingredientGroups.find(g=>g.id===id)?.label??'Needs grouping';}
