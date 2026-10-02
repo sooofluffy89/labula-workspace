@@ -19,7 +19,7 @@ try{
  assert.equal(db.prepare('SELECT access_role FROM kitchen_team WHERE id=?').get(add.id).access_role,'cook');
  globalThis.activityUser=legacy;assert.equal((await m.notebookApi.GET()).status,200,'existing invited cook without a profile keeps prior access');await m.team.GET();assert.equal(db.prepare('SELECT access_role FROM kitchen_team WHERE user_id=?').get(legacy.userId).access_role,'legacy');
  const book=m.initialNotebook();book.items=[m.newItem('Synthetic broth','prep')];db.prepare("UPDATE notebooks SET payload=? WHERE id='kitchen'").run(JSON.stringify(book));
- globalThis.activityUser=owner;await m.stock.GET();db.prepare('UPDATE stock_items SET track=1,revision=revision+1').run();const original=db.prepare('SELECT * FROM notebooks').get();
+ globalThis.activityUser=owner;await m.stock.GET();db.prepare("UPDATE stock_items SET track=1,round_id='daily',round_revision=round_revision+1,round_source='owner:synthetic',revision=revision+1").run();const original=db.prepare('SELECT * FROM notebooks').get();
  globalThis.activityUser=cook;
  // The unlinked profile is restricted already, before a stock identity call links it.
  assert.equal((await m.notebookApi.GET()).status,403);assert.equal((await m.notebookApi.PUT(request('notebook','PUT',book))).status,403);

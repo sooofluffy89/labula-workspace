@@ -27,7 +27,7 @@ try{
  const restored=stock.items.find(i=>i.itemId===first.itemId);assert.equal((await groupPost(change(restored,'vegetables'))).status,200);stock=await readStock();assert.equal(stock.items.find(i=>i.itemId===first.itemId).revision,restored.revision);
  globalThis.groupUser=chef;assert.equal((await groupPost(change(restored,'broths'))).status,403);globalThis.groupUser=owner;
  const menuRows=stock.items.map((i,index)=>({...i,categories:index===0?['Starters','Main Dishes']:index===1?['Main Dishes']:[]}));assert.equal(m.stockRows(menuRows,'','all',true,'all',['Starters','Main Dishes']).length,2);
- db.prepare('UPDATE stock_items SET track=1,revision=revision+1 WHERE item_id IN (?,?)').run(first.itemId,unknown.itemId);
+ db.prepare("UPDATE stock_items SET track=1,round_id='daily',round_revision=round_revision+1,round_source='owner:synthetic',revision=revision+1 WHERE item_id IN (?,?)").run(first.itemId,unknown.itemId);
  const eveningPost=c=>m.evening.POST(new Request('http://test.local/api/evening',{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':'0'},body:JSON.stringify(c)}));
  const ecommand=x=>({id:crypto.randomUUID(),scope:'kitchen',actorId:owner.userId,...x});
  const send=async c=>{const r=await eveningPost(c),body=await r.json();assert.equal(r.status,200,JSON.stringify(body));return body.snapshot};

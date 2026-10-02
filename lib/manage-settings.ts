@@ -17,11 +17,6 @@ export function settingAfter(before:SettingValue,target:ManageCommand['target'])
  const included=target.track?true:before.included,stockChanged=included!==before.included||target.track!==before.track,roundChanged=stockChanged||target.roundId!==before.roundId;
  return {...before,...target,included,revision:before.revision+Number(stockChanged),roundRevision:before.roundRevision+Number(roundChanged),stationRevision:before.stationRevision+Number(target.stationId!==before.stationId)};
 }
-export function settingProblem(before:SettingValue,target:ManageCommand['target']):string{
- if(target.track&&!target.roundId)return 'Choose a frequency to turn tracking on.';
- if(target.track&&!target.stationId&&(!before.track||!!before.stationId))return 'Choose a station to turn tracking on.';
- return '';
-}
 export function sameSetting(a:SettingValue,b:SettingValue){return a.included===b.included&&a.track===b.track&&a.roundId===b.roundId&&a.stationId===b.stationId&&a.revision===b.revision&&a.roundRevision===b.roundRevision&&a.stationRevision===b.stationRevision;}
 export const settingDescription=(v:Pick<SettingValue,'track'|'roundId'|'stationId'>)=>`Track ${v.track?'On':'Off'} · ${v.roundId==='twice-weekly'?'Twice weekly':v.roundId==='daily'?'Daily':v.roundId==='weekly'?'Weekly':'No frequency'} · ${v.stationId?'Station '+v.stationId.slice(-1):'Not assigned'}`;
 export function applySetting(snapshot:ManageSnapshot,itemId:string,value:SettingValue):ManageSnapshot{

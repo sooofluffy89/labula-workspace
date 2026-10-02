@@ -65,7 +65,7 @@ try{
  // Add snapshots are captured once. Remapping never transfers a different catalog identity's comments.
  const notebook=JSON.parse(db.prepare("SELECT payload FROM notebooks WHERE id='kitchen'").get().payload);
  notebook.items.push({...m.newItem('Synthetic added prep','prep'),id:'added-prep'}, {...m.newItem('Synthetic replacement','prep'),id:'replacement-prep'});
- db.prepare("UPDATE notebooks SET payload=?,revision=revision+1 WHERE id='kitchen'").run(JSON.stringify(notebook));await m.stock.GET();db.prepare("UPDATE stock_items SET track=1,revision=revision+1 WHERE item_id='added-prep'").run();
+ db.prepare("UPDATE notebooks SET payload=?,revision=revision+1 WHERE id='kitchen'").run(JSON.stringify(notebook));await m.stock.GET();db.prepare("UPDATE stock_items SET track=1,round_id='daily',round_revision=round_revision+1,round_source='owner:synthetic',revision=revision+1 WHERE item_id='added-prep'").run();
  await send(instruction('Added snapshot',0,'added-prep'));newer=await json(await m.api.GET(new Request('http://test.local/api/evening?day='+next)));
  const add=h.command({kind:'add-items',checkId:next,revision:newer.check.revision,itemIds:['added-prep']});await json(await h.post(m.api,add));await send(instruction('Later default',1,'added-prep'));await json(await h.post(m.api,add));newer=await json(await m.api.GET(new Request('http://test.local/api/evening?day='+next)));assert.equal(newer.check.answers.find(a=>a.itemId==='added-prep').instruction.text,'Added snapshot');
  const confirmCurrent=async()=>{const current=await snap();return h.send({kind:'confirm',checkId:day,revision:current.check.revision,planRevision:current.check.planRevision,notebookRevision:current.notebookRevision});};

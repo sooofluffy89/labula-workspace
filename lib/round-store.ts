@@ -9,7 +9,6 @@ export async function initializeRounds(){
  await db.batch([
   ...roundIds.map(id=>db.prepare('INSERT INTO check_rounds(id,days,revision,updated_at,updated_by) VALUES(?,?,0,?,?) ON CONFLICT(id) DO NOTHING').bind(id,JSON.stringify(id==='daily'?[0,1,2,3,4,5,6]:id==='weekly'?[0]:[1,4]),now,'system:round-activation')),
   db.prepare("INSERT INTO round_state(id,revision,activated_at) VALUES('kitchen',1,?) ON CONFLICT(id) DO NOTHING").bind(now),
-  db.prepare("UPDATE stock_items SET round_revision=round_revision+1,round_id='daily',round_source='system:daily-default' WHERE included=1 AND track=1 AND round_id IS NULL"),
  ]);
 }
 export type PlanningItem={itemId:string;name:string;kind:'bought'|'prep';groupId:string|null;roundId:RoundId|null;track:boolean;included:boolean;round:RoundReason};

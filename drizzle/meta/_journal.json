@@ -120,6 +120,13 @@
       "when": 1790930973484,
       "tag": "0016_loud_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1790954778802,
+      "tag": "0017_optional_tracking_settings",
+      "breakpoints": true
     }
   ]
 }
