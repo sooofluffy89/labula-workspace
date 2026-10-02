@@ -1,3 +1,4 @@
+import {stationExistsSql} from './checking-stations';
 import {readCalendarVersions} from './calendar-server';
 import {calendarVersion} from './operating-calendar';
 import {getRawDb} from '@/db';
@@ -32,8 +33,8 @@ export async function roundCommand(user:ChatGPTUser,raw:unknown){
   extra.push(JSON.stringify(c.itemIds),c.roundId);
  }
  if(c.kind==='track'){
-  condition+=` AND EXISTS(SELECT 1 FROM stock_items s,notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id AND s.item_id=? AND s.included=1 AND s.revision=?)`;
-  extra.push(c.itemId,c.itemRevision);
+  condition+=` AND EXISTS(SELECT 1 FROM stock_items s,notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id AND s.item_id=? AND s.included=1 AND s.revision=? AND (s.track=1 OR ?=0 OR (s.round_id IS NOT NULL AND ${stationExistsSql('s.item_id')})))`;
+  extra.push(c.itemId,c.itemRevision,Number(c.track));
  }
  const args=[c.id,user.userId,request],gate='EXISTS(SELECT 1 FROM round_commands WHERE id=? AND actor_id=? AND request=? AND applied=0)';
  const receipt=db.prepare(`INSERT INTO round_commands(id,actor_id,request,applied,created_at) SELECT ?,?,?,0,? WHERE EXISTS(SELECT 1 FROM round_state WHERE id='kitchen' AND revision=?) AND EXISTS(SELECT 1 FROM ${managementUsersSql} WHERE user_id=?) AND EXISTS(SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) AND ${condition} ON CONFLICT(id) DO NOTHING`).bind(...args,now,c.revision,user.userId,user.userId,...extra);
@@ -51,5 +52,5 @@ export async function roundCommand(user:ChatGPTUser,raw:unknown){
  }
  await db.batch([receipt,...writes,db.prepare(`UPDATE round_commands SET applied=1 WHERE id=? AND ${gate}`).bind(c.id,...args)]);
  if(await replay())return {operationId:c.id,replayed:false};
- throw new RequestError('The list or schedule changed. Refresh, review the current rounds and confirm your changes again.',409,'round_conflict');
+ throw new RequestError('The list or schedule changed, or tracking needs a frequency and station. Refresh and review the item in Manage list.',409,'round_conflict');
 }

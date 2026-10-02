@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';import {mkdtemp,writeFile,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import {harness,sleep} from './sync-harness.mjs';
-const h=await harness(),dir=await mkdtemp(tmpdir()+'/labula-edit-ui-'),oldFetch=globalThis.fetch;
+const h=await harness();h.db.prepare("INSERT INTO checking_station_items(item_id,station_id,revision,updated_at,updated_by) VALUES('item-2','station-1',1,?,'owner')").run(new Date().toISOString());const dir=await mkdtemp(tmpdir()+'/labula-edit-ui-'),oldFetch=globalThis.fetch;
 try{
  await writeFile(dir+'/react.mjs',`export const jsx=(type,props)=>({type,props}),jsxs=jsx,Fragment='Fragment';export const useSyncExternalStore=()=>false;export const createContext=x=>x,useContext=()=>globalThis.noteContext;export function useState(v){let i=globalThis.hooks.cursor++;if(!(i in hooks.cells))hooks.cells[i]={value:typeof v==='function'?v():v};return [hooks.cells[i].value,n=>{hooks.cells[i].value=typeof n==='function'?n(hooks.cells[i].value):n;}];}export function useRef(v){let i=hooks.cursor++;return hooks.cells[i]??(hooks.cells[i]={current:v});}export function useEffect(fn,deps){let i=hooks.cursor++,old=hooks.cells[i];if(!old||deps?.some((v,j)=>v!==old.deps?.[j])){hooks.cells[i]={deps};hooks.effects.push(()=>{old?.cleanup?.();hooks.cells[i].cleanup=fn();});}}`);
 

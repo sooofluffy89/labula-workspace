@@ -11,6 +11,7 @@ try{
  const command=async(itemId,track)=>{const s=await read(),i=s.items.find(i=>i.itemId===itemId);return {id:crypto.randomUUID(),actorId:h.owner.userId,revision:s.revision,kind:'track',itemId,itemRevision:i.revision,track};};
  const post=c=>h.post(h.m.rounds,c);const send=async c=>{const r=await post(c);assert.equal(r.status,200,JSON.stringify(await r.json()));};
  const table=t=>h.db.prepare('SELECT * FROM '+t).all();
+ for(let i=0;i<3;i++)h.db.prepare("INSERT INTO checking_station_items(item_id,station_id,revision,updated_at,updated_by) VALUES(?,'station-1',1,?,'owner')").run('item-'+i,new Date().toISOString());
  const notebook=table('notebooks'),draft=table('evening_answers');
  for(const [index,roundId] of ['daily','twice-weekly','weekly'].entries()){
   const itemId='item-'+index;let s=await read();await send({id:crypto.randomUUID(),actorId:h.owner.userId,revision:s.revision,kind:'members',roundId,itemIds:[itemId]});
@@ -22,8 +23,8 @@ try{
   assert.deepEqual(table('evening_answers'),draft,'existing draft unchanged');await send(await command(itemId,true));i=(await read()).items.find(i=>i.itemId===itemId);assert.equal(i.track,true);assert.equal(i.roundId,roundId);
   await send(off);assert.equal((await read()).items.find(i=>i.itemId===itemId).track,true,'replay cannot turn later On off');
  }
- // An unassigned off item defaults only to Daily, with a single timeline transition.
- await send(await command('item-3',false));let s=await read();await send({id:crypto.randomUUID(),actorId:h.owner.userId,revision:s.revision,kind:'members',roundId:null,itemIds:['item-3']});const timeline=table('round_timeline').length;await send(await command('item-3',true));assert.equal((await read()).items.find(i=>i.itemId==='item-3').roundId,'daily');assert.equal(table('round_timeline').length,timeline+1);
+ // A new activation cannot invent missing configuration; explicitly prepare Daily and a station.
+ await send(await command('item-3',false));let s=await read();await send({id:crypto.randomUUID(),actorId:h.owner.userId,revision:s.revision,kind:'members',roundId:null,itemIds:['item-3']});assert.equal((await post(await command('item-3',true))).status,409);s=await read();await send({id:crypto.randomUUID(),actorId:h.owner.userId,revision:s.revision,kind:'members',roundId:'daily',itemIds:['item-3']});h.db.prepare("INSERT INTO checking_station_items(item_id,station_id,revision,updated_at,updated_by) VALUES('item-3','station-1',1,?,'owner')").run(new Date().toISOString());const timeline=table('round_timeline').length;await send(await command('item-3',true));assert.equal((await read()).items.find(i=>i.itemId==='item-3').roundId,'daily');assert.equal(table('round_timeline').length,timeline+1);
  const noOpCount=table('kitchen_activity').length;await send(await command('item-3',true));assert.equal(table('kitchen_activity').length,noOpCount);
  // Shared membership, legacy Track and manager races all invalidate stale requests.
  const stale=await command('item-0',false);s=await read();await send({id:crypto.randomUUID(),actorId:h.owner.userId,revision:s.revision,kind:'members',roundId:'weekly',itemIds:['item-0']});assert.equal((await post(stale)).status,409);

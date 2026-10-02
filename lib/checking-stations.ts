@@ -1,7 +1,9 @@
 import {z} from 'zod';
 import {actionMetaSchema} from './activity';
 import type {StockItem} from './stock';
-export const stationIds=['station-1','station-2','station-3'] as const;
+export const stationIds=['station-1','station-2','station-3','station-4'] as const;
+export const validStationSql="station_id IN ('station-1','station-2','station-3','station-4')";
+export const stationExistsSql=(id:string)=>`EXISTS(SELECT 1 FROM checking_station_items WHERE item_id=${id} AND ${validStationSql})`;
 export type StationId=typeof stationIds[number];
 export type StationFilter='all'|'none'|StationId;
 export const stationIdSchema=z.enum(stationIds).nullable();

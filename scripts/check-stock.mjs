@@ -48,6 +48,7 @@ try {
  assert.deepEqual(db.prepare('SELECT * FROM stock_items ORDER BY item_id').all(),stockBeforeCategories);
  db.prepare("UPDATE notebooks SET payload=? WHERE id='kitchen'").run(JSON.stringify(n));
  console.log('PASS stock menu categories: active saved recipes, shared/nested inputs, inactive/unused items, composed filters, unchanged stock settings');
+ for(const id of [a,b,c,d]){db.prepare("UPDATE stock_items SET round_id='daily',round_revision=round_revision+1 WHERE item_id=?").run(id);db.prepare("INSERT INTO checking_station_items(item_id,station_id,revision,updated_at,updated_by) VALUES(?,'station-1',1,?,'chef')").run(id,new Date().toISOString());}
  const protectedBefore=db.prepare('SELECT * FROM notebooks').get();
  const change=(itemId,revision,included,track)=>({itemId,revision,included,track});
  let cmd=make([change(a,0,true,true)]);assert.equal((await send(cmd)).status,200);assert.equal((await send(cmd)).status,200);assert.equal(db.prepare('SELECT revision FROM stock_items WHERE item_id=?').get(a).revision,1);assert.deepEqual(db.prepare('SELECT * FROM notebooks').get(),protectedBefore);
