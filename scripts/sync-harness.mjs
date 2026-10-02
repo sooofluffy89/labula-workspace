@@ -18,7 +18,7 @@ export async function harness({httpDelay=0,sqlDelay=0,bundlePath=null,saturday=f
  const post=(api,c,init={})=>api.POST(new Request('http://test.local/api',{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':'0','X-Labula-Stations':'4',...init.headers},body:JSON.stringify(c)}));
  const command=c=>({id:crypto.randomUUID(),scope:'kitchen',actorId:globalThis.syncUser.userId,...c});
  const send=async c=>{const r=await post(m.api,command(c)),b=await r.json();if(!r.ok)throw Error(JSON.stringify(b));return b.snapshot};
- await m.stock.GET();const n=m.initialNotebook();n.items=Array.from({length:80},(_,i)=>({...m.newItem('Synthetic '+String(i).padStart(2,'0'),i%2?'bought':'prep'),id:'item-'+i}));db.prepare("UPDATE notebooks SET payload=?,revision=1 WHERE id='kitchen'").run(JSON.stringify(n));await m.stock.GET();db.prepare('UPDATE stock_items SET track=1,revision=revision+1').run();
+ await m.stock.GET();const n=m.initialNotebook();n.items=Array.from({length:80},(_,i)=>({...m.newItem('Synthetic '+String(i).padStart(2,'0'),i%2?'bought':'prep'),id:'item-'+i}));db.prepare("UPDATE notebooks SET payload=?,revision=1 WHERE id='kitchen'").run(JSON.stringify(n));await m.stock.GET();db.prepare("UPDATE stock_items SET track=1,round_id='daily',round_revision=round_revision+1,round_source='owner:synthetic',revision=revision+1").run();
  db.prepare("INSERT INTO kitchen_team(id,user_id,email,name,access_role,active,revision,created_at) VALUES('cook','cook','cook@example.test','Synthetic Cook','cook',1,0,?)").run(new Date().toISOString());
  if(saturday){
   db.prepare("UPDATE check_rounds SET days='[3,6]' WHERE id='twice-weekly'").run();db.prepare("UPDATE check_rounds SET days='[6]' WHERE id='weekly'").run();

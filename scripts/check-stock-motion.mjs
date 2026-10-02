@@ -17,7 +17,7 @@ try{
  const post=(c,origin='http://test.local')=>m.api.POST(new Request('http://test.local/api/evening',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','If-Match':'0'},body:JSON.stringify(c)}));
  const send=async(c,status=200)=>{const r=await post(c),b=await r.json();assert.equal(r.status,status,JSON.stringify(b));return b};
  await read();const n=m.initialNotebook();n.items=Array.from({length:3},(_,i)=>m.newItem('QA '+String(i).padStart(2,'0')+(i===0?' long preparation':' item'),i%2?'bought':'prep'));
- db.prepare("UPDATE notebooks SET payload=?,revision=1 WHERE id='kitchen'").run(JSON.stringify(n));await read();db.prepare('UPDATE stock_items SET track=1,revision=revision+1 WHERE included=1').run();
+ db.prepare("UPDATE notebooks SET payload=?,revision=1 WHERE id='kitchen'").run(JSON.stringify(n));await read();db.prepare("UPDATE stock_items SET track=1,round_id='daily',round_revision=round_revision+1,round_source='owner:synthetic',revision=revision+1 WHERE included=1").run();
  const notebookBefore=db.prepare('SELECT * FROM notebooks').get(),stockBefore=db.prepare('SELECT * FROM stock_items ORDER BY item_id').all();
  const day='2026-09-23';await send(cmd({kind:'start',day,targetDay:'2026-09-24'}));let snap=await read();
  for(const [i,row] of snap.check.answers.entries())await send(cmd({kind:'answer',checkId:day,itemId:row.itemId,revision:0,generation:0,value:'missing',deviceId:crypto.randomUUID(),sequence:i+1}));

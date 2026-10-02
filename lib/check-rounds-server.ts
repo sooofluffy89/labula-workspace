@@ -1,4 +1,3 @@
-import {stationExistsSql} from './checking-stations';
 import {readCalendarVersions} from './calendar-server';
 import {calendarVersion} from './operating-calendar';
 import {getRawDb} from '@/db';
@@ -29,12 +28,12 @@ export async function roundCommand(user:ChatGPTUser,raw:unknown){
  if(c.kind==='days'&&c.roundId!=='daily'&&config&&c.days.some(d=>!config.openDays.includes(d)))throw new RequestError('Choose distinct open weekdays. Closed weekdays need an operating calendar change first.',409,'closed_round_day');
  let condition='(SELECT coalesce(max(revision),0) FROM operating_calendar_versions)=?';const extra:unknown[]=[Math.max(0,...calendar.map(v=>v.revision))];
  if(c.kind==='members'){
-  condition+=` AND NOT EXISTS(SELECT 1 FROM json_each(?) j LEFT JOIN stock_items s ON s.item_id=j.value WHERE s.item_id IS NULL OR (? IS NULL AND s.track=1 AND s.included=1) OR NOT EXISTS(SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id))`;
-  extra.push(JSON.stringify(c.itemIds),c.roundId);
+  condition+=` AND NOT EXISTS(SELECT 1 FROM json_each(?) j LEFT JOIN stock_items s ON s.item_id=j.value WHERE s.item_id IS NULL OR NOT EXISTS(SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id))`;
+  extra.push(JSON.stringify(c.itemIds));
  }
  if(c.kind==='track'){
-  condition+=` AND EXISTS(SELECT 1 FROM stock_items s,notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id AND s.item_id=? AND s.included=1 AND s.revision=? AND (s.track=1 OR ?=0 OR (s.round_id IS NOT NULL AND ${stationExistsSql('s.item_id')})))`;
-  extra.push(c.itemId,c.itemRevision,Number(c.track));
+  condition+=` AND EXISTS(SELECT 1 FROM stock_items s,notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id AND s.item_id=? AND s.included=1 AND s.revision=?)`;
+  extra.push(c.itemId,c.itemRevision);
  }
  const args=[c.id,user.userId,request],gate='EXISTS(SELECT 1 FROM round_commands WHERE id=? AND actor_id=? AND request=? AND applied=0)';
  const receipt=db.prepare(`INSERT INTO round_commands(id,actor_id,request,applied,created_at) SELECT ?,?,?,0,? WHERE EXISTS(SELECT 1 FROM round_state WHERE id='kitchen' AND revision=?) AND EXISTS(SELECT 1 FROM ${managementUsersSql} WHERE user_id=?) AND EXISTS(SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) AND ${condition} ON CONFLICT(id) DO NOTHING`).bind(...args,now,c.revision,user.userId,user.userId,...extra);
@@ -44,13 +43,13 @@ export async function roundCommand(user:ChatGPTUser,raw:unknown){
   writes.push(db.prepare(`UPDATE check_rounds SET days=?,revision=revision+1,updated_at=?,updated_by=? WHERE id=? AND ${gate}`).bind(JSON.stringify([...c.days].sort()),now,user.userId,c.roundId,...args));
  }else if(c.kind==='track'){
   const track=c.track?1:0;
-  writes.push(eventStatement(user,member.name,c,now,{category:'stock',action:'settings',itemId:'s.item_id',itemName:"json_extract(i.value,'$.name')",itemKind:"json_extract(i.value,'$.kind')",before:"json_object('included',s.included,'track',s.track,'roundId',s.round_id,'revision',s.revision)",after:"json_object('included',s.included,'track',?,'roundId',CASE WHEN ?=1 THEN coalesce(s.round_id,'daily') ELSE s.round_id END,'revision',s.revision+1)",from:`FROM stock_items s,notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id AND s.item_id=? AND s.track!=? AND ${gate}`,args:[track,track,c.itemId,track,...args]}));
-  writes.push(db.prepare(`UPDATE stock_items SET track=?,round_id=CASE WHEN ?=1 THEN coalesce(round_id,'daily') ELSE round_id END,round_revision=round_revision+1,round_source=?,revision=revision+1,updated_at=?,updated_by=? WHERE item_id=? AND track!=? AND ${gate}`).bind(track,track,`owner:${user.userId}`,now,user.userId,c.itemId,track,...args));
+  writes.push(eventStatement(user,member.name,c,now,{category:'stock',action:'settings',itemId:'s.item_id',itemName:"json_extract(i.value,'$.name')",itemKind:"json_extract(i.value,'$.kind')",before:"json_object('included',s.included,'track',s.track,'roundId',s.round_id,'revision',s.revision)",after:"json_object('included',s.included,'track',?,'roundId',s.round_id,'revision',s.revision+1)",from:`FROM stock_items s,notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id AND s.item_id=? AND s.track!=? AND ${gate}`,args:[track,c.itemId,track,...args]}));
+  writes.push(db.prepare(`UPDATE stock_items SET track=?,round_revision=round_revision+1,round_source=?,revision=revision+1,updated_at=?,updated_by=? WHERE item_id=? AND track!=? AND ${gate}`).bind(track,`owner:${user.userId}`,now,user.userId,c.itemId,track,...args));
  }else{
   writes.push(eventStatement(user,member.name,c,now,{category:'stock',action:'round-membership',itemId:'s.item_id',before:"json_object('roundId',s.round_id,'days',json(coalesce((SELECT days FROM check_rounds WHERE id=s.round_id),'[]')))",after:"json_object('roundId',?,'days',json(coalesce((SELECT days FROM check_rounds WHERE id=?),'[]')))",from:`FROM stock_items s WHERE item_id IN(SELECT value FROM json_each(?)) AND ${gate}`,args:[c.roundId,c.roundId,JSON.stringify(c.itemIds),...args]}));
   writes.push(db.prepare(`UPDATE stock_items SET round_revision=round_revision+1,round_id=?,round_source=? WHERE item_id IN(SELECT value FROM json_each(?)) AND ${gate}`).bind(c.roundId,`owner:${user.userId}`,JSON.stringify(c.itemIds),...args));
  }
  await db.batch([receipt,...writes,db.prepare(`UPDATE round_commands SET applied=1 WHERE id=? AND ${gate}`).bind(c.id,...args)]);
  if(await replay())return {operationId:c.id,replayed:false};
- throw new RequestError('The list or schedule changed, or tracking needs a frequency and station. Refresh and review the item in Manage list.',409,'round_conflict');
+ throw new RequestError('The list or schedule changed. Refresh and review the item in Manage list.',409,'round_conflict');
 }

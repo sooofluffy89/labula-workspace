@@ -26,13 +26,13 @@ try{
  const move=async(ids,roundId)=>{const s=await read();return json(await post(m.rounds,cmd({kind:'members',revision:s.revision,roundId,itemIds:ids})));};
  const days=async(roundId,ds)=>{const s=await read();return json(await post(m.rounds,cmd({kind:'days',revision:s.revision,roundId,days:ds})));};
  const e=body=>({id:crypto.randomUUID(),actorId:globalThis.roundUser.userId,scope:'kitchen',...body}),send=async c=>(await json(await post(m.evening,c))).snapshot;
- db.prepare("UPDATE stock_items SET track=1,revision=revision+1 WHERE item_id IN ('item-0','item-1','item-2')").run();
+ db.prepare("UPDATE stock_items SET track=1,round_id='daily',round_revision=round_revision+1,round_source='owner:synthetic',revision=revision+1 WHERE item_id IN ('item-0','item-1','item-2')").run();
  let s=await read();assert.equal(s.items.filter(i=>i.roundId==='daily').length,3);assert.equal(s.items.filter(i=>i.track).length,3);const savedStock=db.prepare('SELECT item_id,included,track,revision,group_revision FROM stock_items ORDER BY item_id').all();const count=db.prepare('SELECT count(*) n FROM round_timeline').get().n;await read();await read();assert.equal(db.prepare('SELECT count(*) n FROM round_timeline').get().n,count);
  await move(['item-0','item-1'],'twice-weekly');await move(['item-2'],'weekly');await move(['item-3'],'weekly');
  assert.deepEqual(db.prepare('SELECT item_id,included,track,revision,group_revision FROM stock_items ORDER BY item_id').all(),savedStock);
  s=await read();const base={revision:s.revision,roundId:'weekly',kind:'days'};for(const invalid of [[],[1,1],[1,2],[7]])assert.equal((await post(m.rounds,cmd({...base,days:invalid}))).status,400);
- assert.equal((await post(m.rounds,cmd({kind:'members',revision:s.revision,roundId:null,itemIds:['item-0']}))).status,409);
- const original=cmd({kind:'members',revision:s.revision,roundId:'daily',itemIds:['item-4']});assert.equal((await post(m.rounds,original)).status,200);await move(['item-4'],'weekly');assert.equal((await post(m.rounds,original)).status,200);assert.equal((await read()).items.find(i=>i.itemId==='item-4').roundId,'weekly','replay cannot overwrite later decision');
+ assert.equal((await post(m.rounds,cmd({kind:'members',revision:s.revision,roundId:null,itemIds:['item-0']}))).status,200);
+ await move(['item-0'],'twice-weekly');s=await read();const original=cmd({kind:'members',revision:s.revision,roundId:'daily',itemIds:['item-4']});assert.equal((await post(m.rounds,original)).status,200);await move(['item-4'],'weekly');assert.equal((await post(m.rounds,original)).status,200);assert.equal((await read()).items.find(i=>i.itemId==='item-4').roundId,'weekly','replay cannot overwrite later decision');
  assert.equal((await post(m.rounds,cmd({kind:'members',revision:s.revision,roundId:'daily',itemIds:['item-0','item-1']}))).status,409);
  s=await read();const rollback=cmd({kind:'members',revision:s.revision,roundId:'daily',itemIds:['item-0','item-1']});failWrite=true;assert.equal((await post(m.rounds,rollback)).status,503);assert.equal(db.prepare('SELECT count(*) n FROM round_commands WHERE id=?').get(rollback.id).n,0);assert.equal((await read()).items.find(i=>i.itemId==='item-0').roundId,'twice-weekly');
  // Cook direct writes are forbidden; their ordinary operations are allowed.

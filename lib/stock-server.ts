@@ -1,4 +1,4 @@
-import {validStation,stationExistsSql} from './checking-stations';
+import {validStation} from './checking-stations';
 import {initializeRounds} from './round-store';
 import {activeMember,eventStatement} from './activity-server';
 import {getRawDb} from '@/db';
@@ -94,7 +94,6 @@ export async function stockCommand(user:ChatGPTUser,raw:unknown){
  SELECT 1 FROM json_each(?) c LEFT JOIN stock_items s ON s.item_id=json_extract(c.value,'$.itemId')
  WHERE s.item_id IS NULL OR s.revision!=json_extract(c.value,'$.revision')
  OR (s.included=0 AND json_extract(c.value,'$.track')=1)
- OR (s.track=0 AND json_extract(c.value,'$.track')=1 AND (s.round_id IS NULL OR NOT ${stationExistsSql('s.item_id')}))
  OR NOT EXISTS (SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id)
  ) AND EXISTS (SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) ON CONFLICT(id) DO NOTHING`).bind(command.id,user.userId,request,result,now,changes,user.userId);
  const update=db.prepare(`UPDATE stock_items SET
@@ -104,5 +103,5 @@ export async function stockCommand(user:ChatGPTUser,raw:unknown){
  const events=eventStatement(user,member.name,command,now,{category:'stock',action:'settings',itemId:'s.item_id',itemName:"json_extract(i.value,'$.name')",itemKind:"json_extract(i.value,'$.kind')",before:"json_object('included',s.included,'track',s.track,'revision',s.revision)",after:"json_object('included',json_extract(c.value,'$.included'),'track',json_extract(c.value,'$.track'),'revision',s.revision+1)",from:`FROM json_each(?) c JOIN stock_items s ON s.item_id=json_extract(c.value,'$.itemId'),notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND json_extract(i.value,'$.id')=s.item_id AND s.revision=json_extract(c.value,'$.revision') AND (s.included!=json_extract(c.value,'$.included') OR s.track!=json_extract(c.value,'$.track')) AND EXISTS (SELECT 1 FROM stock_commands WHERE id=? AND actor_id=? AND request=?)`,args:[changes,command.id,user.userId,request]});
  await db.batch([receipt,events,update]);
  const saved=await replay();if(saved)return saved;
- throw new RequestError('This item changed or needs a frequency and station before tracking can be enabled. Refresh Manage list and review the shared settings.',409,'stock_conflict');
+ throw new RequestError('This item changed. Refresh Manage list and review the shared settings.',409,'stock_conflict');
 }
