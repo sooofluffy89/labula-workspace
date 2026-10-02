@@ -3,10 +3,17 @@ import type {EveningCommand,EveningSnapshot,PublicationReceipt} from './evening'
 export type FinishIntent={
  protocol:1;id:string;accountId:string;account:string;checkId:string;targetDay:string;
  generation:number;createdAt:string;approved:EveningSnapshot;fingerprint:string;
- dependencies:string[];supersedes?:string;
+ dependencies:string[];supersedes?:string;resolved?:true;
  phase:'sending'|'checking'|'publishing'|'offline'|'attention'|'complete';
  reason?:string;command?:Extract<EveningCommand,{kind:'confirm'}>;receipt?:PublicationReceipt;
 };
+// Completed device receipts do not retain the full approval snapshot. Pending
+// approvals always keep the original full record and immutable commands.
+export type CompletedFinish=Pick<FinishIntent,'protocol'|'id'|'accountId'|'account'|'checkId'|'targetDay'|'generation'|'createdAt'|'supersedes'|'reason'>&{
+ compact:1;phase:'complete';resolved?:never;command:Extract<EveningCommand,{kind:'confirm'}>;receipt:PublicationReceipt;
+};
+export type FinishRecord=FinishIntent|CompletedFinish;
+export type FinishRecovery=Pick<FinishIntent,'id'|'checkId'|'targetDay'|'phase'|'reason'>;
 // Check-wide revisions advance for our own acknowledged answers. Item revisions
 // in the local overlay already include those writes, so compare those instead.
 // Ignore presentation counters/timestamps; retain every fact that affects approval.
@@ -26,7 +33,7 @@ export function finishProblem(s:EveningSnapshot){
  const missing=rows.filter(a=>a.value===null);if(missing.length)return `${missing.length} items still unchecked. Start with ${missing[0].name}.`;
  return '';
 }
-export function finishStatus(f:FinishIntent){
+export function finishStatus(f:FinishRecord){
  if(f.phase==='complete')return 'Evening check finished';
  if(f.phase==='attention')return 'Needs your attention';
  if(f.phase==='offline')return 'Saved on this device';
@@ -35,7 +42,8 @@ export function finishStatus(f:FinishIntent){
  return 'Sending your check…';
 }
 
-export function finishChanges(f:FinishIntent,s:EveningSnapshot|null){
+export function finishChanges(f:FinishRecord,s:EveningSnapshot|null){
+ if(!('approved' in f))return [];
  const before=f.approved.check,after=s?.check;
  const changes:{name:string;mine:string;shared:string;by?:string;at?:string}[]=[];
  if(!before||!after||before.id!==after.id)return changes;

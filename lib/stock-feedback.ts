@@ -11,7 +11,7 @@ export function rowFeedback(state:EveningState,kind:'answer'|'ready',itemId:stri
  const label=pending.some(p=>p.rejected)?'Needs review':pending.length?state.verifying?'Verifying…':state.errorKind==='network'?'On this device · not shared':state.unauthorized||state.recoveryBlocked?'Not shared · action needed':pending.some(p=>state.sendingIds?.includes(p.command.id))?'Sending…':'Waiting to share':'';
  return {pending:pending.length>0,label,receiptId:c?.id??null,ackEligible:!pending.length&&!blocked&&!!matches};
 }
-export function savedStatus(state:EveningState,account:string,now=Date.now()){
+export function savedStatus(state:EveningState,account:string,now=Date.now(),view:'evening'|'morning'='morning'){
  if(state.snapshot&&state.snapshot.account.toLowerCase()!==account.toLowerCase())return 'Verifying signed-in account…';
  if(state.publicationLoading)return 'Check published · loading shared Morning prep…';
  if(state.verifying&&state.pending.length)return `Checking the connection · ${state.pending.length} changes kept on this device`;
@@ -27,7 +27,9 @@ export function savedStatus(state:EveningState,account:string,now=Date.now()){
  if(!state.snapshot)return 'Loading…';
  if(state.freshnessError||!state.lastVerifiedAt||now-state.lastVerifiedAt>=75000)return 'Shared state needs a refresh.';
  if(state.needsVerification)return 'Changes shared · complete plan needs verification.';
- if(morningProgress(state,now).complete)return '✓ All morning items ready · shared';
+ if(view==='evening'&&state.snapshot.check?.stage==='draft'&&state.snapshot.check.version>0)return 'Answers shared · correction not published yet.';
+ if(state.refreshing)return 'Updating shared check…';
+ if(view==='morning'&&morningProgress(state,now).complete)return '✓ All morning items ready · shared';
  return 'All changes shared.';
 }
 export function settledReceipt(state:EveningState,kind:SaveReceipt['command']['kind']){

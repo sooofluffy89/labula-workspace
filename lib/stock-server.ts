@@ -14,7 +14,7 @@ type StockRow={item_id:string;included:number;track:number;revision:number;updat
 type Receipt={id:string;actor_id:string;request:string;result:string};
 const seed=JSON.stringify(groupSeed.assignments.filter(row=>row.proposedGroupId));
 // Read the *saved* catalog inside SQL. A missing entry is new, an explicit tombstone is not.
-async function initialize(user:ChatGPTUser){
+export async function initializeStock(user:ChatGPTUser){
  await readNotebook(user);
  await getRawDb().prepare(`INSERT INTO stock_items (item_id,included,track,revision,updated_at,updated_by)
  SELECT json_extract(j.value,'$.id'),1,0,0,?,? FROM notebooks n,json_each(n.payload,'$.items') j
@@ -28,7 +28,7 @@ async function initialize(user:ChatGPTUser){
  await initializeRounds();
 }
 export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
- await initialize(user);
+ await initializeStock(user);
  // A single transaction prevents pairing a newer catalog with an older merge configuration.
  const results=await getRawDb().batch([
   getRawDb().prepare("SELECT payload,revision FROM notebooks WHERE id='kitchen'"),
@@ -65,7 +65,7 @@ export async function ingredientGroupCommand(user:ChatGPTUser,raw:unknown){
   if(!prior)return null;if(prior.actor_id!==user.userId||prior.request!==request)throw new RequestError('This request ID belongs to another change.',409,'command_mismatch');
   return {operationId:c.id,result:JSON.parse(prior.result),replayed:true};};
  const prior=await replay();if(prior)return prior;
- await initialize(user);const member=await activeMember(user),now=new Date().toISOString();
+ await initializeStock(user);const member=await activeMember(user),now=new Date().toISOString();
  const gate='EXISTS (SELECT 1 FROM ingredient_group_commands WHERE id=? AND actor_id=? AND request=?)',args=[c.id,user.userId,request];
  const reviewedMerges=JSON.stringify(c.reviewedMerges??[]);
  const result=JSON.stringify({itemId:c.itemId,groupId:c.groupId,revision:c.revision+1,...(c.reviewedMerges?{reviewedMerges:c.reviewedMerges}:{})});
@@ -98,7 +98,7 @@ export async function stockCommand(user:ChatGPTUser,raw:unknown){
  };
  const prior=await replay();if(prior)return prior;
  const member=await activeMember(user);
- await initialize(user);
+ await initializeStock(user);
  const now=new Date().toISOString(),changes=JSON.stringify(command.changes);
  const result=JSON.stringify(command.changes.map(c=>({...c,revision:c.revision+1,updatedAt:now,updatedBy:user.userId})));
  // Receipt + all item updates are one D1 transaction. Per-item CAS permits unrelated concurrent edits.

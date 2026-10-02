@@ -6,9 +6,8 @@ import {activeMember} from './activity-server';
 import {eveningEvents} from './evening-activity';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
-import type {Notebook} from './notebook';
 import {RequestError} from './notebook-server';
-import {readStock} from './stock-server';
+import {initializeStock} from './stock-server';
 import {dateSchema,eveningCommandSchema,operationalDay,type CheckSummary,type CheckAnswer,type MorningTask,type EveningSnapshot,type EveningCommand,type EveningSelection} from './evening';
 import {stationIdSchema} from './checking-stations';
 import {validGroup} from './ingredient-groups';
@@ -20,24 +19,28 @@ type Receipt={id:string;actor_id:string;request:string;result:string;applied:num
 export const summary=(r:CheckRow):CheckSummary=>({calendarRevision:r.calendar_revision,roundsVersion:r.rounds_version,id:r.id,targetDay:r.target_day,stage:r.stage,revision:r.revision,planRevision:r.plan_revision,version:r.version,confirmedAt:r.confirmed_at,confirmedBy:r.confirmed_by});
 const conflict=(message='This check changed. Refresh, review the shared answers and try again.',code='evening_conflict')=>new RequestError(message,409,code);
 export async function readEvening(user:ChatGPTUser,selection:EveningSelection={day:operationalDay()}):Promise<EveningSnapshot>{
+ return (await readEveningContext(user,selection)).snapshot;
+}
+async function readEveningContext(user:ChatGPTUser,selection:EveningSelection){
  const selected='day' in selection?dateSchema.parse(selection.day):dateSchema.parse(selection.morningDay);
- await readStock(user);const db=getRawDb();
- const results=await db.batch([
-  db.prepare("SELECT payload,revision FROM notebooks WHERE id='kitchen'"),
+ await initializeStock(user);const db=getRawDb();
+ // Planning, catalog, calendar, selected rows and the sync high water share one
+ // transaction. Reuse those inputs only within this read/command; writes still CAS.
+ const planning=await readPlanning(selected,[
   db.prepare('SELECT * FROM evening_checks ORDER BY id DESC'),
   db.prepare('day' in selection?`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? ORDER BY position`:`SELECT ${noteColumns('a')} FROM evening_answers a JOIN evening_checks c ON c.id=a.check_id WHERE c.plan_day=? ORDER BY a.position`).bind(selected),
   db.prepare('day' in selection?`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? ORDER BY position`:`SELECT ${noteColumns('a')} FROM morning_tasks a JOIN evening_checks c ON c.id=a.check_id WHERE c.plan_day=? ORDER BY a.position`).bind(selected),
-  db.prepare('SELECT item_id FROM stock_items WHERE included=1 AND track=1'),
   db.prepare('SELECT check_id,catalog_id,superseded_by FROM evening_answers'),
   db.prepare(syncMetadataSql),
  ]);
- const notebook=results[0].results[0] as {payload:string;revision:number},catalog=(JSON.parse(notebook.payload) as Notebook).items.map(i=>({id:i.id,name:i.name,kind:i.kind})),byId=new Map(catalog.map(i=>[i.id,i]));
- const checks=results[1].results as CheckRow[],row=checks.find(c=>'day' in selection?c.id===selected:c.plan_day===selected);
- const answers=(results[2].results as AnswerRow[]).map(a=>answerView(a,byId));
- const tasks=(results[3].results as TaskRow[]).map(t=>taskView(t,byId));
- const planning=await readPlanning(selected),calendar=await readCalendarVersions();
- const summaries=checks.map(c=>{const base=summary(c);if(c.stage==='draft'&&c.version===0){const originals=(results[5].results as AnswerRow[]).filter(a=>a.check_id===c.id&&!a.superseded_by);if(originals.length&&originals.every(a=>(planning.coverage.get(a.catalog_id)??'')>c.id))base.coveredBy=originals.map(a=>planning.coverage.get(a.catalog_id)!).sort().at(-1)!;}return base;});
- return {prepNotes:1,sync:{version:1,cursor:initialSyncCursor(user,selection,results[6].results[0] as {through:number;notebook:number;rounds:number;calendar:number})},calendar:{versions:calendar,revision:Math.max(0,...calendar.map(v=>v.revision)),accountId:user.userId,isOwner:false},planning:{day:selected,revision:planning.revision,dueCount:planning.due.length,rounds:planning.rounds,items:planning.items},scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:notebook.revision,catalog,trackedCount:(results[4].results as {item_id:string}[]).filter(s=>byId.has(s.item_id)).length,checks:summaries,check:row?{...summaries.find(s=>s.id===row.id)!,answers,tasks,grouped:!!row.grouped}:null};
+ const results=planning.extraResults,catalog=planning.notebook.items.map(i=>({id:i.id,name:i.name,kind:i.kind})),byId=new Map(catalog.map(i=>[i.id,i]));
+ const checks=results[0].results as CheckRow[],row=checks.find(c=>'day' in selection?c.id===selected:c.plan_day===selected);
+ const answers=(results[1].results as AnswerRow[]).map(a=>answerView(a,byId));
+ const tasks=(results[2].results as TaskRow[]).map(t=>taskView(t,byId));
+ const calendar=planning.calendar;
+ const summaries=checks.map(c=>{const base=summary(c);if(c.stage==='draft'&&c.version===0){const originals=(results[3].results as AnswerRow[]).filter(a=>a.check_id===c.id&&!a.superseded_by);if(originals.length&&originals.every(a=>(planning.coverage.get(a.catalog_id)??'')>c.id))base.coveredBy=originals.map(a=>planning.coverage.get(a.catalog_id)!).sort().at(-1)!;}return base;});
+ const snapshot:EveningSnapshot={prepNotes:1,sync:{version:1,cursor:initialSyncCursor(user,selection,results[4].results[0] as {through:number;notebook:number;rounds:number;calendar:number})},calendar:{versions:calendar,revision:Math.max(0,...calendar.map(v=>v.revision)),accountId:user.userId,isOwner:false},planning:{day:selected,revision:planning.revision,dueCount:planning.due.length,rounds:planning.rounds,items:planning.items},scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:planning.notebookRevision,catalog,trackedCount:planning.items.length,checks:summaries,check:row?{...summaries.find(s=>s.id===row.id)!,answers,tasks,grouped:!!row.grouped}:null};
+ return {snapshot,planning};
 }
 
 export async function eveningCommand(user:ChatGPTUser,raw:unknown){
@@ -47,9 +50,10 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  const prior=await replay();if(prior)return prior;
  const member=await activeMember(user);
  const checkId=c.kind==='start'?c.day:c.checkId;
- const snapshot=c.kind==='confirm'?await readConfirmation(user,checkId):await readEvening(user,{day:checkId}),check=snapshot.check,now=new Date().toISOString();
+ const context=c.kind==='confirm'?null:await readEveningContext(user,{day:checkId});
+ const snapshot=context?.snapshot??await readConfirmation(user,checkId),check=snapshot.check,now=new Date().toISOString();
  if(c.kind!=='start'&&!check)throw new RequestError('This kitchen check does not exist.',404);
- if((c.kind==='start'&&!check)||c.kind==='dates')validateTarget(checkId,c.targetDay,await readCalendarVersions(),c.calendarRevision);
+ if((c.kind==='start'&&!check)||c.kind==='dates')validateTarget(checkId,c.targetDay,context?.planning.calendar??await readCalendarVersions(),c.calendarRevision);
  if(c.kind==='start'&&c.targetDay<=c.day)throw new RequestError('Morning prep must be after the evening check date.');
  let condition='1',conditionArgs:unknown[]=[];
  const writes:ReturnType<typeof db.prepare>[]=[];
@@ -58,7 +62,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  const args=[c.id,user.userId,request];
  const updateCheck=(set:string,values:unknown[])=>writes.push(db.prepare(`UPDATE evening_checks SET ${set},updated_at=? WHERE id=? AND ${gate}`).bind(...values,now,checkId,...args));
  if(c.kind==='start'||c.kind==='add-items'){
-  const planning=await readPlanning(checkId),extraIds=c.kind==='start'?c.extraItemIds??[]:c.itemIds;
+  const planning=context!.planning,extraIds=c.kind==='start'?c.extraItemIds??[]:c.itemIds;
   if(new Set(extraIds).size!==extraIds.length||extraIds.some(id=>!planning.items.some(i=>i.itemId===id)))throw conflict('Choose currently tracked items from the shared list.','invalid_extra_items');
   const existing=new Set(check?.answers.filter(a=>!a.supersededBy).map(a=>a.catalogId)??[]);
   const roster=(c.kind==='start'?planning.items.filter(i=>i.round.firstDue||extraIds.includes(i.itemId)):planning.items.filter(i=>extraIds.includes(i.itemId)&&!existing.has(i.itemId))).map((i,index)=>({...i,position:(c.kind==='start'?0:Math.max(-1,...check!.answers.map(a=>a.position))+1)+index,round:planning.legacy?null:{...i.round,reason:extraIds.includes(i.itemId)&&(!i.round.firstDue||c.kind==='add-items')?'extra':i.round.reason}}));

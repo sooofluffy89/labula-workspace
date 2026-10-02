@@ -21,7 +21,7 @@ async function setup(options={}){
   await until(()=>c.state.finish?.phase==='complete');
   assert.equal(h.db.prepare('SELECT count(*) n FROM evening_versions').get().n,1);
   assert.equal(c.state.finish.receipt.checkId,h.day);assert.equal(c.state.finish.receipt.targetDay,h.targetDay);
-  const persisted=JSON.parse(store.getItem('labula-finish-v1:owner:'+id));assert.equal(persisted.phase,'complete');
+  const persisted=JSON.parse(store.getItem('labula-finish-receipt-v1:owner:'+id));assert.equal(persisted.phase,'complete');assert.equal(persisted.compact,1);assert.equal(store.getItem('labula-finish-v1:owner:'+id),null);assert(!('approved' in persisted));
   const peer=new h.m.EveningController(h.cook.email,h.storage(),{morningDay:h.targetDay},h.requester);clients.push(peer);globalThis.syncUser=h.cook;await peer.refresh();assert.equal(peer.visibleCheck().tasks.length,1,'another cook reads the committed actual plan');
   assert.equal(peer.visibleCheck().tasks[0].ready,false,'publication is not all Ready');
  }finally{c.dispose();h.db.close();}

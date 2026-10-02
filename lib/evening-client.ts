@@ -1,4 +1,5 @@
-import {finishFingerprint,finishProblem,type FinishIntent} from './finish-intent';
+import {finishFingerprint,finishProblem,type FinishIntent,type FinishRecord,type FinishRecovery} from './finish-intent';
+import {compactCompletedFinishes,readFinishRecords,unresolvedFinishes,writeCompletedFinish,finishJournalPrefix,finishResolutionPrefix,keepSharedFinish} from './finish-journal';
 import {PrepNotesController} from './prep-notes-client';
 import {requestJson} from './request-json';
 import {EVENING_BATCH_LIMIT,applyEveningDelta,mergeEveningSnapshot,type EveningBatchReply,type EveningDelta} from './evening-sync';
@@ -8,7 +9,7 @@ type Storage=Pick<globalThis.Storage,'length'|'key'|'getItem'|'setItem'|'removeI
 type Requester=(url:string,init?:RequestInit)=>Promise<{res:Response;body:unknown}>;
 export type PendingEvening={accountId:string;account:string;command:EveningCommand;created:number;sent:boolean;rejected:boolean};
 export type SaveReceipt={accountId:string;command:EveningCommand};
-export type EveningState={finish?:FinishIntent;snapshot:EveningSnapshot|null;pending:PendingEvening[];loading:boolean;saving:boolean;error:string;unauthorized:boolean;notice:string;finishing?:boolean;finishPhase?:'saving'|'summary'|'publishing';errorKind?:'network'|'conflict'|'blocked';recoveryBlocked?:boolean;lastVerifiedAt?:number;freshnessError?:string;refreshing?:boolean;verifying?:'retry'|'manual'|'finality'|null;needsVerification?:boolean;sendingIds?:string[];requestedSelection?:string;loadedSelection?:string;conflictReview?:string|null;acknowledged?:Record<string,SaveReceipt>;settledSave?:SaveReceipt|null;publicationLoading?:boolean};
+export type EveningState={finish?:FinishRecord;finishRecovery?:FinishRecovery[];deviceWorkPending?:boolean;snapshot:EveningSnapshot|null;pending:PendingEvening[];loading:boolean;saving:boolean;error:string;unauthorized:boolean;notice:string;finishing?:boolean;finishPhase?:'saving'|'summary'|'publishing';errorKind?:'network'|'conflict'|'blocked';recoveryBlocked?:boolean;lastVerifiedAt?:number;freshnessError?:string;refreshing?:boolean;verifying?:'retry'|'manual'|'finality'|null;needsVerification?:boolean;sendingIds?:string[];requestedSelection?:string;loadedSelection?:string;conflictReview?:string|null;acknowledged?:Record<string,SaveReceipt>;settledSave?:SaveReceipt|null;publicationLoading?:boolean};
 export const RECOVERY_COOLDOWN_MS=15_000;
 type Resolution={before:string[];next:PendingEvening[]};
 const prefix='labula-evening-v1:';
@@ -16,15 +17,16 @@ export class EveningController {
  state:EveningState={snapshot:null,pending:[],loading:false,saving:false,error:'',unauthorized:false,notice:''};
  private finishFlight:Promise<boolean>|null=null;private finishNotes:PrepNotesController|null=null;private finishWake=()=>{void this.recoverConnection();};
  private listeners=new Set<()=>void>();private disposed=false;private busy=false;private polling=false;private snapshotSerial=0;private loadedRecovery=false;private accountId='';private deviceId=crypto.randomUUID();private sequence=0;private inflight:Promise<boolean>|null=null;private lastCreated=0;private actionSequence=0;private readEpoch=0;private intentEpoch=0;private readProof=new WeakMap<EveningSnapshot,{epoch:number;empty:boolean}>();private retryTimer:ReturnType<typeof setTimeout>|null=null;private retryCount=0;private recoveryAt=-Infinity;private recoveryFlight:Promise<boolean>|null=null;private publicationFlight:Promise<boolean>|null=null;private syncEpoch=0;private syncFlight:{promise:Promise<boolean>;abort:AbortController;epoch:number;readEpoch:number;intent:number;empty:boolean;selected:string;serial:number}|null=null;
- constructor(private account:string,private storage:Storage,private selection:EveningSelection,private request:Requester=requestJson,private fastSync=true){}
+ private journalChanged=(event:StorageEvent)=>{if(!this.accountId)return;const key=event.key;if(!key||[this.accountPrefix(),this.finishPrefix(),finishResolutionPrefix(this.accountId),'labula-finish-receipt-v1:'+encodeURIComponent(this.accountId)+':','labula.prep-notes.v1.'+encodeURIComponent(this.accountId)+'.pending.'].some(p=>key.startsWith(p)))this.emit({});};
+ constructor(private account:string,private storage:Storage,private selection:EveningSelection,private request:Requester=requestJson,private fastSync=true){if(typeof window!=='undefined')window.addEventListener('storage',this.journalChanged);}
  subscribe(fn:()=>void){this.listeners.add(fn);return()=>{this.listeners.delete(fn);};}
  getSnapshot=()=>this.state;
- private emit(patch:Partial<EveningState>){if(this.disposed)return;this.state={...this.state,...patch};for(const f of this.listeners)f();}
+ private emit(patch:Partial<EveningState>){if(this.disposed)return;this.state={...this.state,...patch};if(this.accountId){try{this.state.finishRecovery=this.recoveryList(this.finishRecords(),this.state.finish?.id);this.state.deviceWorkPending=this.keys().length>0||!!this.state.finishRecovery?.length||this.finishActive()||this.state.finish?.phase==='attention'||Array.from({length:this.storage.length},(_,i)=>this.storage.key(i)).some(k=>k?.startsWith('labula.prep-notes.v1.'+encodeURIComponent(this.accountId)+'.pending.'));}catch{this.state.deviceWorkPending=true;this.state.recoveryBlocked=true;this.state.errorKind='blocked';this.state.error='Saved Finish needs review. Keep device data and ask the manager.';}}for(const f of this.listeners)f();}
  private acceptSnapshot(snapshot:EveningSnapshot){this.snapshotSerial++;const proof=this.readProof.get(snapshot);this.emit({snapshot:mergeEveningSnapshot(this.state.snapshot,snapshot),loadedSelection:selectionQuery(this.selection),requestedSelection:selectionQuery(this.selection),lastVerifiedAt:Date.now(),freshnessError:'',conflictReview:null,...(proof?.empty&&proof.epoch===this.intentEpoch&&!this.state.pending.length?{needsVerification:false}:{})});}
  private refuse(reason:string){this.emit({notice:reason});return false;}
- cancelNavigation(){if(this.finishActive())return;this.readEpoch++;this.emit({loading:false});}
- private conflictFingerprint(snapshot:EveningSnapshot,pending=this.state.pending){const check=snapshot.check;return JSON.stringify({id:check?.id,planRevision:check?.planRevision,notebookRevision:snapshot.notebookRevision,items:pending.filter(p=>p.rejected||p.command.kind==='answer'||p.command.kind==='ready').map(p=>{const c=p.command;if(c.kind==='answer'){const a=check?.answers.find(a=>a.itemId===c.itemId);return [c.itemId,a?.value,a?.revision,a?.mappingValid];}if(c.kind==='ready'){const t=check?.tasks.find(t=>t.itemId===c.itemId);return [c.itemId,t?.ready,t?.revision,t?.cancelled,t?.mappingValid];}return [c.kind];})});}
- dispose(){this.stopFinishWake();this.finishNotes?.dispose();this.syncFlight?.abort.abort();this.syncEpoch++;if(this.retryTimer)clearTimeout(this.retryTimer);this.disposed=true;this.listeners.clear();}
+ cancelNavigation(){if(this.finishActive())return;this.readEpoch++;this.emit({loading:false,refreshing:false});}
+ private conflictFingerprint(snapshot:EveningSnapshot,pending=this.state.pending){const check=snapshot.check;return JSON.stringify({id:check?.id,version:check?.version,stage:check?.stage,planRevision:check?.planRevision,notebookRevision:snapshot.notebookRevision,items:pending.filter(p=>p.rejected||p.command.kind==='answer'||p.command.kind==='ready').map(p=>{const c=p.command;if(c.kind==='answer'){const a=check?.answers.find(a=>a.itemId===c.itemId);return [c.itemId,a?.value,a?.revision,a?.mappingValid];}if(c.kind==='ready'){const t=check?.tasks.find(t=>t.itemId===c.itemId);return [c.itemId,t?.ready,t?.revision,t?.cancelled,t?.mappingValid];}return [c.kind];})});}
+ dispose(){this.stopFinishWake();if(typeof window!=='undefined')window.removeEventListener('storage',this.journalChanged);this.finishNotes?.dispose();this.syncFlight?.abort.abort();this.syncEpoch++;if(this.retryTimer)clearTimeout(this.retryTimer);this.disposed=true;this.listeners.clear();}
  private accountPrefix(){return prefix+encodeURIComponent(this.accountId)+':kitchen:';}
  private key(p:PendingEvening){return this.accountPrefix()+p.command.id;}
  private persist(p:PendingEvening){try{this.storage.setItem(this.key(p),JSON.stringify(p));}catch{this.emit({errorKind:'blocked',recoveryBlocked:true});throw Error('Browser storage could not preserve this change. Keep browser data, free storage and retry.');}}
@@ -60,15 +62,16 @@ export class EveningController {
   if(this.busy||this.state.verifying||this.state.publicationLoading)return this.refuse('Please wait for the current save or verification before opening another date.');
   if(selection&&this.state.pending.length)return this.refuse('Changes are saved on this device. Retry or resolve them before opening another date.');
   const epoch=++this.readEpoch,current=()=>!this.disposed&&epoch===this.readEpoch,next=selection??this.selection;this.selection=next;this.snapshotSerial++;
-  this.emit({loading:true,requestedSelection:selectionQuery(next),error:'',unauthorized:false,conflictReview:null,notice:''});
+  const same=!!this.state.snapshot&&this.state.loadedSelection===selectionQuery(next);
+  this.emit({loading:!same,refreshing:same,requestedSelection:selectionQuery(next),error:'',unauthorized:false,conflictReview:null,notice:''});
   try{
    const snapshot=await this.read(next,true,current);if(!current())return false;
    this.acceptSnapshot(snapshot);try{this.restore();}catch(e){this.emit({recoveryBlocked:true,errorKind:'blocked'});throw e;}
    if(this.state.pending.length){const first=this.state.pending[0].command,day=first.kind==='start'?first.day:first.checkId;if(snapshot.check?.id!==day){this.selection={day};this.emit({requestedSelection:selectionQuery(this.selection)});const recovered=await this.read(this.selection,true,current);if(!current())return false;this.acceptSnapshot(recovered);this.emit({notice:`Recovered changes for the ${day} check. Resolve them before opening another date.`});}}
    if(this.state.pending[0]?.rejected&&this.state.snapshot)this.emit({conflictReview:this.conflictFingerprint(this.state.snapshot)});
-   try{this.restoreFinish();}catch(e){this.emit({recoveryBlocked:true,errorKind:'blocked'});throw e;}
+   try{this.restoreFinish();if(this.finishActive()&&this.state.finish!.checkId!==this.state.snapshot?.check?.id){this.selection={day:this.state.finish!.checkId};this.emit({requestedSelection:selectionQuery(this.selection)});const recovered=await this.read(this.selection,true,current);if(!current())return false;this.acceptSnapshot(recovered);}}catch(e){this.emit({recoveryBlocked:true,errorKind:'blocked'});throw e;}
    return true;
-  }catch(e){if(current())this.emit({error:e instanceof Error?e.message:'Could not load the shared check.'});return false;}finally{if(current()){this.emit({loading:false});if(this.state.pending.length&&this.state.errorKind==='network')this.scheduleRetry();}}
+  }catch(e){if(current())this.emit({error:e instanceof Error?e.message:'Could not load the shared check.'});return false;}finally{if(current()){this.emit({loading:false,refreshing:false});if(this.finishActive())queueMicrotask(()=>void this.continueFinish());else if(this.state.pending.length&&this.state.errorKind==='network')this.scheduleRetry();}}
  }
  // Background reads never replace an accepted local intent or a newer save response.
  async refreshVisible(){
@@ -195,7 +198,7 @@ export class EveningController {
    if(this.state.pending.some(x=>x.rejected))this.emit({conflictReview:this.conflictFingerprint(reply.snapshot)});
   }
   succeeded=!this.disposed;this.retryCount=0;if(this.retryTimer){clearTimeout(this.retryTimer);this.retryTimer=null;}this.emit({notice:'Shared changes saved.',error:'',errorKind:undefined});return succeeded;
- }catch(e){this.emit({errorKind:this.state.errorKind??'network',error:e instanceof Error?e.message:'Connection failed. Changes are kept on this device.'});if(this.state.errorKind==='network')this.scheduleRetry();return false;}finally{this.busy=false;this.emit({saving:false,sendingIds:[],...(succeeded&&(!this.fastSync||!this.state.snapshot?.sync)?{needsVerification:false}:{}),...(succeeded?{settledSave:lastReceipt}:{})});if(succeeded&&this.state.needsVerification&&!this.state.verifying&&this.visibleCheck()?.tasks.filter(t=>!t.cancelled).every(t=>t.ready&&t.mappingValid))queueMicrotask(()=>void this.verifyMorning());}}
+ }catch(e){this.emit({errorKind:this.state.errorKind??'network',error:e instanceof Error?e.message:'Connection failed. Changes are kept on this device.'});if(this.state.errorKind==='network')this.scheduleRetry();return false;}finally{this.busy=false;this.emit({saving:false,sendingIds:[],...(succeeded&&(!this.fastSync||!this.state.snapshot?.sync)?{needsVerification:false}:{}),...(succeeded?{settledSave:lastReceipt}:{})});if(succeeded&&!this.state.verifying&&(lastReceipt?.command.kind==='confirm'||this.state.needsVerification&&this.visibleCheck()?.tasks.filter(t=>!t.cancelled).every(t=>t.ready&&t.mappingValid)))queueMicrotask(()=>void this.verifyMorning());}}
  async retry(manual=true,mode:'retry'|'manual'='retry'){
   if(this.state.finish&&this.state.finish.phase!=='complete'&&!this.state.pending.some(p=>p.rejected)){if(!this.finishActive())this.finishStep(this.state.finish.command?'publishing':'sending');if(manual){this.retryCount=0;if(this.retryTimer){clearTimeout(this.retryTimer);this.retryTimer=null;}}return this.continueFinish();}
   if(this.recoveryFlight)return this.recoveryFlight;
@@ -226,7 +229,7 @@ export class EveningController {
  }
  private async verifyMorning(){
   if(this.disposed||this.state.pending.length||this.state.verifying||this.state.loading)return;
-  this.emit({verifying:'finality'});try{if(this.fastSync&&this.state.snapshot?.sync)await this.syncVisible(true);}finally{this.emit({verifying:null});}
+  this.emit({verifying:'finality'});try{if(this.fastSync&&this.state.snapshot?.sync)await this.syncVisible(true);else {const snapshot=await this.read();if(!this.disposed)this.acceptSnapshot(snapshot);}}catch(e){this.emit({freshnessError:e instanceof Error?e.message:'Could not verify shared tasks.'});}finally{this.emit({verifying:null});}
  }
  async flush(){if(this.state.error||this.state.recoveryBlocked||this.state.pending.some(p=>p.rejected))return false;if(this.inflight&&!await this.inflight)return false;if(this.state.pending.length&&!await this.drain())return false;return this.state.pending.length===0&&!this.busy&&!this.state.error;}
  async summary(){
@@ -238,24 +241,40 @@ export class EveningController {
 
  private finishComplete(){return this.state.finish?.phase==='complete';}
  finishActive(){return !!this.state.finish&&!['complete','attention'].includes(this.state.finish.phase);}
- private finishPrefix(){return 'labula-finish-v1:'+encodeURIComponent(this.accountId)+':';}
- private storeFinish(f:FinishIntent){const prior=JSON.parse(this.storage.getItem(this.finishPrefix()+f.id)??'null') as FinishIntent|null;if(prior?.phase==='complete'&&f.phase!=='complete')f=prior;this.storage.setItem(this.finishPrefix()+f.id,JSON.stringify(f));this.emit({finish:f,finishing:!['complete','attention'].includes(f.phase)});}
- private finishStep(phase:FinishIntent['phase'],reason=''){if(this.state.finish)this.storeFinish({...this.state.finish,phase,reason});}
+ private finishPrefix(){return finishJournalPrefix(this.accountId);}
+ private finishRecords(){return readFinishRecords(this.storage,this.accountId,this.account);}
+ private recoveryList(records:FinishRecord[],selected?:string){return unresolvedFinishes(records).filter(f=>f.id!==selected).map(({id,checkId,targetDay,phase,reason})=>({id,checkId,targetDay,phase,reason}));}
+ private storeFinish(f:FinishRecord){
+  // Cleanup can fail (quota/interruption). Do it before accepting a new approval,
+  // so a refused Finish can never leave an unseen durable approval behind.
+  const before=compactCompletedFinishes(this.storage,this.accountId,this.account,f.id);
+  const prior=before.find(p=>p.id===f.id);if(prior?.phase==='complete'&&f.phase!=='complete')f=prior;
+  if(prior?.resolved&&f.phase!=='complete'){this.emit({finish:undefined,finishing:false,error:'This Finish was withdrawn in another tab. Refresh the shared check.'});throw Error('Finish was withdrawn in another tab.');}
+  if(f.phase==='complete')f=writeCompletedFinish(this.storage,f);else this.storage.setItem(this.finishPrefix()+f.id,JSON.stringify(f));
+  const records=f.phase==='complete'?compactCompletedFinishes(this.storage,this.accountId,this.account,f.id):[...before.filter(p=>p.id!==f.id),f];
+  this.emit({finish:f,finishRecovery:this.recoveryList(records,f.id),finishing:!['complete','attention'].includes(f.phase)});
+ }
+ private finishStep(phase:FinishIntent['phase'],reason=''){const f=this.state.finish;if(f&&f.phase!=='complete'&&!('compact' in f))this.storeFinish({...f,phase,reason});}
  private startFinishWake(){if(typeof window!=='undefined'){window.addEventListener('online',this.finishWake);window.addEventListener('focus',this.finishWake);}}
  private stopFinishWake(){if(typeof window!=='undefined'){window.removeEventListener('online',this.finishWake);window.removeEventListener('focus',this.finishWake);}}
  private restoreFinish(){
-  if(this.state.finish)return;
-  const records:FinishIntent[]=[];
-  for(let i=0;i<this.storage.length;i++){const key=this.storage.key(i);if(!key?.startsWith(this.finishPrefix()))continue;
-   const f=JSON.parse(this.storage.getItem(key)!);
-   if(f.protocol!==1||typeof f.id!=='string'||!/^[-0-9a-f]{36}$/i.test(f.id)||!Array.isArray(f.dependencies)||!f.dependencies.every((id:unknown)=>typeof id==='string')||!Number.isFinite(Date.parse(f.createdAt))||f.generation!==f.approved?.check?.version||f.accountId!==this.accountId||f.account.toLowerCase()!==this.account.toLowerCase()||!dateSchema.safeParse(f.checkId).success||!dateSchema.safeParse(f.targetDay).success||f.fingerprint!==finishFingerprint(f.approved)||f.checkId!==f.approved.check?.id||f.targetDay!==f.approved.check?.targetDay||!['sending','checking','publishing','offline','attention','complete'].includes(f.phase)||key!==this.finishPrefix()+f.id)throw Error('Saved Finish needs review. Keep device data and ask the manager.');
-   if(f.command){eveningCommandSchema.parse(f.command);if(f.command.id!==f.id||f.command.actorId!==this.accountId||f.command.checkId!==f.checkId)throw Error('Saved Finish identity is invalid.');}
-   if(f.phase==='complete'){const r=f.receipt,c=f.command;if(!r||!c||r.protocol!==1||r.actorId!==this.accountId||r.checkId!==f.checkId||r.targetDay!==f.targetDay||r.version!==f.generation+1||r.revision!==c.revision+1||r.planRevision!==c.planRevision+1||!Number.isFinite(Date.parse(r.confirmedAt))||typeof r.confirmedBy!=='string'||r.confirmedBy.toLowerCase()!==this.account.toLowerCase())throw Error('Saved Finish receipt needs verification. Keep device data and ask the manager.');}
-   records.push(f);
-  }
-  records.sort((a,b)=>a.createdAt.localeCompare(b.createdAt));const f=records.at(-1);if(!f)return;
-  this.emit({finish:f,finishing:!['complete','attention'].includes(f.phase)});
-  if(this.finishActive()){this.selection={day:f.checkId};this.startFinishWake();queueMicrotask(()=>void this.continueFinish());}
+  const records=compactCompletedFinishes(this.storage,this.accountId,this.account,this.state.finish?.id),unresolved=unresolvedFinishes(records),checkId=this.state.snapshot?.check?.id;
+  const current=this.state.finish;const f=current&&current.phase!=='complete'&&!records.find(f=>f.id===current.id)?.resolved?records.find(f=>f.id===current.id):current&&current.phase==='complete'&&current.checkId===checkId?records.find(f=>f.id===current.id):unresolved.find(f=>f.checkId===checkId)??unresolved[0]??records.filter(f=>f.phase==='complete'&&f.checkId===checkId).at(-1);
+  this.emit({finish:f,finishRecovery:this.recoveryList(records,f?.id),finishing:!!f&&!['complete','attention'].includes(f.phase)});
+  if(this.finishActive()){this.selection={day:f!.checkId};this.startFinishWake();}
+ }
+ async resumeFinish(id:string){
+  if(this.finishActive()||this.state.saving||this.state.verifying||this.state.pending.length)return this.refuse('Resolve the current saved-on-device work before resuming another check.');
+  try{const f=unresolvedFinishes(this.finishRecords()).find(f=>f.id===id);if(!f)return this.refuse('This Finish has already been resolved. Refresh the check.');this.emit({finish:undefined});return await this.refresh({day:f.checkId});}
+  catch(e){this.emit({recoveryBlocked:true,error:e instanceof Error?e.message:'Saved Finish needs review.'});return false;}
+ }
+ async keepReviewedSharedFinish(){
+  const f=this.state.finish,snapshot=this.state.snapshot;
+  if(!f||f.phase!=='attention'||'compact' in f||f.command||!snapshot||this.state.pending.length||this.keys().length||this.busy||this.state.verifying||this.state.unauthorized||this.state.recoveryBlocked)return this.refuse('Verify or resolve the original save before keeping the shared check.');
+  const reviewed=finishFingerprint(snapshot);if(!await this.refresh())return false;
+  if(this.state.finish?.id!==f.id||finishFingerprint(this.state.snapshot!)!==reviewed)return this.refuse('The shared check changed again. Review its updated details, then choose again.');
+  try{keepSharedFinish(this.storage,f);this.emit({finish:undefined,finishing:false,error:'',errorKind:undefined,notice:'Shared check kept. Your earlier Finish was withdrawn, not published.'});return true;}
+  catch{this.emit({recoveryBlocked:true,error:'Could not preserve your decision. Keep device data and retry.'});return false;}
  }
  reviewFinish():EveningSnapshot|null{
   if(this.disposed||this.finishActive()||this.state.loading||this.state.verifying||this.state.recoveryBlocked||this.state.unauthorized||this.state.pending.some(p=>p.rejected||p.command.kind!=='answer')){this.refuse('Resolve the waiting changes or verification before reviewing Finish.');return null;}
@@ -266,7 +285,7 @@ export class EveningController {
   if(this.finishActive())return false;
   const current=this.reviewFinish();if(!current)return false;
   const problem=finishProblem(approved);if(problem||finishFingerprint(current)!==finishFingerprint(approved)){this.refuse(problem||'Answers changed while you reviewed. Keep editing and open a new summary.');return false;}
-  const c=approved.check!,f:FinishIntent={protocol:1,id:crypto.randomUUID(),accountId:this.accountId,account:this.account,checkId:c.id,targetDay:c.targetDay,generation:c.version,createdAt:new Date().toISOString(),approved:structuredClone(approved),fingerprint:finishFingerprint(approved),dependencies:this.state.pending.map(p=>p.command.id),supersedes:this.state.finish?.id,phase:'sending'};
+  const c=approved.check!,f:FinishIntent={protocol:1,id:crypto.randomUUID(),accountId:this.accountId,account:this.account,checkId:c.id,targetDay:c.targetDay,generation:c.version,createdAt:new Date().toISOString(),approved:structuredClone(approved),fingerprint:finishFingerprint(approved),dependencies:this.state.pending.map(p=>p.command.id),supersedes:this.state.finish?.checkId===c.id&&this.state.finish.phase!=='complete'?this.state.finish.id:undefined,phase:'sending'};
   try{this.storeFinish(f);}catch{this.refuse('Finish was not accepted: device storage is full. Keep this window open, free storage, and try again.');return false;}
   this.startFinishWake();void this.continueFinish();return true;
  }
@@ -281,7 +300,7 @@ export class EveningController {
   this.finishFlight=this.runFinish().finally(()=>{this.finishFlight=null;});return this.finishFlight;
  }
  private async runFinish(){
-  const f=this.state.finish!;
+  const f=this.state.finish;if(!f||f.phase==='complete'||'compact' in f)return false;
   try{
    this.finishStep(f.command?'publishing':'sending');
    // Verify original identity even with a warm cache. For an uncertain confirm,
@@ -325,7 +344,7 @@ export class EveningController {
     this.finishStep('attention','Shared answers, links, date, or Morning prep changed since your approval. Review a new summary before finishing.');return false;
    }
    const c=verified.check!;const command:Extract<EveningCommand,{kind:'confirm'}>={id:f.id,scope:'kitchen',actorId:this.accountId,kind:'confirm',checkId:f.checkId,revision:c.revision,planRevision:c.planRevision,notebookRevision:verified.notebookRevision,meta:{occurredAt:f.createdAt,sessionId:this.deviceId,sequence:++this.actionSequence}};
-   this.storeFinish({...this.state.finish!,command,phase:'publishing'});
+   this.storeFinish({...f,command,phase:'publishing'});
    this.emit({error:'',errorKind:undefined});if(!this.enqueue(command))throw Error(this.state.notice||'Could not keep the Finish command.');
    if(this.inflight)await this.inflight;else await this.drain();
    if(this.disposed)return false;
@@ -351,18 +370,27 @@ export class EveningController {
   if(currentFingerprint!==reviewedFingerprint){this.emit({conflictReview:currentFingerprint,error:'Shared result changed again. Review the updated comparison, then choose again.'});return false;}
   if(useLocal&&kind!=='answer'&&kind!=='ready')return false;
   const keep=useLocal?before:[];
-  if(keep.some(p=>p.command.kind!==kind||!check||p.command.kind==='start'||p.command.checkId!==check.id)||(kind==='answer'&&keep.length&&check?.stage!=='draft')){this.emit({error:'The check changed. Keep the shared result and review the check before making new changes.'});return false;}
+  if(keep.some(p=>p.command.kind!==kind||!check||p.command.kind==='start'||p.command.checkId!==check.id)||(kind==='answer'&&keep.length&&(check?.stage!=='draft'||keep.some(p=>p.command.kind==='answer'&&p.command.generation!==check.version)))){this.emit({error:'The check changed. Keep the shared result and review the check before making new changes.'});return false;}
   // A fresh fetch cannot silently expand the user's approval to a different shared result.
-  const revisions=new Map(kind==='ready'?check?.tasks.filter(t=>!t.cancelled&&t.mappingValid).map(t=>[t.itemId,t.revision]):check?.answers.map(a=>[a.itemId,a.revision]));
+  const rows=kind==='ready'?check?.tasks.filter(t=>!t.cancelled&&t.mappingValid):check?.answers.filter(a=>a.mappingValid&&!a.supersededBy);
+  const revisions=new Map(rows?.map(a=>[a.itemId,a.revision]));
+  const values=new Map(rows?.map(a=>[a.itemId,'value' in a?a.value:a.ready]));
   if(keep.some(p=>!('itemId' in p.command)||!revisions.has(p.command.itemId))){this.emit({error:'A listed item is no longer available. Keep the shared result and use Correct check to resolve its link.'});return false;}
-  const next:PendingEvening[]=keep.map(p=>{
-   const c=p.command as Extract<EveningCommand,{kind:'answer'|'ready'}>,revision=revisions.get(c.itemId)!;revisions.set(c.itemId,revision+1);
-   return {...p,sent:false,rejected:false,command:{...c,id:crypto.randomUUID(),revision,meta:{occurredAt:new Date().toISOString(),sessionId:this.deviceId,sequence:++this.actionSequence,supersedesCommandId:c.id},...(c.kind==='answer'?{generation:check!.version}:{})}};
-  });
+  const next:PendingEvening[]=[];
+  for(const p of keep){
+   const c=p.command as Extract<EveningCommand,{kind:'answer'|'ready'}>,revision=revisions.get(c.itemId)!;
+   // Explicit review of a definitively rejected change can adopt the same fresh
+   // result without inventing a transition/author. Later different intents still
+   // run in order; an uncertain sent command was excluded above and is replayed.
+   if(values.get(c.itemId)===c.value&&(c.kind==='ready'||c.generation===check!.version))continue;
+   revisions.set(c.itemId,revision+1);values.set(c.itemId,c.value);
+   next.push({...p,sent:false,rejected:false,command:{...c,id:crypto.randomUUID(),revision,meta:{occurredAt:new Date().toISOString(),sessionId:this.deviceId,sequence:++this.actionSequence,supersedesCommandId:c.id},...(c.kind==='answer'?{generation:check!.version}:{})}});
+  }
   const journal:Resolution={before:before.map(p=>p.command.id),next};
-  try{this.storage.setItem(this.accountPrefix()+'resolution:'+crypto.randomUUID(),JSON.stringify(journal));this.finishResolutions();}
+  const abandoned=!useLocal&&kind==='confirm'&&this.state.finish?.phase==='attention'&&before.some(p=>p.rejected&&p.command.id===this.state.finish?.id)?this.state.finish as FinishIntent:undefined;
+  try{if(abandoned)keepSharedFinish(this.storage,abandoned);this.storage.setItem(this.accountPrefix()+'resolution:'+crypto.randomUUID(),JSON.stringify(journal));this.finishResolutions();}
   catch{this.emit({recoveryBlocked:true,error:'Could not finish saving the reviewed recovery. Your changes are kept. Free device storage, then retry.'});return false;}
-  this.emit({pending:next,error:'',errorKind:undefined,notice:useLocal?'Your reviewed changes will be saved.':'Shared result kept.'});return next.length?this.drain():true;
+  this.emit({pending:next,...(abandoned?{finish:undefined,finishing:false}:{}),error:'',errorKind:undefined,notice:useLocal?'Your reviewed changes will be saved.':'Shared result kept.'});return next.length?this.drain():true;
  }
 }
 
@@ -393,4 +421,5 @@ export function releaseEveningController(account:string,controller:EveningContro
 export function hasStoredEveningWork(account:string,storage:Pick<Storage,'length'|'key'|'getItem'>){
  try{for(let i=0;i<storage.length;i++){const key=storage.key(i);if(!key||!key.startsWith('labula-evening-v1:')&&!key.startsWith('labula-finish-v1:'))continue;const entry=JSON.parse(storage.getItem(key)??'null');if(!entry||!entry.account)return true;if(entry.account.toLowerCase()===account.toLowerCase()&&entry.phase!=='complete')return true;}return false;}catch{return true;}
 }
-export function currentFinishReceipt(state:EveningState){const check=state.snapshot?.check,f=state.finish;return !!(check&&f?.phase==='complete'&&f.checkId===check.id&&check.stage==='confirmed'&&f.receipt?.version===check.version&&!state.pending.length&&!state.saving&&!state.needsVerification&&!state.freshnessError&&!state.error&&!state.unauthorized&&!state.recoveryBlocked&&!state.verifying);}
+export function currentFinishReceipt(state:EveningState){const check=state.snapshot?.check,f=state.finish;return !!(check&&f?.phase==='complete'&&f.checkId===check.id&&check.stage==='confirmed'&&f.receipt?.version===check.version&&f.receipt.targetDay===check.targetDay&&f.command?.id===f.id&&f.receipt.actorId===state.snapshot?.accountId&&!state.pending.length&&!state.saving&&!state.error&&!state.unauthorized&&!state.recoveryBlocked);}
+export function safeToCloseEvening(state:EveningState){return currentFinishReceipt(state)&&!state.deviceWorkPending&&!state.finishRecovery?.length;}

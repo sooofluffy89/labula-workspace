@@ -75,7 +75,7 @@ try{
  const changed=structuredClone(n);changed.items=changed.items.filter(i=>i.id!==ids[6]);db.prepare('UPDATE notebooks SET payload=?,revision=revision+1').run(JSON.stringify(changed));await client.refresh();assert.equal(client.toggleReady(ids[6]),false);assert.equal(client.visibleCheck().tasks[6].mappingValid,false);assert.equal(m.morningProgress(client.state).complete,false);
  db.prepare('UPDATE notebooks SET payload=?,revision=?').run(notebookBefore.payload,notebookBefore.revision);await client.refresh();
  // Storage interruption in explicit conflict resolution is journaled, restored, and sent once.
- s=await read();task=s.check.tasks[7];await send(cmd({kind:'ready',checkId:day,itemId:task.itemId,revision:task.revision,value:!task.ready}));client.toggleReady(ids[7]);await client.flush();await client.refresh();failNewResolution=true;
+ s=await read();task=s.check.tasks[7];await send(cmd({kind:'ready',checkId:day,itemId:task.itemId,revision:task.revision,value:!task.ready}));await send(cmd({kind:'ready',checkId:day,itemId:task.itemId,revision:task.revision+1,value:task.ready}));client.toggleReady(ids[7]);await client.flush();await client.refresh();failNewResolution=true;
  assert.equal(await client.resolveRejected(true),false);assert.equal(client.state.recoveryBlocked,true);assert.ok([...records.keys()].some(k=>k.includes('resolution:')));const journal=JSON.parse([...records].find(([k])=>k.includes('resolution:'))[1]);
  client.dispose();failNewResolution=false;client=makeClient();await client.refresh();assert.deepEqual(client.state.pending.map(p=>p.command),journal.next.map(p=>p.command));assert.ok(await client.retry());assert.equal(records.size,0);
  // Existing v32 single Ready recovery keeps its exact schema and command ID.
