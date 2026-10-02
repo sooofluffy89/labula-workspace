@@ -33,6 +33,12 @@ export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
  const results=await getRawDb().batch([
   getRawDb().prepare("SELECT payload,revision FROM notebooks WHERE id='kitchen'"),
   getRawDb().prepare('SELECT s.*,t.station_id,coalesce(t.revision,0) AS station_revision,t.updated_at AS station_updated_at,t.updated_by AS station_updated_by FROM stock_items s LEFT JOIN checking_station_items t ON t.item_id=s.item_id'),
+  getRawDb().prepare(`SELECT c.id AS operation_id,c.retired_id AS source_id,json_extract(c.request,'$.targetId') AS target_id,
+   (SELECT json_extract(i.value,'$.name') FROM json_each(c.before_payload,'$.items') i WHERE json_extract(i.value,'$.id')=c.retired_id) AS source_name
+   FROM catalog_operations c WHERE c.kind='merge' AND c.retired_id IS NOT NULL
+   AND NOT EXISTS (SELECT 1 FROM catalog_operations u WHERE u.kind='undo' AND u.undo_of=c.id)
+   AND NOT EXISTS (SELECT 1 FROM ingredient_group_commands g,json_each(g.request,'$.reviewedMerges') r WHERE json_extract(r.value,'$.operationId')=c.id)
+   AND EXISTS (SELECT 1 FROM ${managementUsersSql} WHERE user_id=?)`).bind(user.userId),
  ]);
  const notebook=results[0].results[0] as {payload:string;revision:number};
  const rows=new Map((results[1].results as StockRow[]).map(row=>[row.item_id,row]));
@@ -46,11 +52,10 @@ export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
  });
  const canManageGroups=await canManage(user);
  const byItem=new Map(items.map(item=>[item.itemId,item]));
- const merges=canManageGroups?(await getRawDb().prepare(`SELECT retired_id AS source_id,json_extract(request,'$.targetId') AS target_id FROM catalog_operations c
-  WHERE kind='merge' AND retired_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM catalog_operations u WHERE u.kind='undo' AND u.undo_of=c.id)`).all<{source_id:string;target_id:string}>()).results:[];
- const groupConflicts=merges.flatMap(m=>{const source=rows.get(m.source_id),target=byItem.get(m.target_id),sourceName=(JSON.parse(notebook.payload) as Notebook).items.find(i=>i.id===m.source_id)?.name;
+ const merges=canManageGroups?results[2].results as {operation_id:string;source_id:string;target_id:string;source_name:string|null}[]:[];
+ const groupConflicts=merges.flatMap(m=>{const source=rows.get(m.source_id),target=byItem.get(m.target_id);
   if(!source?.group_source||!target||source.group_id===target.groupId)return [];
-  return [{sourceId:m.source_id,sourceName:sourceName??'Retired item',targetId:m.target_id,targetName:target.name,sourceGroupId:validGroup(source.group_id),targetGroupId:target.groupId}];});
+  return [{operationId:m.operation_id,sourceRevision:source.group_revision,sourceId:m.source_id,sourceName:m.source_name??'Retired item',targetId:m.target_id,targetName:target.name,sourceGroupId:validGroup(source.group_id),targetGroupId:target.groupId}];});
  return {stations:1,accountId:user.userId,account:user.email,scope:'kitchen',items,notebookRevision:notebook.revision,canManageGroups,groupConflicts};
 }
 export async function ingredientGroupCommand(user:ChatGPTUser,raw:unknown){
@@ -62,16 +67,24 @@ export async function ingredientGroupCommand(user:ChatGPTUser,raw:unknown){
  const prior=await replay();if(prior)return prior;
  await initialize(user);const member=await activeMember(user),now=new Date().toISOString();
  const gate='EXISTS (SELECT 1 FROM ingredient_group_commands WHERE id=? AND actor_id=? AND request=?)',args=[c.id,user.userId,request];
- const result=JSON.stringify({itemId:c.itemId,groupId:c.groupId,revision:c.revision+1});
+ const reviewedMerges=JSON.stringify(c.reviewedMerges??[]);
+ const result=JSON.stringify({itemId:c.itemId,groupId:c.groupId,revision:c.revision+1,...(c.reviewedMerges?{reviewedMerges:c.reviewedMerges}:{})});
  const receipt=db.prepare(`INSERT INTO ingredient_group_commands(id,actor_id,request,result,created_at)
  SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM stock_items s,notebooks n,json_each(n.payload,'$.items') i
  WHERE n.id='kitchen' AND s.item_id=? AND s.group_revision=? AND json_extract(i.value,'$.id')=s.item_id)
  AND EXISTS (SELECT 1 FROM ${managementUsersSql} WHERE user_id=?)
- AND EXISTS (SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) ON CONFLICT(id) DO NOTHING`).bind(c.id,user.userId,request,result,now,c.itemId,c.revision,user.userId,user.userId);
+ AND EXISTS (SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1)
+ AND NOT EXISTS (SELECT 1 FROM json_each(?) review WHERE NOT EXISTS (
+  SELECT 1 FROM catalog_operations m JOIN stock_items source ON source.item_id=m.retired_id
+  WHERE m.id=json_extract(review.value,'$.operationId') AND m.kind='merge' AND json_extract(m.request,'$.targetId')=?
+  AND source.group_revision=json_extract(review.value,'$.sourceRevision')
+  AND NOT EXISTS (SELECT 1 FROM catalog_operations u WHERE u.kind='undo' AND u.undo_of=m.id)
+  AND NOT EXISTS (SELECT 1 FROM ingredient_group_commands g,json_each(g.request,'$.reviewedMerges') done WHERE json_extract(done.value,'$.operationId')=m.id)
+ )) ON CONFLICT(id) DO NOTHING`).bind(c.id,user.userId,request,result,now,c.itemId,c.revision,user.userId,user.userId,reviewedMerges,c.itemId);
  const event=eventStatement(user,member.name,c,now,{category:'stock',action:'group',itemId:'s.item_id',itemName:"json_extract(i.value,'$.name')",itemKind:"json_extract(i.value,'$.kind')",
-  before:"json_object('groupId',s.group_id,'revision',s.group_revision)",after:"json_object('groupId',?,'revision',s.group_revision+1)",
+  before:"json_object('groupId',s.group_id,'revision',s.group_revision)",after:"json_object('groupId',?,'revision',s.group_revision+1,'reviewedMerges',json(?))",
   from:`FROM stock_items s,notebooks n,json_each(n.payload,'$.items') i WHERE n.id='kitchen' AND s.item_id=? AND s.group_revision=? AND json_extract(i.value,'$.id')=s.item_id AND ${gate}`,
-  args:[c.groupId,c.itemId,c.revision,...args]});
+  args:[c.groupId,reviewedMerges,c.itemId,c.revision,...args]});
  const update=db.prepare(`UPDATE stock_items SET group_id=?,group_revision=group_revision+1,group_source='owner',group_updated_at=?,group_updated_by=? WHERE item_id=? AND group_revision=? AND ${gate}`).bind(c.groupId,now,user.userId,c.itemId,c.revision,...args);
  await db.batch([receipt,event,update]);
  const saved=await replay();if(saved)return saved;

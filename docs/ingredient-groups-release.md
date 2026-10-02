@@ -11,3 +11,11 @@ Migration `0011_mushy_deadpool.sql` is additive. It adds group metadata and a co
 Verification: 49 regression scripts, TypeScript, ESLint and production build passed. Browser QA used a separate local database and synthetic catalog items, checks and tasks. It exercised Manage list, group change, evening answer/finish, Morning prep Ready/undo, narrow mobile widths and large text. No real Track, answer or Ready state was changed in testing. The deployment record and private backup live outside the source repository under `/Users/johnny/Documents/LABULA/nasazeni-skupiny-ingredienci-2026-09-25/`.
 
 The older Evening check / Morning prep UX findings in `audit-evening-morning-v40-2026-09-25/audit.md` are outside this grouping change. Passing group tests does not establish that those separate findings were fixed.
+
+## Merge review resolution — 2 October 2026
+
+The group dialog compares the retained ingredient with the original names and groups of merged ingredients. A manager can confirm the existing group or choose another. Confirmation stores the exact merge operation IDs in the existing ingredient-group command receipt and activity event, atomically with the group decision. Fresh snapshots suppress only explicitly reviewed merges; changing a group without that acknowledgement does not silently resolve a review. A later merge has its own identity and remains reviewable, including after undo and remerge.
+
+The server validates the current target group revision, each source group revision, merge target, management permission and active merge status. Failed writes roll back both the group decision and acknowledgement. Retrying the original request returns its original receipt without applying another change. Recovery from a rejected merge review requires reopening the current comparison before a new confirmation. Existing private backups include the receipts; no migration or historical-check rewrite is needed.
+
+Verification includes real API and component-handler regression scripts covering same-group confirmation, lost responses and remount/retry, stale reviews, rollback, undo/remerge, an additional merge while the dialog is open, audit and backup preservation.
