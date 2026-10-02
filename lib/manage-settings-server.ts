@@ -3,15 +3,14 @@ import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {canManage,managementUsersSql,RequestError} from './notebook-server';
 import {activeMember,eventStatement} from './activity-server';
 import {readStock} from './stock-server';
-import {readPlanning} from './round-store';
-import {operationalDay} from './evening';
+import {readRoundConfiguration} from './round-store';
 import {manageCommandSchema,settingAfter,type SettingValue,type ManageSnapshot,type ManageReceipt} from './manage-settings';
 import type {RoundId} from './check-rounds';
 
 export async function readManageSettings(user:ChatGPTUser):Promise<ManageSnapshot>{
  if(!await canManage(user))throw new RequestError('Only the owner or a Manager can manage items.',403,'role_restricted');
  for(let attempt=0;attempt<3;attempt++){
-  const stock=await readStock(user),p=await readPlanning(operationalDay());
+  const stock=await readStock(user),p=await readRoundConfiguration();
   const rows=p.stockRows as {item_id:string;included:number;track:number;revision:number;group_revision:number;round_id:RoundId|null;round_revision:number}[];
   if(stock.notebookRevision!==p.notebookRevision||stock.items.some(i=>{const r=rows.find(r=>r.item_id===i.itemId);return !r||r.revision!==i.revision||r.group_revision!==i.groupRevision;}))continue;
   const configuration:Record<string,SettingValue>={};for(const i of stock.items){const r=rows.find(r=>r.item_id===i.itemId)!;configuration[i.itemId]={included:i.included,track:i.track,revision:i.revision,roundId:r.round_id,roundRevision:r.round_revision,stationId:i.stationId??null,stationRevision:i.stationRevision??0};}

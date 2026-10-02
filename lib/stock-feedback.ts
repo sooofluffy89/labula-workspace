@@ -22,13 +22,13 @@ export function savedStatus(state:EveningState,account:string,now=Date.now()){
  if(state.finishPhase==='publishing')return 'Publishing morning prep…';
  if(state.errorKind==='network'&&state.pending.length&&!state.unauthorized&&!state.recoveryBlocked)return `Saved on this device · ${state.pending.length} changes waiting to sync. We’ll retry when the connection returns.`;
  if(state.error||state.unauthorized||state.recoveryBlocked)return 'Shared state could not be confirmed.';
- if(state.saving)return `${state.finishing?'Saving':'Syncing'} ${state.pending.length} change${state.pending.length===1?'':'s'}…`;
+ if(state.saving)return `${state.finishing?'Saving':'Sharing'} ${state.pending.length} change${state.pending.length===1?'':'s'}…`;
  if(state.pending.length)return `${state.pending.length} changes waiting to sync`;
  if(!state.snapshot)return 'Loading…';
  if(state.freshnessError||!state.lastVerifiedAt||now-state.lastVerifiedAt>=75000)return 'Shared state needs a refresh.';
  if(state.needsVerification)return 'Changes shared · complete plan needs verification.';
  if(morningProgress(state,now).complete)return '✓ All morning items ready · shared';
- return 'Changes saved.';
+ return 'All changes shared.';
 }
 export function settledReceipt(state:EveningState,kind:SaveReceipt['command']['kind']){
  const r=state.settledSave,c=r?.command;

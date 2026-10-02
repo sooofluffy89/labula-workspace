@@ -387,3 +387,10 @@ export function acquireEveningController(account:string,storage:Storage,selectio
 export function releaseEveningController(account:string,controller:EveningController){
  if(!controller.finishActive())controller.dispose();if(!controller.finishActive()&&finishControllers.get(account.toLowerCase())===controller)finishControllers.delete(account.toLowerCase());
 }
+
+// Inspect device journals without making a hidden service read on an empty device.
+// A malformed record still requires authenticated recovery; nothing is removed here.
+export function hasStoredEveningWork(account:string,storage:Pick<Storage,'length'|'key'|'getItem'>){
+ try{for(let i=0;i<storage.length;i++){const key=storage.key(i);if(!key||!key.startsWith('labula-evening-v1:')&&!key.startsWith('labula-finish-v1:'))continue;const entry=JSON.parse(storage.getItem(key)??'null');if(!entry||!entry.account)return true;if(entry.account.toLowerCase()===account.toLowerCase()&&entry.phase!=='complete')return true;}return false;}catch{return true;}
+}
+export function currentFinishReceipt(state:EveningState){const check=state.snapshot?.check,f=state.finish;return !!(check&&f?.phase==='complete'&&f.checkId===check.id&&check.stage==='confirmed'&&f.receipt?.version===check.version&&!state.pending.length&&!state.saving&&!state.needsVerification&&!state.freshnessError&&!state.error&&!state.unauthorized&&!state.recoveryBlocked&&!state.verifying);}

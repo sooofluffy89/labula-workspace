@@ -34,3 +34,10 @@ export async function readPlanning(day:string){
  }).sort((a,b)=>a.name.localeCompare(b.name,'en')||a.itemId.localeCompare(b.itemId));
  return {stockRows:r[2].results,revision:state.revision,activatedAt:state.activated_at,rounds,timeline,coverage,coveredThrough,items,due:items.filter(i=>i.round.firstDue),notebookRevision:notebook.revision,legacy};
 }
+
+// Configuration-only read: no service history, calendar obligations or next-check scan.
+export async function readRoundConfiguration(){
+ const r=await getRawDb().batch([getRawDb().prepare('SELECT * FROM check_rounds'),getRawDb().prepare('SELECT item_id,revision,group_revision,round_id,round_revision FROM stock_items'),getRawDb().prepare("SELECT revision FROM notebooks WHERE id='kitchen'")]);
+ const rounds=(r[0].results as {id:RoundId;days:string;revision:number;updated_at:string;updated_by:string}[]).map(x=>({id:x.id,days:JSON.parse(x.days) as number[],revision:x.revision,updatedAt:x.updated_at,updatedBy:x.updated_by}));
+ return {rounds,stockRows:r[1].results,notebookRevision:(r[2].results[0] as {revision:number}).revision};
+}

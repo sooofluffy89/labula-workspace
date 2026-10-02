@@ -42,7 +42,7 @@ try{
  let client=makeClient();await client.refresh();const ids=client.state.snapshot.check.tasks.map(t=>t.itemId);
 
  const feedback=(id=ids[0])=>m.rowFeedback(client.state,'ready',id);
- assert.equal(feedback().receiptId,null);assert.equal(m.savedStatus(client.state,chef.email),'Changes saved.');
+ assert.equal(feedback().receiptId,null);assert.equal(m.savedStatus(client.state,chef.email),'All changes shared.');
  // Real controller -> real API -> SQLite. ACK A must not bless later B/C intents.
  fault='slow';client.ready(ids[0],true);client.ready(ids[0],false);client.ready(ids[0],true);
  const seen=[];const off=client.subscribe(()=>seen.push({pending:client.state.pending.length,feedback:feedback(),settled:client.state.settledSave}));
@@ -66,8 +66,8 @@ try{
  const progress=render(m.StockProgress,{value:2,total:3,label:'Ready'});assert.match(progress,/aria-valuenow="2"/);assert.match(progress,/aria-valuemax="3"/);assert.match(progress,/choices, not saved requests/);
  // Final Ready is never complete while waiting or in a failed/freshness state.
  for(const id of ids.slice(1))client.ready(id,true);await client.flush();assert.equal(m.morningProgress(client.state).complete,true);
- for(const patch of [{saving:true},{loading:true},{unauthorized:true},{recoveryBlocked:true},{error:'offline'},{freshnessError:'offline'},{lastVerifiedAt:Date.now()-80000}]){assert.equal(m.morningProgress({...client.state,...patch}).complete,false);assert.notEqual(m.savedStatus({...client.state,...patch},chef.email),'Changes saved.');}
- assert.notEqual(m.savedStatus(client.state,'another@test'),'Changes saved.');
+ for(const patch of [{saving:true},{loading:true},{unauthorized:true},{recoveryBlocked:true},{error:'offline'},{freshnessError:'offline'},{lastVerifiedAt:Date.now()-80000}]){assert.equal(m.morningProgress({...client.state,...patch}).complete,false);assert.notEqual(m.savedStatus({...client.state,...patch},chef.email),'All changes shared.');}
+ assert.notEqual(m.savedStatus(client.state,'another@test'),'All changes shared.');
  // A new controller, new day, or another account cannot replay a historical receipt.
  client.dispose();client=makeClient();await client.refresh();assert.equal(feedback().receiptId,null);assert.equal(client.state.settledSave,undefined);
  release=null;fault='slow';client.toggleReady(ids[1]);await waitRelease();const queued=client.state.pending[0].command;client.dispose();release();await new Promise(r=>setImmediate(r));assert.equal(client.state.acknowledged,undefined);
