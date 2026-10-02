@@ -390,3 +390,16 @@
 .round-tracking-filter select{min-height:44px;max-width:100%}
 .rounds-view .round-group li>button[aria-pressed]{min-height:44px;min-width:100px}
 @media(max-width:600px){.rounds-view .round-group li{flex-wrap:wrap}.rounds-view .round-group li>label{min-width:0;flex-basis:100%}.rounds-view .round-group li strong{overflow-wrap:anywhere}.round-tracking-filter{align-items:flex-start;flex-direction:column}}
+
+/* Finish motion follows durable state, never a timer-driven success. */
+.finish-background{position:sticky;top:0;z-index:21;background:var(--background);padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:.875rem;line-height:1.4;transition:border-color 150ms ease}
+.finish-background p{margin:4px 0;overflow-wrap:anywhere}.finish-background button{min-height:44px;margin:4px 6px 0 0}
+.finish-background[data-phase=sending] strong:before,.finish-background[data-phase=checking] strong:before,.finish-background[data-phase=publishing] strong:before{content:'';display:inline-block;width:12px;height:12px;margin-right:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:finish-spin 900ms linear 400ms infinite;vertical-align:middle}
+.finish-background[data-phase=complete]{border-color:#526e59}.finish-background[data-phase=complete] strong:before{content:'✓ ';}
+.finish-background[data-phase=attention]{border-color:#956524}
+@keyframes finish-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.finish-background,.finish-background strong:before{animation:none!important;transition:none!important}}
+
+.finish-background[data-phase=complete]{position:static}
+
+.finish-changes ul{max-height:240px;overflow:auto;padding-left:20px}.finish-changes li{margin:10px 0}.finish-changes p{margin:3px 0}
