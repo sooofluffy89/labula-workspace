@@ -2,7 +2,7 @@ import {finishFingerprint,finishProblem,type FinishIntent,type FinishRecord,type
 import {compactCompletedFinishes,readFinishRecords,unresolvedFinishes,writeCompletedFinish,finishJournalPrefix,finishResolutionPrefix,keepSharedFinish} from './finish-journal';
 import {PrepNotesController} from './prep-notes-client';
 import {requestJson} from './request-json';
-import {EVENING_BATCH_LIMIT,applyEveningDelta,mergeEveningSnapshot,type EveningBatchReply,type EveningDelta} from './evening-sync';
+import {EVENING_BATCH_LIMIT,applyEveningDelta,mergeEveningSnapshot,verifiedEveningDelta,type EveningBatchReply,type EveningDelta} from './evening-sync';
 import {dateSchema,eveningCommandSchema,selectionQuery,type EveningCommand,type EveningSelection,type EveningSnapshot,type Availability} from './evening';
 
 type Storage=Pick<globalThis.Storage,'length'|'key'|'getItem'|'setItem'|'removeItem'>;
@@ -116,8 +116,15 @@ export class EveningController {
    // A full read or structural write completed while this read was in flight. Start at its new cursor.
    if(snapshot.sync!.cursor!==this.state.snapshot?.sync?.cursor)continue;
    if(delta.reset||delta.check?.id!==this.state.snapshot?.check?.id){const fresh=await this.read(this.selection,true,current);if(!current())return false;this.acceptSnapshot(fresh);void this.recoverConnection();return true;}
-   const updated=applyEveningDelta(this.state.snapshot!,delta);this.emit({snapshot:updated,lastVerifiedAt:Date.now(),freshnessError:'',...(this.state.pending.some(p=>p.rejected)?{conflictReview:this.conflictFingerprint(updated)}:{})});
-   if(!delta.more){if(proof.empty&&proof.epoch===this.intentEpoch&&!this.state.pending.length)this.emit({needsVerification:false});void this.recoverConnection();return true;}
+   const updated=applyEveningDelta(this.state.snapshot!,delta);this.emit({snapshot:updated,needsVerification:true,...(this.state.pending.some(p=>p.rejected)?{conflictReview:this.conflictFingerprint(updated)}:{})});
+   if(!delta.more){
+    if(!verifiedEveningDelta(delta,this.selection)){
+     // Rolling back to an older server remains safe. Its mixed terminal page
+     // cannot approve Finish or all-ready; use its consistent full read instead.
+     const fresh=await this.read(this.selection,true,current);if(!current())return false;this.acceptSnapshot(fresh);
+    }else this.emit({lastVerifiedAt:Date.now(),freshnessError:'',...(proof.empty&&proof.epoch===this.intentEpoch&&!this.state.pending.length?{needsVerification:false}:{})});
+    void this.recoverConnection();return true;
+   }
   }throw Error('More shared changes are waiting. Refresh to continue safely.');}
   catch(e){if(current()&&!abort.signal.aborted)this.emit({freshnessError:e instanceof Error?e.message:'Could not refresh shared changes.'});return false;}
   finally{if(epoch===this.syncEpoch){this.polling=false;this.emit({refreshing:false});}}

@@ -37,11 +37,15 @@ export async function readEveningDelta(user:ChatGPTUser,selection:EveningSelecti
   db.prepare(`SELECT ${noteColumns('a')},1 AS mapping_valid FROM morning_tasks a WHERE a.check_id=(SELECT id FROM evening_checks WHERE ${checkWhere}) AND a.item_id IN (${ids}) ORDER BY a.position`).bind(selected,cursor.after,bound),
  ]);
  const meta=r[0].results[0] as Metadata,row=r[1].results[0] as CheckRow|undefined,events=r[2].results as {seq:number;check_id:string;item_id:string|null;action:string;category:string}[];
- const through=cursor.through??meta.through,last=events.at(-1)?.seq??through,more=events.length===pageSize&&last<through;
+ const through=cursor.through??meta.through,last=events.at(-1)?.seq??through,pageMore=events.length===pageSize&&last<through;
+ // A header is current within this transaction, while a page can still be
+ // bounded by an earlier transaction. Exhausting that horizon is not final:
+ // old clients must also continue until the header's changes have arrived.
+ const more=pageMore||through<meta.through;
  const reset=cursor.after>meta.through||cursor.notebook!==meta.notebook||cursor.rounds!==meta.rounds||cursor.calendar!==meta.calendar||events.some(e=>!['answer','ready','prep-feedback','prep-instruction'].includes(e.action));
- const next={...cursor,after:more?last:through,through:more?through:null};
+ const next={...cursor,after:pageMore?last:through,through:pageMore?through:null};
  // Catalog changes force a complete read; unchanged catalog means existing mapping/name data stay valid.
- return {accountId:user.userId,account:user.email,cursor:JSON.stringify(next),reset,more,check:row?summary(row):null,answers:(r[3].results as AnswerRow[]).map(a=>answerView(a)),tasks:(r[4].results as TaskRow[]).map(t=>taskView(t))};
+ return {accountId:user.userId,account:user.email,cursor:JSON.stringify(next),reset,more,...(!reset&&!more?{verifiedThrough:meta.through}:{}),check:row?summary(row):null,answers:(r[3].results as AnswerRow[]).map(a=>answerView(a)),tasks:(r[4].results as TaskRow[]).map(t=>taskView(t))};
 }
 
 export async function eveningBatch(user:ChatGPTUser,raw:unknown):Promise<EveningBatchReply>{
