@@ -1,4 +1,5 @@
 'use client';
+import {registerSignOutWork} from '@/lib/profile-signout';
 import {QuickReview} from './quick';
 import {useEffect,useRef,useState,useId} from 'react';
 import {Button} from '@/components/ui/button';
@@ -32,6 +33,7 @@ export default function DataReview({legacy=false}:{legacy?:boolean}={}){
  const queue=useRef<SaveQueue|null>(null),envRef=useRef<Envelope|null>(null),key=useRef(''),alive=useRef(true),operation=useRef<{body:Record<string,unknown>;revision:number}|null>(null),busyRef=useRef(false),comparisonRef=useRef(false),comparisonToken=useRef(0),acceptingImport=useRef(false);
  const data=snapshot?.data,record=env?.record,source=record?.source,current=data?entity(data,data.position.entityId):undefined,available=data&&current?activeGroups(data,current,source).filter(g=>(env?.canManage??env?.isOwner)||!g.manager):[],group=available.find(g=>g.id===data?.position.group)??available[0];
  function backup():Recovery|null{const q=queue.current,e=envRef.current;if(!q||!e?.record)return null;return {format:'Labula review recovery v2',campaign:REVIEW_ID,userId:e.userId,user:e.user,record:e.record,current:q.current,acknowledged:q.acknowledged,pending:q.pending,pendingAction:operation.current,revision:q.revision,savedAt:new Date().toISOString()};}
+ useEffect(()=>registerSignOutWork(()=>queue.current?.dirty||operation.current?{label:'Review recovery',value:backup(),safe:true}:null));
  function notifyRender(){const q=queue.current;if(alive.current&&q){setSnapshot({data:q.current,revision:q.revision,dirty:q.dirty,running:q.running,pendingAction:!!operation.current});setTick(x=>x+1);}}
  function persist(){const b=backup();if(!b)return;try{localStorage.setItem(key.current,JSON.stringify(b));if(alive.current)setLocalError(false);}catch{if(alive.current)setLocalError(true);}notifyRender();}
  function install(e:Envelope){envRef.current=e;setEnv(e);if(e.record){bindReviewSource(e.record.data,e.record.source);queue.current=new SaveQueue(e.record,persist,notifyRender);notifyRender();const selected=entity(e.record.data,e.record.data.position.entityId);if(selected)setSection(selected.kind);}setSaveError('');}

@@ -134,6 +134,13 @@
       "when": 1791111914296,
       "tag": "0018_application_access",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1791126413265,
+      "tag": "0019_minor_nighthawk",
+      "breakpoints": true
     }
   ]
 }

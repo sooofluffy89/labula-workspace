@@ -3,7 +3,7 @@ import {accessFetch} from '@/lib/access-client';
 
 import {useRef, useState} from 'react';
 import {Button} from '@/components/ui/button';
-import {isCompletePrivateBackup} from '@/lib/private-backup';
+import {isCompletePrivateBackup,verifyPrivateBackupPhotos} from '@/lib/private-backup';
 
 export default function Download() {
   const [status, setStatus] = useState('');
@@ -23,7 +23,7 @@ export default function Download() {
         ? 'Sign in again before downloading.'
         : 'Could not read the private backup. Try again.');
       const data: unknown = await response.json();
-      if (!isCompletePrivateBackup(data)) throw Error('Incomplete backup response. Try again.');
+      if (!isCompletePrivateBackup(data)||!await verifyPrivateBackupPhotos(data)) throw Error('Incomplete backup response. Try again.');
 
       const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}));
       const link = document.createElement('a');

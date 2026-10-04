@@ -128,3 +128,8 @@ export const prepFeedback=sqliteTable('prep_feedback',{
 // Transaction-local authorization barriers are inserted and deleted atomically.
 export const accessWriteGuards=sqliteTable('access_write_guards',{id:text('id').primaryKey(),userId:text('user_id').notNull(),scope:text('scope').notNull()});
 export const teamAccessState=sqliteTable('team_access_state',{id:text('id').primaryKey(),initializedAt:text('initialized_at').notNull(),policyRevision:integer('policy_revision').notNull(),policyHash:text('policy_hash').notNull()});
+
+// Photo revision never touches kitchen_team or operational revisions.
+export const userPhotos=sqliteTable('user_photos',{userId:text('user_id').primaryKey(),revision:integer('revision').notNull(),objectKey:text('object_key'),sha256:text('sha256'),size:integer('size'),updatedAt:text('updated_at').notNull()});
+export const userPhotoCommands=sqliteTable('user_photo_commands',{id:text('id').primaryKey(),actorId:text('actor_id').notNull(),fingerprint:text('fingerprint').notNull(),beforeRevision:integer('before_revision').notNull(),afterRevision:integer('after_revision').notNull(),createdAt:text('created_at').notNull()});
+export const userPhotoUploads=sqliteTable('user_photo_uploads',{id:text('id').primaryKey(),actorId:text('actor_id').notNull(),objectKey:text('object_key'),sha256:text('sha256'),size:integer('size'),fingerprint:text('fingerprint').notNull(),state:text('state').notNull(),expiresAt:text('expires_at').notNull()});

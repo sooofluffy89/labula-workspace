@@ -1,3 +1,4 @@
+import {registerSignOutWork} from './profile-signout';
 import {requestJson} from './request-json';
 import {prepNoteCommandSchema,contextKey,type PrepNoteCommand,type NotesPage,type InstructionIndex} from './prep-notes';
 type Store=Pick<Storage,'length'|'key'|'getItem'|'setItem'|'removeItem'>;
@@ -5,7 +6,7 @@ export type NotePending={command:PrepNoteCommand;rejected?:boolean;error?:string
 export type NotesState={identity:Pick<NotesPage,'account'|'accountId'|'canEdit'|'supported'>|null;pending:NotePending[];parked:NotePending[];unsafeDrafts:number;loading:boolean;sending:string|null;error:string;received:number;draftVersion?:number;index?:InstructionIndex|null;indexLoading?:boolean;indexError?:string;indexCheckedAt?:number};
 const initial:NotesState={identity:null,pending:[],parked:[],unsafeDrafts:0,loading:false,sending:null,error:'',received:0};
 export class PrepNotesController{
- state:NotesState=initial;private listeners=new Set<()=>void>();private disposed=false;private drain:Promise<boolean>|null=null;private init:Promise<boolean>|null=null;private session=crypto.randomUUID();private sequence=0;private indexFlight:Promise<boolean>|null=null;private indexEpoch=0;private volatileDrafts=new Map<string,{text:string;revision?:number}>();
+ state:NotesState=initial;private listeners=new Set<()=>void>();private disposed=false;private drain:Promise<boolean>|null=null;private init:Promise<boolean>|null=null;private session=crypto.randomUUID();private sequence=0;private indexFlight:Promise<boolean>|null=null;private indexEpoch=0;private volatileDrafts=new Map<string,{text:string;revision?:number}>();private unregisterSignout=registerSignOutWork(()=>this.volatileDrafts.size?{label:'Unbacked-up instruction / feedback text',value:[...this.volatileDrafts],safe:false}:null);
  constructor(private account:string,private storage:Store,private request:typeof requestJson=requestJson){}
  subscribe=(fn:()=>void)=>{this.listeners.add(fn);return()=>{this.listeners.delete(fn);};};
  private set(p:Partial<NotesState>){if(this.disposed)return;this.state={...this.state,...p};this.listeners.forEach(fn=>fn());}
@@ -70,5 +71,5 @@ export class PrepNotesController{
  }
  // Only a definitely rejected operation may be retired; uncertain requests retain their original identity.
  discardRejected(id:string){const p=this.state.pending.find(p=>p.command.id===id);if(!p?.rejected)return false;try{this.storage.setItem(this.prefix()+'parked.'+id,JSON.stringify(p));this.storage.removeItem(this.key(id));this.restore();this.set({error:''});return true;}catch(e){this.set({error:(e as Error).message});return false;}}
- dispose(){this.indexEpoch++;this.disposed=true;this.listeners.clear();}
+ dispose(){this.unregisterSignout();this.indexEpoch++;this.disposed=true;this.listeners.clear();}
 }
