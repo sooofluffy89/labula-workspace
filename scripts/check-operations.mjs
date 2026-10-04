@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
@@ -12,7 +13,7 @@ try{
  let fail=false;
  const stmt=(sql,args=[])=>({bind(...v){return stmt(sql,v)},async first(){return db.prepare(sql).get(...args)??null},async all(){return{results:db.prepare(sql).all(...args)}},async run(){return this.exec()},exec(){if(fail&&sql.startsWith('INSERT INTO operating_outcomes')){fail=false;throw Error('Synthetic rollback')}const q=db.prepare(sql);return q.columns().length?{results:q.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(q.run(...args).changes)}}}});
  globalThis.opsDb={prepare:stmt,async batch(ss){db.exec('BEGIN');try{const r=ss.map(s=>s.exec());db.exec('COMMIT');return r}catch(e){db.exec('ROLLBACK');throw e}}};
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.opsDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.opsUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.opsDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.opsUser','globalThis.opsDb'));
  await build({stdin:{contents:`export * as api from './app/api/evening/route';export * as stock from './app/api/stock/route';export * as rounds from './app/api/check-rounds/route';export * as calendar from './app/api/operating-calendar/route';export * as ops from './app/api/operations/route';export * as backup from './app/api/private-backup/route';export * from './lib/notebook';export * from './lib/operating-calendar';export * from './lib/evening';export * from './lib/evening-client';export * from './lib/check-rounds';export * from './lib/operations';export * from './lib/private-backup';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/test.mjs',alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
  const m=await import(dir+'/test.mjs'),owner={userId:'owner',email:'jan@bananasport.cz'},cook={userId:'cook',email:'cook@example.test'},legacy={userId:'legacy',email:'legacy@example.test'};globalThis.opsUser=owner;
  const json=async(r,status=200)=>{const b=await r.json();assert.equal(r.status,status,JSON.stringify(b));return b};

@@ -21,6 +21,7 @@ import {preparationProgress} from '@/lib/prep-completion';
 import {PrepWorkflow} from './prep-workflow';
 import {hasPrepDraftChanges,type PrepDraft} from '@/lib/prep-draft';
 import {readLocalPreparation,hasVolatilePreparation,volatilePreparation,prepLocalEvent} from '@/lib/prep-local';
+import {accessDraftEvent,accessDraftAvailableEvent} from '@/lib/access-client';
 import {downloadJson} from '@/lib/download';
 import {exportPreparationCsv} from '@/lib/prep-export';
 import { CreateItemDialog,ItemEditor } from './catalog-editor';
@@ -103,6 +104,7 @@ export default function KitchenApp({account=''}:{account?:string}={}){
  const createItem:CreateItem=(name,done)=>setCreating({name,done});
  const commitItem=(item:Item)=>{const next={...data,items:data.items.map(i=>i.id===item.id?item:i)};try{validateNotebook(next);}catch(e){return validationMessage(e);}update(()=>next);toast.success('Item updated across all recipes.');return null;};
  const exportData=(kind:'json'|'csv')=>{try{download(`labula-kitchen-${new Date().toISOString().slice(0,10)}.${kind}`,kind==='json'?JSON.stringify(makeNotebookDraft(data,nb.getSavedBase(),nb.user,Object.values(aliasDrafts).filter(hasAliasChanges),nb.getSaveRecovery(),nb.getCatalogRecovery(),nb.getBulkRecovery(),getPrepDraft()),null,2):exportDishIngredientsCsv(data),kind==='json'?'application/json':'text/csv;charset=utf-8');}catch(e){toast.error(validationMessage(e));}};
+ useEffect(()=>{const exportLocal=()=>exportData('json');window.addEventListener(accessDraftEvent,exportLocal);window.dispatchEvent(new CustomEvent(accessDraftAvailableEvent,{detail:true}));return()=>{window.removeEventListener(accessDraftEvent,exportLocal);window.dispatchEvent(new CustomEvent(accessDraftAvailableEvent,{detail:false}));};});
  const retryNotebook=async()=>{const receipt=nb.getCatalogRecovery();const ok=await nb.retry();if(ok&&receipt?.operation.kind==='aliases'){const op=receipt.operation,draft=aliasDrafts[op.itemId];if(draft&&JSON.stringify(draft.text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean))===JSON.stringify(op.aliases)){const next={...aliasDrafts};delete next[op.itemId];setAliasDrafts(next);}}return ok;};
  const progress=useMemo(()=>notebookProgress(data),[data]);const selectedProgress=progress.dishes.get(selected)!;
  const bridge=useRef({data,chooseDish});useEffect(()=>{bridge.current={data,chooseDish};});

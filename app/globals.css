@@ -420,3 +420,17 @@
 .station-review-items small{color:#58616e}
 .station-dialog .notice{overflow-wrap:anywhere}
 @media(min-width:768px){.manage-settings-table:has(.station-select) table{table-layout:auto}.manage-settings-table:has(.station-select) th:first-child{width:24%}.manage-settings-table:has(.station-select) th:nth-child(2){width:14%}}
+
+/* Login shell contains no notebook or team data. */
+.access-page {max-width:440px;margin:12vh auto;padding:24px;overflow-wrap:anywhere}
+.access-link {display:inline-block;padding:12px 18px;background:#bf232d;color:white;border-radius:6px;margin-top:16px}
+.team-more {min-width:90px;align-self:flex-start}
+.team-more summary {cursor:pointer;padding:10px 14px;border:1px solid #cbd0d6;border-radius:6px;min-height:44px}
+.team-more[open] {max-width:280px}
+.team-more .team-person-actions {display:flex;flex-direction:column;align-items:stretch;margin-top:12px;gap:8px}
+.team-person-main {min-width:0;overflow-wrap:anywhere}
+.team-email {overflow-wrap:anywhere}
+@media(max-width:480px) {.team-person {align-items:flex-start}.team-more[open] {width:100%;max-width:none}.team-form {width:100%}}
+
+body[data-app-access='blocked'] > :not(.app-access-boundary) { display: none !important; }
+.app-access-boundary > [hidden] { display: none !important; }

@@ -77,7 +77,7 @@ export const eveningCommands=sqliteTable('evening_commands',{
 
 // Stable authenticated identity; roster names never replace the signed-in actor.
 export const kitchenTeam=sqliteTable('kitchen_team',{
- id:text('id').primaryKey(),userId:text('user_id'),email:text('email').notNull(),name:text('name').notNull(),accessRole:text('access_role').notNull().default('legacy'),active:integer('active').notNull().default(1),revision:integer('revision').notNull().default(0),createdAt:text('created_at').notNull(),
+ id:text('id').primaryKey(),userId:text('user_id'),email:text('email').notNull(),name:text('name').notNull(),accessRole:text('access_role').notNull().default('legacy'),active:integer('active').notNull().default(1),accessEnabled:integer('access_enabled').notNull().default(0),lastSignInAt:text('last_sign_in_at'),revision:integer('revision').notNull().default(0),createdAt:text('created_at').notNull(),
 },t=>[uniqueIndex('kitchen_team_user').on(t.userId),uniqueIndex('kitchen_team_email').on(t.email)]);
 export const teamCommands=sqliteTable('team_commands',{
  id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),createdAt:text('created_at').notNull(),
@@ -124,3 +124,7 @@ export const prepNoteCommands=sqliteTable('prep_note_commands',{
 export const prepFeedback=sqliteTable('prep_feedback',{
  id:text('id').primaryKey(),checkId:text('check_id').notNull(),itemId:text('item_id').notNull(),catalogId:text('catalog_id').notNull(),version:integer('version').notNull(),instructionRevision:integer('instruction_revision'),phase:text('phase').notNull(),text:text('text').notNull(),actorId:text('actor_id').notNull(),actorName:text('actor_name').notNull(),actorEmail:text('actor_email').notNull(),createdAt:text('created_at').notNull(),clientAt:text('client_at'),
 },t=>[index('prep_feedback_service').on(t.checkId,t.itemId,t.catalogId),index('prep_feedback_catalog').on(t.catalogId,t.createdAt,t.id)]);
+
+// Transaction-local authorization barriers are inserted and deleted atomically.
+export const accessWriteGuards=sqliteTable('access_write_guards',{id:text('id').primaryKey(),userId:text('user_id').notNull(),scope:text('scope').notNull()});
+export const teamAccessState=sqliteTable('team_access_state',{id:text('id').primaryKey(),initializedAt:text('initialized_at').notNull(),policyRevision:integer('policy_revision').notNull(),policyHash:text('policy_hash').notNull()});

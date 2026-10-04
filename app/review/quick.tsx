@@ -2,13 +2,13 @@
 import {useState,useEffect,useRef} from 'react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {excluded} from '@/lib/review-v2/model';
+import {bindReviewSource,excluded} from '@/lib/review-v2/model';
 import {confirmationStatus} from '@/lib/review-v2/confirmation';
 import type {Draft,Authority} from '@/lib/review-v2/model';
 import type {ReviewSource} from '@/lib/data-review';
 import type {Quick,QuickProcess,QuickCheck} from '@/lib/quick-review/schema';
 import {workKinds,triggers,limits,coverage} from '@/lib/quick-review/schema';
-import {cases,emptyQuick,emptyProcess,emptyOutput,syncChecks,caseProgress,caseGaps,caseHash,gaps,productionActive,weeklyWork,quickProgress,itemName,checkOpen,checkRelevant,checkUnneeded,outputs,toggleOutput} from '@/lib/quick-review/model';
+import {cases,caseItemIds,emptyQuick,emptyProcess,emptyOutput,syncChecks,caseProgress,caseGaps,caseHash,gaps,productionActive,weeklyWork,quickProgress,itemName,checkOpen,checkRelevant,checkUnneeded,outputs,toggleOutput} from '@/lib/quick-review/model';
 import type {Proposal} from '@/lib/review-v2/proposals';
 import './quick.css';
 
@@ -19,8 +19,9 @@ function Select({label,value,options,onChange}:{label:string;value:string;option
 function Amount({label,status,value,onChange}:{label:string;status:string;value:string;onChange:(status:''|'estimate'|'check',value:string)=>void}){return <div className="quick-amount"><Text label={label} value={status==='check'?'':value} number onChange={v=>onChange(v?'estimate':'',v)}/><label><input type="checkbox" checked={status==='check'} onChange={e=>onChange(e.target.checked?'check':value?'estimate':'',value)}/> I need to check</label>{status==='check'&&value&&<small>Previous entry kept: {value}</small>}</div>;}
 
 export function QuickReview({data,source,isOwner,canManage,busy,saving,authority,change,action,refresh}:Props){
+ bindReviewSource(data,source);
  const manage=canManage??isOwner;
- const q=data.quick??emptyQuick(),pos=(q.position.view==='archive'||!manage&&q.position.view==='results')?{...q.position,view:'cases' as const}:q.position,c=cases.find(x=>x.id===pos.caseId)??cases[0],record=q.cases.find(x=>x.id===c.id)!,p=q.processes.find(x=>x.id===pos.processId&&record.processIds.includes(x.id)),progress=quickProgress(data,source);
+ const q=data.quick??emptyQuick(),pos=(q.position.view==='archive'||!manage&&q.position.view==='results')?{...q.position,view:'cases' as const}:q.position,definition=cases.find(x=>x.id===pos.caseId)??cases[0],c={...definition,items:caseItemIds(source,definition.id)},record=q.cases.find(x=>x.id===c.id)!,p=q.processes.find(x=>x.id===pos.processId&&record.processIds.includes(x.id)),progress=quickProgress(data,source);
  const [oldLink,setOldLink]=useState(false);useEffect(()=>{if(typeof window!=='undefined'&&window.location.search)queueMicrotask(()=>setOldLink(true));},[]);
  const [message,setMessage]=useState(''),[preview,setPreview]=useState<{proposal:Proposal;conflicts:unknown[]}|null>(null);const heading=useRef<HTMLHeadingElement>(null);
  const write=(fn:(q:Quick)=>void)=>{if(busy)return;setMessage('');change(d=>{const next=structuredClone(d.quick??emptyQuick());fn(next);return {...d,quick:syncChecks(next,{...d,quick:next},source)};});};

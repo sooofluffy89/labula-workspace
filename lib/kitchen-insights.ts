@@ -12,10 +12,10 @@ const positive=(n:number|null|undefined):n is number=>typeof n==='number'&&Numbe
 export const numberText=(n:number)=>new Intl.NumberFormat('en-GB',{maximumFractionDigits:2}).format(n);
 
 /** Read-only projection. Menu activation and source answers are never rewritten. */
-export function kitchenInsights(n:Notebook,reviewed:AppliedRecord[]=[]) :InsightRow[]{
+export function kitchenInsights(n:Notebook,reviewed:AppliedRecord[]=[],protectedIds?:string[]) :InsightRow[]{
  const usage=directUsage(n),replaced=appliedProductionItems(reviewed);
  return n.items.filter(i=>usage.itemDishes.has(i.id)).map(item=>{
-  const p=item.prepProfile,productionHeld=productionExcluded(n,item.id),wasReviewed=replaced.has(item.id),batch=productionHeld||wasReviewed?undefined:p.batch;
+  const p=item.prepProfile,productionHeld=productionExcluded(n,item.id,protectedIds),wasReviewed=replaced.has(item.id),batch=productionHeld||wasReviewed?undefined:p.batch;
   // A mention is a conservative review flag, not proof that an item belongs to one location.
   const scopeReview=productionHeld||/\bmanifesto\b/i.test([p.note,p.batch?.note,item.method,item.specification].join(' '));
   const fortnight=/once\s+(?:(?:in|every|per)\s+)?(?:2|two)\s+weeks|every\s+(?:2|two)\s+weeks|fortnight/i.test(batch?.note??'');

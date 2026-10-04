@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import {readdir} from 'node:fs/promises';
 import {build} from 'esbuild';
 import assert from 'node:assert/strict';
@@ -23,7 +24,7 @@ try{
  let afterMiss=null,failAfterBatch=false,failNextRead=false,rollbackBatch=false;
  const stmt=(sql,args=[])=>({bind(...v){return stmt(sql,v);},async first(){if(failNextRead&&sql.startsWith('SELECT payload')){failNextRead=false;throw Error('Simulated lost result');}const row=sqlite.prepare(sql).get(...args)??null;if(!row&&afterMiss&&sql==='SELECT * FROM notebook_commands WHERE id=?'){const action=afterMiss;afterMiss=null;await action();}return row;},async all(){return {results:sqlite.prepare(sql).all(...args)};},async run(){return this._run();},_run(){return {meta:{changes:Number(sqlite.prepare(sql).run(...args).changes)}};}});
  globalThis.__testDb={prepare:stmt,async batch(statements){sqlite.exec('BEGIN');try{const results=statements.map(s=>s._run());if(rollbackBatch){rollbackBatch=false;throw Error('Simulated rollback');}sqlite.exec('COMMIT');if(failAfterBatch){failAfterBatch=false;failNextRead=true;}return results;}catch(e){sqlite.exec('ROLLBACK');throw e;}}};
- await writeFile(path.join(dir,'db.ts'),'export const getRawDb=()=>globalThis.__testDb;');await writeFile(path.join(dir,'auth.ts'),'export const getChatGPTUser=async()=>globalThis.__testUser;');
+ await writeFile(path.join(dir,'db.ts'),'export const getRawDb=()=>globalThis.__testDb;export const getAppAccessMode=()=>"application";');await writeFile(path.join(dir,'auth.ts'),fixtureAuthSource('globalThis.__testUser','globalThis.__testDb'));
  const opts={alias:{'@/db':path.join(dir,'db.ts'),'@/app/chatgpt-auth':path.join(dir,'auth.ts')},define:{'import.meta.env.DEV':'false'}};
  const api=await bundle('app/api/notebook/route.ts','api',opts),bulk=await bundle('app/api/bulk/route.ts','api-bulk',opts),cat=await bundle('app/api/catalog/route.ts','api-cat',opts);
  const chef={userId:'chef',email:'xuewenokay@gmail.com'};const request=(body,revision,extra={})=>new Request('http://test.local/api/bulk',{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':String(revision),...extra},body:JSON.stringify(body)});

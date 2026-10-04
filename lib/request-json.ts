@@ -1,3 +1,4 @@
+import {accessFetch} from './access-client';
 export const REQUEST_TIMEOUT_MS=30_000;
 export class RequestTimeoutError extends Error {
  constructor(){super('The connection took too long. The save may have reached the server. Retry to check its result safely.');this.name='RequestTimeoutError';}
@@ -12,6 +13,6 @@ export async function requestJson<T>(url:string,init:RequestInit={}):Promise<{re
  const controller=new AbortController();let timer:ReturnType<typeof setTimeout>|undefined;
  const cancel=()=>controller.abort(init.signal?.reason);if(init.signal?.aborted)cancel();else init.signal?.addEventListener('abort',cancel,{once:true});
  const deadline=new Promise<never>((_,reject)=>{timer=setTimeout(()=>{reject(new RequestTimeoutError());controller.abort();},REQUEST_TIMEOUT_MS);});
- try{return await Promise.race([(async()=>{const res=await fetch(url,{...init,signal:controller.signal});const body=await res.json() as T;return {res,body};})(),deadline]);}
+ try{return await Promise.race([(async()=>{const res=await accessFetch(url,{...init,signal:controller.signal});const body=await res.json() as T;return {res,body};})(),deadline]);}
  finally{clearTimeout(timer);init.signal?.removeEventListener('abort',cancel);}
 }

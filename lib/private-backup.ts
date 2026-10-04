@@ -9,13 +9,14 @@ export const privateBackupTables = [
   'operating_calendar_versions', 'operating_commands', 'operating_outcomes',
   'prep_instructions', 'prep_instruction_versions', 'prep_note_commands', 'prep_feedback',
   'team_commands', 'check_rounds', 'round_state', 'round_timeline', 'round_commands',
-  'checking_station_items', 'checking_station_commands',
+  'checking_station_items', 'checking_station_commands', 'access_write_guards', 'team_access_state',
 ] as const;
 
 export type PrivateBackup = {
   format: 'Labula private database backup';
   version: 1;
   stations?: 1;
+  access?: 1;
   capturedAt: string;
   tables: Record<string, unknown[]>;
   counts: Record<string, number>;
@@ -24,7 +25,7 @@ export type PrivateBackup = {
 export function isCompletePrivateBackup(value: unknown): value is PrivateBackup {
   if (typeof value !== 'object' || value === null) return false;
   const backup = value as Partial<PrivateBackup>;
-  if (backup.format !== 'Labula private database backup' || backup.version !== 1 || backup.stations !== 1 ||
+  if (backup.format !== 'Labula private database backup' || backup.version !== 1 || backup.stations !== 1 || backup.access !== 1 ||
       typeof backup.capturedAt !== 'string' || !Number.isFinite(Date.parse(backup.capturedAt)) ||
       typeof backup.tables !== 'object' || backup.tables === null ||
       typeof backup.counts !== 'object' || backup.counts === null) return false;
@@ -41,6 +42,10 @@ export function readPrivateBackup(value:unknown){
  if(typeof value!=='object'||!value)return null;
  const b=value as PrivateBackup;
  const upgraded={...b,tables:{...b.tables},counts:{...b.counts}};
+ const access=['access_write_guards','team_access_state'];
+ const missingAccess=b.access===undefined&&access.every(t=>b.tables?.[t]===undefined);
+ if(b.access===1&&access.some(t=>b.tables?.[t]===undefined))return null;
+ if(missingAccess){for(const t of access){upgraded.tables[t]=[];upgraded.counts[t]=0;}upgraded.access=1;}
  const stations=['checking_station_items','checking_station_commands'];
  const missingStations=b.stations===undefined&&stations.every(t=>b.tables?.[t]===undefined);
  if(b.stations===1&&stations.some(t=>b.tables?.[t]===undefined))return null;

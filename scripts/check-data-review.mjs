@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,rm,readdir} from 'node:fs/promises';
@@ -29,7 +30,7 @@ try{
  await queue.save(async p=>({operationId:p.operationId,revision:p.revision+1}));assert(!queue.dirty);assert.equal(queue.revision,3);
  edit('D');let original;await assert.rejects(queue.save(async p=>{original=structuredClone(p);throw Error('timeout after commit');}));edit('E');await queue.save(async p=>{assert.deepEqual(p,original);return {operationId:p.operationId,revision:p.revision+1};});assert(queue.dirty);assert.equal(queue.current.answers.session.values.name,'E');assert(persisted>=8);
  // Real route + transactional SQLite, with a dispatch identity stub only.
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.__reviewDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.__reviewUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.__reviewDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.__reviewUser','globalThis.__reviewDb'));
  const api=await bundle('app/api/data-review/route.ts','route',{alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'}});
  const db=new DatabaseSync(':memory:');for(const name of (await readdir('drizzle')).filter(n=>n.endsWith('.sql')).sort())db.exec(await readFile('drizzle/'+name,'utf8'));
  db.prepare('INSERT INTO notebooks VALUES(?,?,?,?,?)').run('kitchen',JSON.stringify(notebook),317,'2026-09-18','chef');const originalNotebook=db.prepare('SELECT * FROM notebooks').all();

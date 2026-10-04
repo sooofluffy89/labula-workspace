@@ -1,4 +1,5 @@
 'use client';
+import {accessFetch} from '@/lib/access-client';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {InformationContext,InformationControls,useInformation,type InformationTab} from './information-context';
 import {informationHash,parseInformationHash,type InformationTarget,type Information,type IngredientInformation,type ReviewInformation} from '@/lib/information';
@@ -61,7 +62,7 @@ export function InformationView({active,target,account,operationsOnly,onEdit,onR
   if(!active||target.kind==='history'||operationsOnly&&target.kind!=='source')return;
   const c=new AbortController();let live=true;const timer=setTimeout(()=>{c.abort();if(live){setLoading(false);setError('The details took too long to load. Retry; your work is unchanged.');}},30000);
   queueMicrotask(()=>{if(live){setError('');setLoading(true);}});
-  void fetch('/api/information?target='+encodeURIComponent(key),{cache:'no-store',signal:c.signal}).then(async r=>{const b=await r.json() as {error?:string;account:string;data:Information};if(!live||c.signal.aborted)return;if(!r.ok){if(r.status===401||r.status===403){setRecord(null);setDenied(true);onSnapshot?.(undefined);onDenied?.();}throw Error(b.error??'Could not load details.');}if(b.account?.toLowerCase()!==account.toLowerCase()){setRecord(null);setDenied(true);onSnapshot?.(undefined);onDenied?.();throw Error('The signed-in account changed. Return to your original account before continuing.');}const at=Date.now();setDenied(false);setRecord({key,account,data:b.data});setLastChecked(at);onSnapshot?.(b.data,at);}).catch(e=>{if(live&&!c.signal.aborted)setError(e.message);}).finally(()=>{clearTimeout(timer);if(live&&!c.signal.aborted)setLoading(false);});
+  void accessFetch('/api/information?target='+encodeURIComponent(key),{cache:'no-store',signal:c.signal}).then(async r=>{const b=await r.json() as {error?:string;account:string;data:Information};if(!live||c.signal.aborted)return;if(!r.ok){if(r.status===401||r.status===403){setRecord(null);setDenied(true);onSnapshot?.(undefined);onDenied?.();}throw Error(b.error??'Could not load details.');}if(b.account?.toLowerCase()!==account.toLowerCase()){setRecord(null);setDenied(true);onSnapshot?.(undefined);onDenied?.();throw Error('The signed-in account changed. Return to your original account before continuing.');}const at=Date.now();setDenied(false);setRecord({key,account,data:b.data});setLastChecked(at);onSnapshot?.(b.data,at);}).catch(e=>{if(live&&!c.signal.aborted)setError(e.message);}).finally(()=>{clearTimeout(timer);if(live&&!c.signal.aborted)setLoading(false);});
   return()=>{live=false;clearTimeout(timer);c.abort();};
  // Callbacks belong to this exact frame; tab/scroll updates must not start a new request.
  // eslint-disable-next-line react-hooks/exhaustive-deps

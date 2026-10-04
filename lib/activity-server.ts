@@ -1,32 +1,27 @@
+import {requireWriteScope} from '@/lib/protected-api';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {owner,canManage,managementUsersSql,RequestError} from './notebook-server';
 import {teamCommandSchema,type TeamMember,type ActionMeta,type ActivityEvent} from './activity';
 import {dateSchema} from './evening';
 
-type MemberRow={id:string;user_id:string|null;email:string;name:string;active:number;access_role?:string;revision:number};
-export async function ensureMember(user:ChatGPTUser){
- const db=getRawDb();let row=await db.prepare('SELECT * FROM kitchen_team WHERE user_id=?').bind(user.userId).first<MemberRow>();
- if(!row){
-  await db.prepare(`INSERT INTO kitchen_team(id,user_id,email,name,active,revision,created_at) VALUES(?,?,?,?,1,0,?)
-   ON CONFLICT(email) DO UPDATE SET user_id=excluded.user_id,revision=kitchen_team.revision+1 WHERE kitchen_team.user_id IS NULL`)
-   .bind(crypto.randomUUID(),user.userId,user.email.toLowerCase(),user.fullName??user.email,new Date().toISOString()).run();
-  row=await db.prepare('SELECT * FROM kitchen_team WHERE user_id=?').bind(user.userId).first<MemberRow>();
- }
- if(!row)throw new RequestError('This email is already linked to another account. Ask the owner to check your team profile.',403);
- return row;
-}
+import {permittedMember,type AccessMember} from './team-access-server';
+import {applicationAccessMode} from '@/lib/site-access-mode';
+type MemberRow=AccessMember;
+export async function ensureMember(user:ChatGPTUser){return permittedMember(user);}
 export async function activeMember(user:ChatGPTUser){const member=await ensureMember(user);if(!member.active)throw new RequestError('Your Current stock access is paused. Ask the owner to reactivate your team profile. Saved changes stay on this device.',403);return member;}
-const memberView=(m:MemberRow,ownerId:string|null):TeamMember=>({id:m.id,userId:m.user_id,email:m.email,name:m.name,active:!!m.active,accessRole:m.access_role==='manager'?'manager' as const:m.access_role==='cook'?'cook' as const:'legacy' as const,revision:m.revision,owner:m.user_id===ownerId});
+const memberView=(m:MemberRow,ownerId:string|null):TeamMember=>({id:m.id,userId:m.user_id,email:m.email,name:m.name,active:!!m.active,accessRole:m.access_role==='manager'?'manager' as const:m.access_role==='cook'?'cook' as const:'legacy' as const,revision:m.revision,owner:m.user_id===ownerId,accessEnabled:!!m.access_enabled,lastSignInAt:m.last_sign_in_at??null});
 // Management reads must not register visitors or link an unclaimed profile.
 export async function readTeamDirectory(user:ChatGPTUser){
+ requireWriteScope('management');
  const db=getRawDb(),ownerId=(await db.prepare("SELECT user_id FROM kitchen_owner WHERE id='owner'").first<{user_id:string}>())?.user_id;
  if(!await canManage(user))throw new RequestError('Only the owner or a Manager can manage the kitchen team.',403);
  const rows=(await db.prepare('SELECT * FROM kitchen_team ORDER BY lower(name),id').all<MemberRow>()).results;
- return {accountId:user.userId,email:user.email,isOwner:ownerId===user.userId,canManage:true,members:rows.map(m=>memberView(m,ownerId??null))};
+ return {accountId:user.userId,email:user.email,isOwner:ownerId===user.userId,canManage:true,accessMode:applicationAccessMode(),members:rows.map(m=>memberView(m,ownerId??null))};
 }
 export async function readTeam(user:ChatGPTUser){
  const self=await ensureMember(user),isOwner=await owner(user),manage=await canManage(user),db=getRawDb(),ownerId=(await db.prepare("SELECT user_id FROM kitchen_owner WHERE id='owner'").first<{user_id:string}>())?.user_id??null;
+ if(manage)requireWriteScope('management');
  const members=manage?(await db.prepare('SELECT * FROM kitchen_team ORDER BY lower(name),id').all<MemberRow>()).results:[self];
  return {accountId:user.userId,self:memberView(self,ownerId),isOwner,canManage:manage,members:members.map(m=>memberView(m,ownerId??null))};
 }
@@ -50,17 +45,22 @@ export async function teamCommand(user:ChatGPTUser,raw:unknown){
  // Recheck actor and target inside the same atomic batch as the receipt and write.
  // Owner is immutable; a Manager cannot change their own role or active status.
  const actorGate=`EXISTS (SELECT 1 FROM ${managementUsersSql} WHERE user_id=?)`;
- const condition=c.kind==='add'?'NOT EXISTS (SELECT 1 FROM kitchen_team WHERE email=?)':`EXISTS (SELECT 1 FROM kitchen_team x WHERE x.id=? AND x.revision=? AND ${c.kind==='role'?"(x.user_id IS NULL OR x.user_id NOT IN (SELECT user_id FROM kitchen_owner))":"(x.user_id IS NULL OR x.user_id NOT IN (SELECT user_id FROM kitchen_owner) OR ?=1)"} AND (EXISTS(SELECT 1 FROM kitchen_owner WHERE user_id=?) OR ((x.user_id IS NULL OR x.user_id NOT IN (SELECT user_id FROM kitchen_owner)) AND ${c.kind==='role'?"(x.user_id IS NULL OR x.user_id!=?)":"(x.user_id IS NULL OR x.user_id!=? OR x.active=?)"})))`;
+ const condition=c.kind==='add'?'NOT EXISTS (SELECT 1 FROM kitchen_team WHERE lower(email)=?)':`EXISTS(SELECT 1 FROM kitchen_team x WHERE x.id=? AND x.revision=? AND
+ ${c.kind==='edit'?"(x.user_id IS NULL OR x.user_id NOT IN (SELECT user_id FROM kitchen_owner) OR ?=1)":"(x.user_id IS NULL OR x.user_id NOT IN (SELECT user_id FROM kitchen_owner))"}
+ AND (EXISTS(SELECT 1 FROM kitchen_owner WHERE user_id=?) OR ((x.user_id IS NULL OR x.user_id NOT IN(SELECT user_id FROM kitchen_owner)) AND
+ ${c.kind==='edit'?"(x.user_id IS NULL OR x.user_id!=? OR x.active=?)":"(x.user_id IS NULL OR x.user_id!=?)"})))`;
  const conditionArgs=c.kind==='add'?[c.email]:[id,c.revision,...(c.kind==='edit'?[c.active?1:0]:[]),user.userId,user.userId,...(c.kind==='edit'?[c.active?1:0]:[])];
  const receipt=db.prepare(`INSERT INTO team_commands(id,actor_id,request,created_at) SELECT ?,?,?,? WHERE ${actorGate} AND ${condition} ON CONFLICT(id) DO NOTHING`).bind(...args,now,user.userId,...conditionArgs);
- const event=eventStatement(user,member.name,c,now,{category:'team',action:c.kind,itemId:'x.id',itemName:'x.name',before:c.kind==='add'?'NULL':"json_object('email',x.email,'userId',x.user_id,'name',x.name,'active',x.active,'role',x.access_role,'revision',x.revision)",after:c.kind==='role'?"json_object('role',?,'email',x.email,'userId',x.user_id,'revision',x.revision+1)":'?',from:`FROM ${c.kind==='add'?"(SELECT ? AS id,? AS name)":"kitchen_team"} x WHERE ${c.kind==='add'?'':'x.id=? AND x.revision=? AND '}${gate}`,args:[c.kind==='role'?c.role:JSON.stringify(c),...(c.kind==='add'?[id,c.name]:[id,c.revision]),...args]});
- const write=c.kind==='add'?db.prepare(`INSERT INTO kitchen_team(id,email,name,active,revision,created_at,access_role) SELECT ?,?,?,1,0,?,'cook' WHERE ${gate} ON CONFLICT(id) DO NOTHING`).bind(id,c.email,c.name,now,...args):c.kind==='role'?db.prepare(`UPDATE kitchen_team SET access_role=?,revision=revision+1 WHERE id=? AND revision=? AND ${gate}`).bind(c.role,id,c.revision,...args):db.prepare(`UPDATE kitchen_team SET name=?,active=?,revision=revision+1 WHERE id=? AND revision=? AND ${gate}`).bind(c.name,c.active?1:0,id,c.revision,...args);
+ const displayName=c.kind==='add'?c.name||c.email:'';
+ const event=eventStatement(user,member.name,c,now,{category:'team',action:c.kind,itemId:'x.id',itemName:'x.name',before:c.kind==='add'?'NULL':"json_object('email',x.email,'userId',x.user_id,'name',x.name,'active',x.active,'accessEnabled',x.access_enabled,'role',x.access_role,'revision',x.revision)",after:c.kind==='role'?"json_object('role',?,'email',x.email,'userId',x.user_id,'revision',x.revision+1)":'?',from:`FROM ${c.kind==='add'?"(SELECT ? AS id,? AS name)":"kitchen_team"} x WHERE ${c.kind==='add'?'':'x.id=? AND x.revision=? AND '}${gate}`,args:[c.kind==='role'?c.role:JSON.stringify(c),...(c.kind==='add'?[id,displayName]:[id,c.revision]),...args]});
+ const write=c.kind==='add'?db.prepare(`INSERT INTO kitchen_team(id,email,name,active,access_enabled,revision,created_at,access_role) SELECT ?,?,?,1,1,0,?,? WHERE ${gate} ON CONFLICT(id) DO NOTHING`).bind(id,c.email,displayName,now,c.role??'cook',...args):c.kind==='role'?db.prepare(`UPDATE kitchen_team SET access_role=?,revision=revision+1 WHERE id=? AND revision=? AND ${gate}`).bind(c.role,id,c.revision,...args):c.kind==='access'?db.prepare(`UPDATE kitchen_team SET access_enabled=?,revision=revision+1 WHERE id=? AND revision=? AND ${gate}`).bind(c.enabled?1:0,id,c.revision,...args):db.prepare(`UPDATE kitchen_team SET name=?,active=?,revision=revision+1 WHERE id=? AND revision=? AND ${gate}`).bind(c.name,c.active?1:0,id,c.revision,...args);
  await db.batch([receipt,event,write]);if(!await replay())throw new RequestError('This profile changed or this change is not permitted. The owner is protected; Managers cannot change their own role or active status. Refresh and review the team.',409);
  return {operationId:c.id};
 }
 
 export async function readActivity(user:ChatGPTUser,q:URLSearchParams){
  await activeMember(user);const isOwner=await owner(user),manage=await canManage(user),db=getRawDb();
+ if(manage)requireWriteScope('management');
  const where:string[]=[manage?'1':"category!='team'"],args:unknown[]=[];
  if(q.get('export')==='1'&&!manage)throw new RequestError('Only the owner or a Manager can export activity.',403);
  if(q.get('from')&&q.get('to')&&q.get('from')!>q.get('to')!)throw new RequestError('The end date must be on or after the start date.');

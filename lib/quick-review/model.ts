@@ -4,15 +4,16 @@ import {excluded,entity,decimal,same,dateValid,today,type Draft} from '../review
 import {quickSchema,type Quick,type QuickProcess,type QuickOutput,type QuickCheck} from './schema';
 export type CaseDefinition={id:string;name:string;items:string[];help:string};
 export const cases:CaseDefinition[]=[
- {id:'garlic',name:'Minced garlic',items:['17ae3ba8-3711-4ea6-a8ae-2236ee3faa76'],help:'Which work belongs to one full batch, and which is a small top-up? Include peeling only if done here.'},
- {id:'base',name:'Beef base & sauce boxes',items:['ad2d73f3-6aef-4fa1-8185-eb123234ec9b','b4c07a38-05d5-4168-9570-4b1b4732b27c','0af6f8eb-7e14-40e8-b899-f5a15994ecf0','45498745-e911-47c5-89d4-b8ae72b4524e','2b5c4c91-e768-41d1-accf-12ec8839f62e'],help:'A mixed base, a set of boxes, or separate jobs? Count total boxes once. Do not multiply a pack description by a number.'},
- {id:'beef',name:'Beef cubes & beef broth',items:['49103b06-4f8a-4324-a18b-e225a9b265e7','0d719507-aa35-46b0-84aa-99b6a55ec2ec'],help:'Separate cooking from later cutting, portioning or reheating. Shared shank production stays outside this review.'},
- {id:'rice',name:'Rice',items:['2e171551-2162-4d29-92ac-4db4e13a309b'],help:'Two cookers, two batches, or two filled pots? Clarify the cooked state; storage needs checking before a larger reserve.'},
- {id:'noodles',name:'Fermented noodles',items:['0f637c4c-e0b1-48e7-9a15-bd6da32dbd95'],help:'Making, fermenting, cooking or portioning noodles? A day total is not one batch.'},
- {id:'pork',name:'Minced pork',items:['7fad61ec-97e2-4e49-b3f4-9e706bb639df'],help:'Do we currently buy minced meat or mince it here? Separate that from cooking. Describe total bags, not a future buying plan.'},
- {id:'coriander',name:'Coriander',items:['f6ad5efc-ed8f-4030-a8be-6a08057aeddb'],help:'Washing, drying and cutting may happen at different times. A quality estimate is not a safe storage rule.'},
- {id:'brown',name:'Brown sauce',items:['deb7ca6f-6dc9-4a44-a000-900e4a165213'],help:'Is it still used today? A plan to remove it is different from having stopped using it.'},
+ {id:'garlic',name:'Minced garlic',items:['review-fixture-garlic-1'],help:'Which work belongs to one full batch, and which is a small top-up? Include peeling only if done here.'},
+ {id:'base',name:'Beef base & sauce boxes',items:['review-fixture-base-1','review-fixture-base-2','review-fixture-base-3','review-fixture-base-4','review-fixture-base-5'],help:'A mixed base, a set of boxes, or separate jobs? Count total boxes once. Do not multiply a pack description by a number.'},
+ {id:'beef',name:'Beef cubes & beef broth',items:['review-fixture-beef-1','review-fixture-beef-2'],help:'Separate cooking from later cutting, portioning or reheating. Shared shank production stays outside this review.'},
+ {id:'rice',name:'Rice',items:['review-fixture-rice-1'],help:'Cookers, batches, or filled pots? Clarify the cooked state; storage needs checking before a larger reserve.'},
+ {id:'noodles',name:'Fermented noodles',items:['review-fixture-noodles-1'],help:'Making, fermenting, cooking or portioning noodles? A day total is not one batch.'},
+ {id:'pork',name:'Minced pork',items:['review-fixture-pork-1'],help:'Do we currently buy minced meat or mince it here? Separate that from cooking. Describe total bags, not a future buying plan.'},
+ {id:'coriander',name:'Coriander',items:['review-fixture-coriander-1'],help:'Washing, drying and cutting may happen at different times. A quality estimate is not a safe storage rule.'},
+ {id:'brown',name:'Brown sauce',items:['review-fixture-brown-1'],help:'Is it still used today? A plan to remove it is different from having stopped using it.'},
 ];
+export const caseItemIds=(s:ReviewSource,id:string)=>s.quickCaseItems?.[id]??cases.find(c=>c.id===id)?.items??[];
 export const emptyQuick=():Quick=>({version:1,week:{days:'',unknown:false},cases:cases.map(c=>({id:c.id,processIds:[],deferred:false})),processes:[],checks:[],position:{caseId:'garlic',processId:'',step:0,view:'cases'},offers:{},approval:{effective:'',reason:'',evidence:''}});
 export const emptyOutput=(itemId=''):QuickOutput=>({id:crypto.randomUUID(),itemId,stage:'',status:'',amount:'',unit:'',pack:'',content:'',contentUnit:'',meaning:''});
 export const emptyProcess=():QuickProcess=>({id:crypto.randomUUID(),name:'',kind:'',inputId:'',separation:'',sharedScope:'',outputs:[],workStatus:'',minutes:'',crewMode:'',people:'',coverage:'',countedIn:'',fullStatus:'',full:'',topupStatus:'',topups:'',trigger:'',emergency:false,triggerOther:'',limits:[],limitBasis:'',limitOther:'',context:''});
@@ -89,7 +90,7 @@ function caseValid(saved:string|undefined,id:string,q:Quick,d:Draft,s:ReviewSour
  const values=records.map(v=>v?Array.isArray(v.facts.outputs)?caseTask(v.facts,historical,d,s):{facts:normalizedFacts(v.facts)}:null);
  return stamp('case',values)===caseHash(id,q,d,s);}catch{return false;}
 }
-export function caseGaps(id:string,q:Quick,d:Draft,s:ReviewSource):Gap[]{const c=q.cases.find(x=>x.id===id),ps=q.processes.filter(p=>c?.processIds.includes(p.id)),missing=(cases.find(x=>x.id===id)?.items??[]).filter(item=>s.notebook.items.some(i=>i.id===item)&&!ps.some(p=>outputs(p).some(o=>o.itemId===item)));return [...ps.flatMap(p=>gaps(p,q,d,s)),...missing.map(item=>({topic:'scope',message:'Describe the work for '+itemName(d,s,item)+', link the task that covers it, or explicitly mark it as unknown/no local prep.',unknown:false}))];}
+export function caseGaps(id:string,q:Quick,d:Draft,s:ReviewSource):Gap[]{const c=q.cases.find(x=>x.id===id),ps=q.processes.filter(p=>c?.processIds.includes(p.id)),missing=caseItemIds(s,id).filter(item=>s.notebook.items.some(i=>i.id===item)&&!ps.some(p=>outputs(p).some(o=>o.itemId===item)));return [...ps.flatMap(p=>gaps(p,q,d,s)),...missing.map(item=>({topic:'scope',message:'Describe the work for '+itemName(d,s,item)+', link the task that covers it, or explicitly mark it as unknown/no local prep.',unknown:false}))];}
 export function caseProgress(id:string,q:Quick,d:Draft,s:ReviewSource){const c=q.cases.find(x=>x.id===id);const ps=q.processes.filter(p=>c?.processIds.includes(p.id));const all=caseGaps(id,q,d,s);const finished=caseValid(c?.finished,id,q,d,s)&&ps.length>0&&!all.some(x=>!x.unknown);const checking=all.some(x=>x.unknown)||q.checks.some(t=>ps.some(p=>p.id===t.processId)&&checkOpen(t,q,d,s));return {finished,unknown:checking,label:finished?(checking?'Answers complete · needs checking':'Answers complete'):ps.some(p=>p.kind||p.name||p.sharedScope||p.context)?'In progress':'Not started',needsReview:!!c?.finished&&!finished};}
 function checkDependencies(p:QuickProcess,q:Quick,d:Draft,s:ReviewSource,topic:string):unknown{
  const f=normalizedFacts(activeFacts(p,d,s)) as Record<string,unknown>;

@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {mkdtemp,readFile,writeFile,rm,readdir} from 'node:fs/promises';
@@ -12,8 +13,8 @@ const dir=await mkdtemp(path.join(tmpdir(),'labula-merge-server-'));
 try{
  const bundle=async(entry,name,extra={})=>{const outfile=path.join(dir,name+'.mjs');await build({entryPoints:[entry],bundle:true,platform:'node',format:'esm',outfile,logLevel:'silent',...extra});return import(pathToFileURL(outfile));};
  const m=await bundle('lib/notebook.ts','model'),c=await bundle('lib/catalog.ts','catalog');
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.__mergeAuditDb;');
- await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.__mergeAuditUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.__mergeAuditDb;export const getAppAccessMode=()=>"application";');
+ await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.__mergeAuditUser','globalThis.__mergeAuditDb'));
  const options={alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'}};
  const api=await bundle('app/api/notebook/route.ts','api',options),cat=await bundle('app/api/catalog/route.ts','catalog-api',options);
  const migrations=await Promise.all((await readdir('drizzle')).filter(f=>f.endsWith('.sql')).sort().map(name=>readFile('drizzle/'+name,'utf8')));

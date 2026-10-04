@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
@@ -9,7 +10,7 @@ try{
  let failEvent=false,concurrent=null;
  const stmt=(sql,args=[])=>({bind(...a){return stmt(sql,a)},async first(){return db.prepare(sql).get(...args)??null},async all(){return {results:db.prepare(sql).all(...args)}},async run(){return this.exec()},exec(){if(failEvent&&sql.includes('INSERT OR IGNORE INTO kitchen_activity')){failEvent=false;throw Error('event write failed')}const s=db.prepare(sql);return s.columns().length?{results:s.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(s.run(...args).changes)}}}});
  globalThis.activityDb={prepare:stmt,async batch(ss){if(concurrent){const fn=concurrent;concurrent=null;fn();}db.exec('BEGIN');try{const r=ss.map(s=>s.exec());db.exec('COMMIT');return r}catch(e){db.exec('ROLLBACK');throw e}}};
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.activityDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.activityUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.activityDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.activityUser','globalThis.activityDb'));
  await build({stdin:{contents:`export * as evening from './app/api/evening/route';export * as stock from './app/api/stock/route';export * as team from './app/api/team/route';export * as activity from './app/api/activity/route';export * from './lib/notebook';export * from './lib/evening-client';export * from './lib/activity';export * from './lib/team-client';export * as notebookApi from './app/api/notebook/route';export * as backup from './app/api/private-backup/route';export * as catalog from './app/api/catalog/route';export * as notes from './app/api/prep-notes/route';export * as instructions from './app/api/prep-instructions/route';export * as rounds from './app/api/check-rounds/route';export * as calendar from './app/api/operating-calendar/route';export * as review from './app/api/review-workflow/route';export * as operations from './app/api/operations/route';export {canManage,owner} from './lib/notebook-server';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/test.mjs',alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
  const m=await import(dir+'/test.mjs');
 
@@ -51,7 +52,7 @@ try{
  await send(m.team,'team',edit(row('legacy'),{name:'New name'}));assert.equal(row('legacy').access_role,'manager');
  const same=row('legacy');const results=await Promise.all([send(m.team,'team',role(same,'cook')),send(m.team,'team',role(same,'manager'),409)]);assert.equal(results.length,2);
  // Authorization is checked in receipt transaction as well as at request entry.
- concurrent=()=>db.prepare("UPDATE kitchen_team SET active=0 WHERE user_id='manager'").run();await send(m.team,'team',role(row('legacy'),'manager'),409);assert.equal(row('legacy').access_role,'cook');
+ concurrent=()=>db.prepare("UPDATE kitchen_team SET active=0 WHERE user_id='manager'").run();await send(m.team,'team',role(row('legacy'),'manager'),403);assert.equal(row('legacy').access_role,'cook');
  await read(m.backup,'private-backup',403);await send(m.notes,'prep-notes',{...instruction,id:crypto.randomUUID(),revision:1},403);await read(m.team,'team?management=1',403);
  globalThis.activityUser=owner;await send(m.team,'team',edit(row('manager'),{active:true}));globalThis.activityUser=manager;
  // Lost ACK and double click use durable, account-scoped original command. No duplicate role event.

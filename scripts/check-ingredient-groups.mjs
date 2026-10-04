@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
@@ -10,8 +11,8 @@ try{
  for(const file of (await readdir('drizzle')).filter(x=>x.endsWith('.sql')).sort())db.exec(await readFile('drizzle/'+file,'utf8'));
  const stmt=(sql,args=[])=>({bind(...values){return stmt(sql,values)},async first(){return db.prepare(sql).get(...args)??null},async all(){return {results:db.prepare(sql).all(...args)}},async run(){return this.exec()},exec(){const q=db.prepare(sql);return q.columns().length?{results:q.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(q.run(...args).changes)}}}});
  globalThis.groupDb={prepare:stmt,async batch(statements){db.exec('BEGIN');try{const result=statements.map(x=>x.exec());db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}}};
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.groupDb;');
- await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.groupUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.groupDb;export const getAppAccessMode=()=>"application";');
+ await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.groupUser','globalThis.groupDb'));
  await build({stdin:{contents:`export * as stock from './app/api/stock/route';export * as groups from './app/api/ingredient-groups/route';export * as evening from './app/api/evening/route';export * as catalog from './app/api/catalog/route';export * from './lib/notebook';export * from './lib/stock';export * from './lib/ingredient-groups';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/api.mjs',alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
  const m=await import(dir+'/api.mjs'),owner={userId:'owner',email:'jan@bananasport.cz'},chef={userId:'chef',email:'chef@test'};globalThis.groupUser=owner;
  const s0=await m.stock.GET();assert.equal(s0.status,200);const n=m.initialNotebook();n.items=seed.assignments.map(row=>({...m.newItem(row.expectedName,row.expectedKind),id:row.itemId}));db.prepare("UPDATE notebooks SET payload=?,revision=1 WHERE id='kitchen'").run(JSON.stringify(n));

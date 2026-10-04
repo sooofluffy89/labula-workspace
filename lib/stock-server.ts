@@ -1,3 +1,4 @@
+import {requireWriteScope} from '@/lib/protected-api';
 import {validStation} from './checking-stations';
 import {initializeRounds} from './round-store';
 import {activeMember,eventStatement} from './activity-server';
@@ -50,7 +51,7 @@ export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
   // A newly committed catalog item may arrive between initialization and this read.
   return {itemId:item.id,name:item.name,aliases:item.aliases,kind:item.kind,categories:itemCategories,included:row?!!row.included:true,track:row?!!row.track:false,revision:row?.revision??0,updatedAt:row?.updated_at??'',updatedBy:row?.updated_by??'',groupId:validGroup(row?.group_id),groupRevision:row?.group_revision??0,groupSource:row?.group_source??null,stationId:validStation(row?.station_id),stationRevision:row?.station_revision??0,stationUpdatedAt:row?.station_updated_at??null,stationUpdatedBy:row?.station_updated_by??null};
  });
- const canManageGroups=await canManage(user);
+ const canManageGroups=await canManage(user);if(canManageGroups)requireWriteScope('management');
  const byItem=new Map(items.map(item=>[item.itemId,item]));
  const merges=canManageGroups?results[2].results as {operation_id:string;source_id:string;target_id:string;source_name:string|null}[]:[];
  const groupConflicts=merges.flatMap(m=>{const source=rows.get(m.source_id),target=byItem.get(m.target_id);

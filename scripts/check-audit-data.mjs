@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import {readdir} from 'node:fs/promises';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
@@ -26,7 +27,7 @@ try{
  const sqlite=new DatabaseSync(':memory:');for(const file of (await readdir('drizzle')).filter(f=>f.endsWith('.sql')).sort())sqlite.exec(await readFile('drizzle/'+file,'utf8'));
  const stmt=(sql,args=[])=>({bind(...values){return stmt(sql,values);},async first(){return sqlite.prepare(sql).get(...args)??null;},async all(){return {results:sqlite.prepare(sql).all(...args)};},async run(){return this._run();},_run(){return {meta:{changes:Number(sqlite.prepare(sql).run(...args).changes)}};}});
  globalThis.auditDb={prepare:stmt,async batch(statements){sqlite.exec('BEGIN');try{const result=statements.map(s=>s._run());sqlite.exec('COMMIT');return result;}catch(e){sqlite.exec('ROLLBACK');throw e;}}};
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.auditDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.auditUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.auditDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.auditUser','globalThis.auditDb'));
  const options={alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'}};
  const api=await bundle('app/api/notebook/route.ts','api',options),cat=await bundle('app/api/catalog/route.ts','cat',options),bulkApi=await bundle('app/api/bulk/route.ts','bulk-api',options);
  const owner={userId:'owner',email:'jan@bananasport.cz'},chef={userId:'chef',email:'xuewenokay@gmail.com'};globalThis.auditUser=owner;

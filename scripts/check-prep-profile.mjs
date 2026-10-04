@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import {readdir} from 'node:fs/promises';
 import {build} from 'esbuild';
 import assert from 'node:assert/strict';
@@ -38,7 +39,7 @@ try{
  const sqlite=new DatabaseSync(':memory:');for(const sql of (await readdir('drizzle')).filter(f=>f.endsWith('.sql')).sort())sqlite.exec(await readFile('drizzle/'+sql,'utf8'));
  let lost=false,readLost=false,rollback=false;const stmt=(sql,args=[])=>({bind(...a){return stmt(sql,a);},async first(){if(readLost&&sql.startsWith('SELECT payload')){readLost=false;throw Error('simulated lost reply');}return sqlite.prepare(sql).get(...args)??null;},async all(){return {results:sqlite.prepare(sql).all(...args)};},async run(){return this._run();},_run(){return {meta:{changes:Number(sqlite.prepare(sql).run(...args).changes)}};}});
  globalThis.__testDb={prepare:stmt,async batch(stmts){sqlite.exec('BEGIN');try{const result=stmts.map(s=>s._run());if(rollback){rollback=false;throw Error('simulated pre-commit failure');}sqlite.exec('COMMIT');if(lost){lost=false;readLost=true;}return result;}catch(e){sqlite.exec('ROLLBACK');throw e;}}};
- await writeFile(path.join(dir,'db.ts'),'export const getRawDb=()=>globalThis.__testDb;');await writeFile(path.join(dir,'auth.ts'),'export const getChatGPTUser=async()=>globalThis.__testUser;');const opts={alias:{'@/db':path.join(dir,'db.ts'),'@/app/chatgpt-auth':path.join(dir,'auth.ts')},define:{'import.meta.env.DEV':'false'}};
+ await writeFile(path.join(dir,'db.ts'),'export const getRawDb=()=>globalThis.__testDb;export const getAppAccessMode=()=>"application";');await writeFile(path.join(dir,'auth.ts'),fixtureAuthSource('globalThis.__testUser','globalThis.__testDb'));const opts={alias:{'@/db':path.join(dir,'db.ts'),'@/app/chatgpt-auth':path.join(dir,'auth.ts')},define:{'import.meta.env.DEV':'false'}};
  const api=await bundle('app/api/notebook/route.ts','api',opts),profile=await bundle('app/api/prep-profile/route.ts','api-profile',opts),catalog=await bundle('app/api/catalog/route.ts','api-catalog',opts);
  sqlite.prepare('INSERT INTO notebooks VALUES (?,?,?,?,?)').run('kitchen',JSON.stringify(baseline),0,'2026-09-13','test');globalThis.__testUser={userId:'chef',email:'chef@example.test'};
  const req=(body,revision,extra={})=>new Request('http://test.local/api/prep-profile',{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':String(revision),...extra},body:JSON.stringify(body)});

@@ -1,8 +1,9 @@
 import {redirect} from 'next/navigation';
 import {requireChatGPTUser} from './chatgpt-auth';
-import {workspaceRole} from '@/lib/notebook-server';
+import {accessRole} from '@/lib/team-access-server';
 export async function requireWorkspacePage(path:string){
  const user=await requireChatGPTUser(path);
- if(await workspaceRole(user)==='cook')redirect('/');
+ try {if(await accessRole(user)==='cook')redirect('/');}
+ catch {redirect('/');}
  return user;
 }

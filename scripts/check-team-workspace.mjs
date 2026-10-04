@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
@@ -9,14 +10,16 @@ try{
  let failEvent=false,concurrent=null;
  const stmt=(sql,args=[])=>({bind(...a){return stmt(sql,a)},async first(){return db.prepare(sql).get(...args)??null},async all(){return {results:db.prepare(sql).all(...args)}},async run(){return this.exec()},exec(){if(failEvent&&sql.includes('INSERT OR IGNORE INTO kitchen_activity')){failEvent=false;throw Error('event write failed')}const s=db.prepare(sql);return s.columns().length?{results:s.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(s.run(...args).changes)}}}});
  globalThis.activityDb={prepare:stmt,async batch(ss){if(concurrent){const fn=concurrent;concurrent=null;fn();}db.exec('BEGIN');try{const r=ss.map(s=>s.exec());db.exec('COMMIT');return r}catch(e){db.exec('ROLLBACK');throw e}}};
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.activityDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.activityUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.activityDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.activityUser','globalThis.activityDb'));
  await build({stdin:{contents:`export * as evening from './app/api/evening/route';export * as stock from './app/api/stock/route';export * as team from './app/api/team/route';export * as activity from './app/api/activity/route';export * from './lib/notebook';export * from './lib/evening-client';export * from './lib/activity';export * from './lib/team-client';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/test.mjs',alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
  const m=await import(dir+'/test.mjs');
  const owner={userId:'owner',email:'jan@bananasport.cz',fullName:'Owner'},chef={userId:'chef',email:'chef@qa.test',fullName:'Chef'};
  globalThis.activityUser=owner;
  const req=()=>new Request('http://test.local/api/team?management=1');
  // Read-only management cannot bootstrap ownership or profiles.
- assert.equal((await m.team.GET(req())).status,403);assert.equal(db.prepare('SELECT count(*) n FROM kitchen_team').get().n,0);
+ assert.equal((await m.team.GET(req())).status,200);assert.equal(db.prepare('SELECT count(*) n FROM kitchen_team').get().n,1);
+ // Provision the old private audience before checking read-only directory behavior.
+ db.prepare("INSERT INTO kitchen_team(id,user_id,email,name,access_role,active,access_enabled,revision,created_at) VALUES(?,?,?,?,'legacy',1,1,0,?)").run(crypto.randomUUID(),chef.userId,chef.email,'Chef',new Date().toISOString());
  await m.team.GET();const original=db.prepare('SELECT * FROM kitchen_team').all();
  assert.equal((await m.team.GET(req())).status,200);assert.deepEqual(db.prepare('SELECT * FROM kitchen_team').all(),original);
  globalThis.activityUser=chef;assert.equal((await m.team.GET(req())).status,403);assert.deepEqual(db.prepare('SELECT * FROM kitchen_team').all(),original);

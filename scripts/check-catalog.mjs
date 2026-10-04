@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import {readdir} from 'node:fs/promises';
 import {build} from 'esbuild';
 import assert from 'node:assert/strict';
@@ -23,7 +24,7 @@ try{
  let failAfterBatch=false,failNextRead=false,afterAuditMiss=null;
  const stmt=(sql,args=[])=>({bind(...values){return stmt(sql,values);},async first(){if(failNextRead&&sql.startsWith('SELECT payload')){failNextRead=false;throw Error('Simulated lost database response');}const row=sqlite.prepare(sql).get(...args)??null;if(!row&&afterAuditMiss&&sql==='SELECT * FROM catalog_operations WHERE id=?'){const action=afterAuditMiss;afterAuditMiss=null;await action();}return row;},async all(){return {results:sqlite.prepare(sql).all(...args)};},async run(){return {meta:{changes:Number(sqlite.prepare(sql).run(...args).changes)}};},_run(){return {meta:{changes:Number(sqlite.prepare(sql).run(...args).changes)}};}});
  globalThis.__testDb={prepare:stmt,async batch(statements){sqlite.exec('BEGIN');try{const result=statements.map(s=>s._run());sqlite.exec('COMMIT');if(failAfterBatch){failAfterBatch=false;failNextRead=true;}return result;}catch(e){sqlite.exec('ROLLBACK');throw e;}}};
- await writeFile(path.join(dir,'db.ts'),'export const getRawDb=()=>globalThis.__testDb;');await writeFile(path.join(dir,'auth.ts'),'export const getChatGPTUser=async()=>globalThis.__testUser;');
+ await writeFile(path.join(dir,'db.ts'),'export const getRawDb=()=>globalThis.__testDb;export const getAppAccessMode=()=>"application";');await writeFile(path.join(dir,'auth.ts'),fixtureAuthSource('globalThis.__testUser','globalThis.__testDb'));
  const opts={alias:{'@/db':path.join(dir,'db.ts'),'@/app/chatgpt-auth':path.join(dir,'auth.ts')},define:{'import.meta.env.DEV':'false'}};
  const api=await bundle('app/api/notebook/route.ts','api',opts),cat=await bundle('app/api/catalog/route.ts','cat',opts);
  const owner={userId:'verified-owner',email:'jan@bananasport.cz'},chef={userId:'verified-chef',email:'xuewenokay@gmail.com'};

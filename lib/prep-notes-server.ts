@@ -1,3 +1,4 @@
+import {requireWriteScope} from '@/lib/protected-api';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {RequestError,canManage,managementUsersSql} from './notebook-server';
@@ -13,6 +14,7 @@ export async function readPrepNotes(user:ChatGPTUser,q:URLSearchParams):Promise<
  const cursor=q.get('cursor');let after:unknown[]=[];if(cursor){try{after=JSON.parse(cursor);}catch{throw new RequestError('Invalid feedback page.');}if(!Array.isArray(after)||after.length!==2||after.some(v=>typeof v!=='string'||v.length>100))throw new RequestError('Invalid feedback page.');}
  let where:string,args:unknown[],instruction:PrepInstruction|null|undefined;
  if(q.has('ingredient')){
+  requireWriteScope('management');
   if(!canEdit)throw new RequestError('Only the owner or a Manager can read ingredient feedback across services.',403);
   const id=q.get('ingredient')!;if(!id||id.length>160)throw new RequestError('Invalid ingredient.');
   instruction=await db.prepare('SELECT * FROM prep_instructions WHERE item_id=?').bind(id).first<PrepInstruction>();where='catalog_id=?';args=[id];
@@ -34,6 +36,7 @@ export async function readPrepNotes(user:ChatGPTUser,q:URLSearchParams):Promise<
 }
 // Owner-only, one read for the list. Versions and service feedback stay on the detail endpoint.
 export async function readInstructionIndex(user:ChatGPTUser){
+ requireWriteScope('management');
  await syncMember(user);
  if(!await canManage(user))throw new RequestError('Only the owner or a Manager can manage prep instructions.',403);
  const instructions=(await getRawDb().prepare('SELECT item_id,text,revision,updated_at,updated_by FROM prep_instructions').all<PrepInstruction>()).results;
@@ -49,6 +52,7 @@ export async function prepNoteCommand(user:ChatGPTUser,raw:unknown){
  const gate='EXISTS(SELECT 1 FROM prep_note_commands WHERE id=? AND actor_id=? AND request=? AND applied=0)';
  const writes:ReturnType<typeof db.prepare>[]=[];let condition:string,conditionArgs:unknown[];
  if(c.kind==='instruction'){
+  requireWriteScope('management');
   condition=`coalesce((SELECT revision FROM prep_instructions WHERE item_id=?),0)=? AND EXISTS(SELECT 1 FROM ${managementUsersSql} WHERE user_id=?) AND EXISTS(SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') j WHERE n.id='kitchen' AND json_extract(j.value,'$.id')=?)`;conditionArgs=[c.itemId,c.revision,user.userId,c.itemId];
   writes.push(eventStatement(user,member.name,c,now,{category:'stock',action:'prep-instruction',itemId:'a.id',itemName:'a.name',itemKind:'a.kind',before:"(SELECT json_object('text',text,'revision',revision) FROM prep_instructions WHERE item_id=a.id)",after:'?',from:`FROM (SELECT json_extract(j.value,'$.id') AS id,json_extract(j.value,'$.name') AS name,json_extract(j.value,'$.kind') AS kind FROM notebooks n,json_each(n.payload,'$.items') j WHERE n.id='kitchen') a WHERE a.id=? AND ${gate}`,args:[JSON.stringify({text:c.text,revision:c.revision+1}),c.itemId,...args]}));
   writes.push(db.prepare(`INSERT INTO prep_instructions(item_id,text,revision,updated_at,updated_by,actor_id) SELECT ?,?,?,?,?,? WHERE ${gate} ON CONFLICT(item_id) DO UPDATE SET text=excluded.text,revision=excluded.revision,updated_at=excluded.updated_at,updated_by=excluded.updated_by,actor_id=excluded.actor_id`).bind(c.itemId,c.text,c.revision+1,now,member.name,user.userId,...args));

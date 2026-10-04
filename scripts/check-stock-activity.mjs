@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
@@ -9,7 +10,7 @@ try{
  let failEvent=false,concurrent=null;
  const stmt=(sql,args=[])=>({bind(...a){return stmt(sql,a)},async first(){return db.prepare(sql).get(...args)??null},async all(){return {results:db.prepare(sql).all(...args)}},async run(){return this.exec()},exec(){if(failEvent&&sql.includes('INSERT OR IGNORE INTO kitchen_activity')){failEvent=false;throw Error('event write failed')}const s=db.prepare(sql);return s.columns().length?{results:s.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(s.run(...args).changes)}}}});
  globalThis.activityDb={prepare:stmt,async batch(ss){if(concurrent){const fn=concurrent;concurrent=null;fn();}db.exec('BEGIN');try{const r=ss.map(s=>s.exec());db.exec('COMMIT');return r}catch(e){db.exec('ROLLBACK');throw e}}};
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.activityDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.activityUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.activityDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.activityUser','globalThis.activityDb'));
  await build({stdin:{contents:`export * as evening from './app/api/evening/route';export * as stock from './app/api/stock/route';export * as team from './app/api/team/route';export * as activity from './app/api/activity/route';export * from './lib/notebook';export * from './lib/evening-client';export * from './lib/activity';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/test.mjs',alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
  const m=await import(dir+'/test.mjs'),chef={userId:'chef',email:'chef@test.test',fullName:'Cook One'},owner={userId:'owner',email:'jan@bananasport.cz',fullName:'Owner'};globalThis.activityUser=owner;
  const get=async(api,q='',status=200)=>{const r=await m[api].GET(new Request('http://test.local/api/'+api+q));assert.equal(r.status,status);return r.json()};

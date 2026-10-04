@@ -1,4 +1,4 @@
-import {activeGroups,values,list,str,entity,options,same,taskHash,type Draft,type Entity} from './model';
+import {bindReviewSource,activeGroups,values,list,str,entity,options,same,taskHash,type Draft,type Entity} from './model';
 import {groups,visible,type Field,type Values} from './fields';
 import type {ReviewSource} from '../data-review';
 import {emptyUX} from './ux-schema';
@@ -28,6 +28,7 @@ export function topicDependencies(d:Draft,e:Entity,id:string,source?:ReviewSourc
  }};scan(e,id);for(const key of Object.keys(result).filter(k=>k.startsWith('context:')))scan(e,key.slice(8));return JSON.stringify(Object.entries(result).sort(([a],[b])=>a.localeCompare(b)));
 }
 export function confirmationStatus(d:Draft,e:Entity,id:string,source?:ReviewSource){
+ bindReviewSource(d,source);
  const stored=e.confirmations[id],stamp=d.ux?.confirmations[e.id]?.[id],reasons:string[]=[];
  if(d.tasks.some(t=>t.targets.some(x=>x.entityId===e.id&&x.group===id)&&(!t.closedHash||t.closedHash!==taskHash(d,t))))reasons.push('A check for this topic is still open.');
  if(unresolvedSourceChecks(d,e,id).length)reasons.push('A previously recorded fact still needs its assigned check.');
@@ -105,12 +106,12 @@ export function confirmationChanges(d:Draft,e:Entity,id:string,source?:ReviewSou
 }
 export function confirmTopic(d:Draft,eid:string,gid:string,source:ReviewSource):Draft{
  const e=entity(d,eid);if(!e)return d;const value=JSON.stringify(values(e,gid)),ux=d.ux??emptyUX();
- return {...d,ux:{...ux,confirmations:{...ux.confirmations,[eid]:{...ux.confirmations[eid],[gid]:{value,dependencies:topicDependencies(d,e,gid,source),at:new Date().toISOString()}}}},entities:d.entities.map(x=>x.id===eid?{...x,confirmations:{...x.confirmations,[gid]:value}}:x)};
+ return bindReviewSource({...d,ux:{...ux,confirmations:{...ux.confirmations,[eid]:{...ux.confirmations[eid],[gid]:{value,dependencies:topicDependencies(d,e,gid,source),at:new Date().toISOString()}}}},entities:d.entities.map(x=>x.id===eid?{...x,confirmations:{...x.confirmations,[gid]:value}}:x)},source);
 }
 // On first UX edit, preserve the exact old confirmation and its currently known context.
 // A confirmation already stale is never made valid by this compatibility snapshot.
 export function upgradeUX(d:Draft,source:ReviewSource):Draft{
- if(d.ux)return d;let next:Draft={...d,ux:emptyUX()};for(const e of d.entities)for(const [gid,hash] of Object.entries(e.confirmations)){if(!groups.some(g=>g.id===gid))continue;next={...next,ux:{...next.ux!,confirmations:{...next.ux!.confirmations,[e.id]:{...next.ux!.confirmations[e.id],[gid]:{value:hash,dependencies:topicDependencies(d,e,gid,source),at:'legacy-context'}}}}};}return next;
+ bindReviewSource(d,source);if(d.ux)return d;let next:Draft={...d,ux:emptyUX()};for(const e of d.entities)for(const [gid,hash] of Object.entries(e.confirmations)){if(!groups.some(g=>g.id===gid))continue;next={...next,ux:{...next.ux!,confirmations:{...next.ux!.confirmations,[e.id]:{...next.ux!.confirmations[e.id],[gid]:{value:hash,dependencies:topicDependencies(d,e,gid,source),at:'legacy-context'}}}}};}return bindReviewSource(next,source);
 }
 export function confirmationContextChanged(before:Draft,after:Draft,eid:string,gid:string){return !same(before.ux?.confirmations[eid]?.[gid],after.ux?.confirmations[eid]?.[gid]);}
 

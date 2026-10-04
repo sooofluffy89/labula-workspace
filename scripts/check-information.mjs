@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
@@ -8,7 +9,7 @@ try{
  const db=new DatabaseSync(':memory:');for(const f of(await readdir('drizzle')).filter(f=>f.endsWith('.sql')).sort())db.exec(await readFile('drizzle/'+f,'utf8'));
  const stmt=(sql,args=[])=>({bind(...a){return stmt(sql,a)},async first(){return db.prepare(sql).get(...args)??null},async all(){return {results:db.prepare(sql).all(...args)}},async run(){return this.exec()},exec(){const s=db.prepare(sql);return s.columns().length?{results:s.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(s.run(...args).changes)}}}});
  globalThis.infoDb={prepare:stmt,async batch(ss){db.exec('BEGIN');try{const r=ss.map(s=>s.exec());db.exec('COMMIT');return r}catch(e){db.exec('ROLLBACK');throw e}}};
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.infoDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.infoUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.infoDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.infoUser','globalThis.infoDb'));
  await build({stdin:{contents:`export * as api from './app/api/information/route';export * as evening from './app/api/evening/route';export * as stock from './app/api/stock/route';export * as team from './app/api/team/route';export * as notebookApi from './app/api/notebook/route';export * as activity from './app/api/activity/route';export * as quick from './lib/quick-review/model';export * as review from './lib/review-v2/model';export * as proposal from './lib/quick-review/proposal';export {REVIEW_ID} from './lib/data-review';export * from './lib/information';export * from './lib/notebook';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/test.mjs',alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
  const m=await import(dir+'/test.mjs'),owner={userId:'info-owner',email:'jan@bananasport.cz'},cook={userId:'info-cook',email:'cook@example.test'},legacy={userId:'info-legacy',email:'legacy@example.test'};
  const req=(url,body)=>new Request('https://test.local/api/'+url,{...(body?{method:'POST',headers:{Origin:'https://test.local','Content-Type':'application/json','If-Match':'0'},body:JSON.stringify(body)}:{})});

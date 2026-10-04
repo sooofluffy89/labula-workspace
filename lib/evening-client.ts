@@ -31,7 +31,7 @@ export class EveningController {
  private key(p:PendingEvening){return this.accountPrefix()+p.command.id;}
  private persist(p:PendingEvening){try{this.storage.setItem(this.key(p),JSON.stringify(p));}catch{this.emit({errorKind:'blocked',recoveryBlocked:true});throw Error('Browser storage could not preserve this change. Keep browser data, free storage and retry.');}}
  private verify(snapshot:EveningSnapshot){if(!snapshot||snapshot.scope!=='kitchen'||snapshot.account.toLowerCase()!==this.account.toLowerCase()||(this.accountId&&snapshot.accountId!==this.accountId)){this.emit({unauthorized:true,errorKind:'blocked'});throw Error('The signed-in account changed. Return to the original account before retrying.');}this.accountId=snapshot.accountId;}
- private async read(selection=this.selection,reportAuth=true,current=()=>true){const proof={epoch:this.intentEpoch,empty:!this.state.pending.length};const {res,body}=await this.request('/api/evening?'+selectionQuery(selection),{cache:'no-store'});if(!current())return body as EveningSnapshot;if(!res.ok){if(reportAuth)this.emit({unauthorized:res.status===401||res.status===403});throw Error((body as {error?:string}).error??'Could not load the shared check.');}const snap=body as EveningSnapshot;this.verify(snap);this.readProof.set(snap,proof);return snap;}
+ private async read(selection=this.selection,reportAuth=true,current=()=>true){const proof={epoch:this.intentEpoch,empty:!this.state.pending.length};const {res,body}=await this.request('/api/evening?'+selectionQuery(selection),{cache:'no-store'});if(!current())return body as EveningSnapshot;if(!res.ok){if(reportAuth||res.status===401||res.status===403)this.emit({unauthorized:res.status===401||res.status===403,...(res.status===401||res.status===403?{errorKind:'blocked' as const}:{})});throw Error((body as {error?:string}).error??'Could not load the shared check.');}const snap=body as EveningSnapshot;this.verify(snap);this.readProof.set(snap,proof);return snap;}
 
  private keys(){return Array.from({length:this.storage.length},(_,i)=>this.storage.key(i)).filter((k):k is string=>!!k&&k.startsWith(this.accountPrefix()));}
  // One durable journal makes replacing rejected requests recoverable even if storage fails
@@ -261,6 +261,7 @@ export class EveningController {
   const records=compactCompletedFinishes(this.storage,this.accountId,this.account,this.state.finish?.id),unresolved=unresolvedFinishes(records),checkId=this.state.snapshot?.check?.id;
   const current=this.state.finish;const f=current&&current.phase!=='complete'&&!records.find(f=>f.id===current.id)?.resolved?records.find(f=>f.id===current.id):current&&current.phase==='complete'&&current.checkId===checkId?records.find(f=>f.id===current.id):unresolved.find(f=>f.checkId===checkId)??unresolved[0]??records.filter(f=>f.phase==='complete'&&f.checkId===checkId).at(-1);
   this.emit({finish:f,finishRecovery:this.recoveryList(records,f?.id),finishing:!!f&&!['complete','attention'].includes(f.phase)});
+  if(f&&f.phase!=='complete'&&!('compact' in f)&&this.storage.getItem('labula.access-blocked.v1.'+encodeURIComponent(this.accountId))==='1'){this.finishStep('attention','Access changed since this Finish was saved. Review the shared check, then explicitly retry or keep the shared version.');this.stopFinishWake();return;}
   if(this.finishActive()){this.selection={day:f!.checkId};this.startFinishWake();}
  }
  async resumeFinish(id:string){
@@ -292,7 +293,7 @@ export class EveningController {
  private finishReceipt(command:Extract<EveningCommand,{kind:'confirm'}>,receipt:import('./evening').PublicationReceipt){
   const f=this.state.finish;if(!f||f.id!==command.id||f.accountId!==receipt.actorId||f.checkId!==receipt.checkId||f.targetDay!==receipt.targetDay)return;
   if(receipt.version!==f.generation+1||receipt.revision!==command.revision+1||receipt.planRevision!==command.planRevision+1||!receipt.confirmedAt||receipt.confirmedBy.toLowerCase()!==f.account.toLowerCase())throw Error('The original Finish receipt could not be verified.');
-  this.storeFinish({...f,phase:'complete',receipt,reason:''});this.stopFinishWake();
+  this.storeFinish({...f,phase:'complete',receipt,reason:''});this.storage.removeItem('labula.access-blocked.v1.'+encodeURIComponent(this.accountId));this.stopFinishWake();
  }
  continueFinish():Promise<boolean>{
   if(this.finishFlight)return this.finishFlight;

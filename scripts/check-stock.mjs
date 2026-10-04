@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
@@ -10,7 +11,7 @@ try {
  const stmt=(sql,args=[])=>({bind(...a){return stmt(sql,a);},async first(){return db.prepare(sql).get(...args)??null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){return this.exec();},exec(){const s=db.prepare(sql);if(s.columns().length)return {results:s.all(...args),meta:{changes:0}};return {results:[],meta:{changes:Number(s.run(...args).changes)}};}});
  let beforeBatch=null,loseCommit=false;
  globalThis.stockDb={prepare:stmt,async batch(ss){if(beforeBatch){const hook=beforeBatch;beforeBatch=null;await hook();}db.exec('BEGIN');let result;try{result=ss.map(s=>s.exec());db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}if(loseCommit){loseCommit=false;throw Error('lost reply after commit');}return result;}};
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.stockDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.stockUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.stockDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.stockUser','globalThis.stockDb'));
  await build({stdin:{contents:`export * as api from './app/api/stock/route';export * as cat from './app/api/catalog/route';export * as notebook from './app/api/notebook/route';export * from './lib/notebook';export * from './lib/stock';export * from './lib/stock-client';export * from './lib/request-json';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/test.mjs',alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
  const m=await import(dir+'/test.mjs'),owner={userId:'owner',email:'jan@bananasport.cz'},chef={userId:'chef',email:'chef@test'};
  globalThis.stockUser=chef;

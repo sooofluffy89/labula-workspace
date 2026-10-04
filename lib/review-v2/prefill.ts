@@ -1,6 +1,6 @@
 import {recipeTitle} from '../notebook';
 import type {ReviewSource} from '../data-review';
-import {entity,values,list,str,excluded,outOfScope,processFor,same,type Draft,type Entity,type Target} from './model';
+import {bindReviewSource,entity,values,list,str,excluded,outOfScope,processFor,same,type Draft,type Entity,type Target} from './model';
 import {upgradeUX} from './confirmation';
 export type Offer={id:string;target:Target;label:string;value:string;sourcePath:string;rowKey?:string;rowId?:string};
 function stable(s:string){let a=2166136261,b=5381;for(const c of s){a=Math.imul(a^c.charCodeAt(0),16777619);b=Math.imul(b,33)^c.charCodeAt(0);}return (a>>>0).toString(36)+(b>>>0).toString(36);}
@@ -24,7 +24,7 @@ export function decideOffer(d:Draft,o:Offer,decision:'accepted'|'change'|'check'
  if(decision==='accepted'&&offerBlocked(d,o))return d;
  let next=upgradeUX(d,source);const e=entity(next,o.target.entityId)!;
  if(decision==='accepted'){const v=values(e,o.target.group),key=o.target.path.at(-1)!;const answer=o.rowKey?{...v,[o.rowKey]:[...list(v,o.rowKey),{id:o.rowId!,[key]:o.value}]}:{...v,[key]:o.value};next={...next,entities:next.entities.map(x=>x.id===e.id?{...x,answers:{...x.answers,[o.target.group]:answer}}:x)};}
- return {...next,ux:{...next.ux!,facts:{...next.ux!.facts,[o.id]:{target:o.target,sourceRevision:source.revision,sourcePath:o.sourcePath,sourceValue:JSON.stringify(o.value),decision,at:new Date().toISOString()}}}};
+ return bindReviewSource({...next,ux:{...next.ux!,facts:{...next.ux!.facts,[o.id]:{target:o.target,sourceRevision:source.revision,sourcePath:o.sourcePath,sourceValue:JSON.stringify(o.value),decision,at:new Date().toISOString()}}}},source);
 }
 export function contextItems(d:Draft,e:Entity,source:ReviewSource){
  const ids=new Set([e.sourceId,e.kind==='item'?e.id:undefined,e.parentId,str(values(e,'STORE-01'),'item')]);

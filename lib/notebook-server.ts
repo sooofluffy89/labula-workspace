@@ -3,21 +3,20 @@ import { getChatGPTUser,type ChatGPTUser } from '@/app/chatgpt-auth';
 import { initialNotebook,migrateNotebook,validateNotebook,validationMessage,type Notebook } from './notebook';
 import { operationSchema,applyOperation,validateOrdinaryEdit } from './catalog';
 import {serializeNotebook,utf8Bytes,MAX_NOTEBOOK_REQUEST_BYTES} from './notebook-size';
-export class RequestError extends Error {constructor(message:string,public status=400,public code?:string){super(message);}}
+import {accessContext,RequestError} from './access-context';
+import {permittedMember,accessRole} from './team-access-server';
+export {RequestError} from './access-context';
 export function notebookPayload(value:unknown){try{return serializeNotebook(value);}catch(e){throw new RequestError(validationMessage(e),413,'capacity_limit');}}
 const checked=<T>(fn:()=>T):T=>{try{return fn();}catch(e){throw new RequestError(validationMessage(e));}};
 export const respond=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 export type Row={payload:string;revision:number;updated_at:string;updated_by:string};
 type Audit={id:string;kind:string;request:string;actor_id:string;actor_email:string;before_revision:number;after_revision:number;before_payload:string;after_payload:string;summary:string;created_at:string;undo_of:string|null};
-export async function identity(scope:'workspace'|'operations'='workspace'){const user=await getChatGPTUser();if(!user)throw new RequestError('Sign in to access the kitchen notebook.',401);if(scope==='workspace'&&await workspaceRole(user)==='cook')throw new RequestError('Your Cook role includes Evening check and Morning prep only.',403,'role_restricted');return user;}
-export async function workspaceRole(user:ChatGPTUser):Promise<'owner'|'manager'|'cook'|'legacy'>{
- if(await owner(user))return 'owner';
- const row=await getRawDb().prepare('SELECT user_id,access_role,active FROM kitchen_team WHERE user_id=? OR email=? ORDER BY CASE WHEN user_id=? THEN 0 ELSE 1 END LIMIT 1').bind(user.userId,user.email.toLowerCase(),user.userId).first<{user_id:string|null;access_role:string;active:number}>();
- if(row?.user_id&&row.user_id!==user.userId)throw new RequestError('This profile is linked to a different account. Ask the owner to check it.',403);
- // Preserve pre-existing private Sites access; only explicitly created Cook profiles are restricted.
- if(row?.access_role==='manager'&&!row.active)throw new RequestError('Your Manager access is paused. Your local drafts are kept. Ask the owner to restore access.',403,'role_restricted');
- return row?.access_role==='cook'?'cook':row?.access_role==='manager'&&row.user_id===user.userId?'manager':'legacy';
+export async function identity(scope:'workspace'|'operations'='workspace'){
+ const context=accessContext.getStore(),user=context?.user??await getChatGPTUser();if(!user)throw new RequestError('Sign in to access the kitchen notebook.',401);
+ const role=context?.role??await accessRole(user,scope);
+ if(scope==='workspace'&&(role==='cook'))throw new RequestError('Your Cook role includes Evening check and Morning prep only.',403,'role_restricted');return user;
 }
+export async function workspaceRole(user:ChatGPTUser):Promise<'owner'|'manager'|'cook'|'legacy'>{return accessRole(user,'operations');}
 export async function owner(user:ChatGPTUser){
  // Bind the explicitly configured owner's verified dispatch identity once. Later checks use the site-scoped stable user ID.
  // The bundled loopback-only development identity is removed from production by Vite.
@@ -26,8 +25,9 @@ export async function owner(user:ChatGPTUser){
  const record=await getRawDb().prepare('SELECT user_id FROM kitchen_owner WHERE id=?').bind('owner').first<{user_id:string}>();return record?.user_id===user.userId;
 }
 // Reused inside atomic write receipts as well as read-time authorization. One stable-ID bind.
-export const managementUsersSql="(SELECT user_id FROM kitchen_owner WHERE id='owner' UNION SELECT user_id FROM kitchen_team WHERE access_role='manager' AND active=1 AND user_id IS NOT NULL)";
+export const managementUsersSql="(SELECT user_id FROM kitchen_owner WHERE id='owner' UNION SELECT user_id FROM kitchen_team WHERE access_role='manager' AND active=1 AND access_enabled=1 AND user_id IS NOT NULL)";
 export async function canManage(user:ChatGPTUser){
+ const context=accessContext.getStore();if(context?.user.userId===user.userId)return context.role==='owner'||context.role==='manager'&&(context.scope!=='operations'||!!(await permittedMember(user,false)).active);
  return !!await getRawDb().prepare(`SELECT 1 FROM ${managementUsersSql} WHERE user_id=?`).bind(user.userId).first();
 }
 export async function readNotebook(user:ChatGPTUser):Promise<Row>{
@@ -60,4 +60,4 @@ export async function catalogCommand(user:ChatGPTUser,revision:number,raw:unknow
  if(!results[0].meta.changes||!results[1].meta.changes){const receipt=await replay();if(receipt)return receipt;throw new RequestError('The notebook changed. Reload and review the operation again.',409,'revision_conflict');}
  return {...snapshot(await readNotebook(user),user,await owner(user),await canManage(user)),operationId:body.operationId,replayed:false};
 }
-export function failure(error:unknown){if(error instanceof Error&&error.message.includes('stock_undo_conflict'))return respond({error:'Stock settings changed after this merge. Undo would overwrite them. Keep the current catalog and review the stock list.',code:'stock_undo_conflict'},409);if(error instanceof RequestError)return respond({error:error.message,code:error.code},error.status);if(error instanceof Error&&error.name==='ZodError')return respond({error:validationMessage(error)},400);console.error('Notebook operation failed',error);return respond({error:'Could not confirm this operation. Your draft is kept here. Please retry.'},503);}
+export function failure(error:unknown){if(error instanceof Error&&error.message.includes('access_revoked'))return respond({error:'Your access or role changed. Your local work is kept.',code:'access_revoked'},403);if(error instanceof Error&&error.message.includes('stock_undo_conflict'))return respond({error:'Stock settings changed after this merge. Undo would overwrite them. Keep the current catalog and review the stock list.',code:'stock_undo_conflict'},409);if(error instanceof RequestError)return respond({error:error.message,code:error.code},error.status);if(error instanceof Error&&error.name==='ZodError')return respond({error:validationMessage(error)},400);console.error('Notebook operation failed',error);return respond({error:'Could not confirm this operation. Your draft is kept here. Please retry.'},503);}

@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
@@ -9,7 +10,7 @@ try{
  let failConfirmation=false;
  const stmt=(sql,args=[])=>({bind(...a){return stmt(sql,a)},async first(){return db.prepare(sql).get(...args)??null},async all(){return {results:db.prepare(sql).all(...args)}},async run(){return this.exec()},exec(){if(failConfirmation&&sql.startsWith('INSERT INTO morning_tasks')){failConfirmation=false;throw Error('simulated transactional failure')}const s=db.prepare(sql);return s.columns().length?{results:s.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(s.run(...args).changes)}}}});
  globalThis.eveningDb={prepare:stmt,async batch(ss){db.exec('BEGIN');let r;try{r=ss.map(s=>s.exec());db.exec('COMMIT')}catch(e){db.exec('ROLLBACK');throw e}return r}};
- await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.eveningDb;');await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.eveningUser;');
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.eveningDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.eveningUser','globalThis.eveningDb'));
  await build({stdin:{contents:`export * as api from './app/api/evening/route';export * as cat from './app/api/catalog/route';export * from './lib/notebook';export * from './lib/evening';export * from './lib/evening-client';export * from './lib/stock-feedback';export * from './app/stock-motion';export {MorningList} from './app/morning-list';export {createElement} from 'react';export {renderToStaticMarkup} from 'react-dom/server';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/test.mjs',alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},banner:{js:"import {createRequire} from 'node:module';const require=createRequire(import.meta.url);"},jsx:'automatic',logLevel:'silent'});
  const m=await import(dir+'/test.mjs'),chef={userId:'chef',email:'chef@test'};globalThis.eveningUser=chef;
  const read=async(day='2026-09-23',morning=false)=>{const r=await m.api.GET(new Request('http://test.local/api/evening?'+(morning?'morningDay':'day')+'='+day));assert.equal(r.status,200);return r.json()};

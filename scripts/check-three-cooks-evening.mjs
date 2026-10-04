@@ -1,3 +1,4 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
 import assert from 'node:assert/strict';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {mkdtemp,writeFile} from 'node:fs/promises';
@@ -10,15 +11,15 @@ import {harness,sleep} from './sync-harness.mjs';
 
 globalThis.auditAuthContext=new AsyncLocalStorage();
 const dir=await mkdtemp(tmpdir()+'/labula-three-cooks-');
-await writeFile(dir+'/auth.ts','export const getChatGPTUser=async()=>globalThis.auditAuthContext.getStore();');
-await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.syncDb;');
+await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.auditAuthContext.getStore()','globalThis.syncDb'));
+await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.syncDb;export const getAppAccessMode=()=>"application";');
 await build({stdin:{contents:"export * as api from './app/api/evening/route';export * as batch from './app/api/evening/batch/route';export * as sync from './app/api/evening/sync/route';export {EveningController} from './lib/evening-client';",resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/test.mjs',alias:{'@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
 const m=await import(dir+'/test.mjs');
 const results=[];
 async function setup(){
  const h=await harness(),clients=[],offline=[false,false,false];
  const users=[h.cook,...[2,3].map(i=>({userId:'cook'+i,email:'cook'+i+'@example.test'}))];
- for(const u of users.slice(1))h.db.prepare("INSERT INTO kitchen_team(id,user_id,email,name,access_role,active,revision,created_at) VALUES(?,?,?,?,'cook',1,0,?)").run(u.userId,u.userId,u.email,'Synthetic '+u.userId,new Date().toISOString());
+ for(const u of users.slice(1))h.db.prepare("INSERT INTO kitchen_team(id,user_id,email,name,access_role,active,access_enabled,revision,created_at) VALUES(?,?,?,?,'cook',1,1,0,?)").run(u.userId,u.userId,u.email,'Synthetic '+u.userId,new Date().toISOString());
  const request=i=>async(url,init={})=>{
   await sleep(10);if(offline[i])throw Error('Synthetic disconnected cook');
   return globalThis.auditAuthContext.run(users[i],async()=>{

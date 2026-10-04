@@ -1,3 +1,4 @@
+import {requireWriteScope} from '@/lib/protected-api';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {owner,RequestError,workspaceRole,canManage,managementUsersSql} from './notebook-server';
@@ -10,7 +11,7 @@ import {measureDay,outcomeCommandSchema,summarizeDays,type HistoryBundle,type Hi
 import {stationIdSchema,stationLabel} from './checking-stations';
 import {csvCell} from './activity';
 
-async function archiveAccess(user:ChatGPTUser,analytics=false){await readOperationalAccess(user);if(await workspaceRole(user)==='cook')throw new RequestError('Your Cook role includes operational check details only.',403);if(analytics&&!await canManage(user))throw new RequestError('Only the owner or a Manager can view Operations overview.',403);}
+async function archiveAccess(user:ChatGPTUser,analytics=false){requireWriteScope(analytics?'management':'workspace');await readOperationalAccess(user);if(await workspaceRole(user)==='cook')throw new RequestError('Your Cook role includes operational check details only.',403);if(analytics&&!await canManage(user))throw new RequestError('Only the owner or a Manager can view Operations overview.',403);}
 const answer=(a:Record<string,unknown>)=>({...((a.station_snapshot)?{stationId:stationIdSchema.parse(JSON.parse(String(a.station_snapshot)).stationId)}:{}),itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,value:a.value,position:a.position,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,groupId:a.group_id,round:a.round_snapshot?JSON.parse(String(a.round_snapshot)):null,supersededBy:a.superseded_by} as CheckAnswer);
 function bounded<T>(rows:T[],what:string){if(rows.length>100000)throw new RequestError(`This ${what} is too large. Choose a shorter date range. No partial results were returned.`,413);return rows;}
 async function loadBundles(from:string,to:string,asOf:string,checkId?:string):Promise<HistoryBundle[]>{
@@ -104,6 +105,7 @@ export async function readOperations(user:ChatGPTUser,q:URLSearchParams):Promise
 }
 function zDateTime(s:string){return /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/.test(s)&&Number.isFinite(Date.parse(s));}
 export async function outcomeCommand(user:ChatGPTUser,raw:unknown){
+ requireWriteScope('management');
  const c=outcomeCommandSchema.parse(raw);if(c.actorId!==user.userId)throw new RequestError('The signed-in account changed.',403);const member=await activeMember(user);if(!await canManage(user))throw new RequestError('Only the owner or a Manager can clarify historical outcomes.',403);
  const db=getRawDb(),request=JSON.stringify(c),now=new Date().toISOString();
  const replay=async()=>{const old=await db.prepare('SELECT * FROM operating_commands WHERE id=?').bind(c.id).first<{actor_id:string;request:string}>();if(!old)return false;if(old.actor_id!==user.userId||old.request!==request)throw new RequestError('That operation belongs to another change.',409);return true;};if(await replay())return {operationId:c.id,replayed:true};

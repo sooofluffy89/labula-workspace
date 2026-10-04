@@ -1,3 +1,5 @@
+import {reviewSourceMetadata} from '@/lib/review-metadata-server';
+import {protectedApi} from '@/lib/protected-api';
 import {getRawDb} from '@/db';
 import {identity,readWrite,respond,failure,RequestError} from '@/lib/notebook-server';
 import {REVIEW_ID,emptyReview,validateReview,type ReviewSource} from '@/lib/data-review';
@@ -6,9 +8,9 @@ import {validateNotebook} from '@/lib/notebook';
 export const dynamic='force-dynamic';
 type Row={source:string;payload:string;revision:number;updated_at:string;updated_by:string};
 const read=()=>getRawDb().prepare('SELECT source,payload,revision,updated_at,updated_by FROM data_reviews WHERE id=?').bind(REVIEW_ID).first<Row>();
-const record=(r:Row)=>({source:JSON.parse(r.source),data:JSON.parse(r.payload),revision:r.revision,updatedAt:r.updated_at,updatedBy:r.updated_by});
-export async function GET(){try{const user=await identity(),row=await read();const notebook=await getRawDb().prepare('SELECT revision FROM notebooks WHERE id=?').bind('kitchen').first<{revision:number}>();return respond({record:row?record(row):null,user:user.email,notebookRevision:notebook?.revision??null});}catch(e){return failure(e);}}
-export async function POST(req:Request){try{
+const record=(r:Row)=>({source:reviewSourceMetadata(JSON.parse(r.source)),data:JSON.parse(r.payload),revision:r.revision,updatedAt:r.updated_at,updatedBy:r.updated_by});
+async function GETHandler(){try{const user=await identity(),row=await read();const notebook=await getRawDb().prepare('SELECT revision FROM notebooks WHERE id=?').bind('kitchen').first<{revision:number}>();return respond({record:row?record(row):null,user:user.email,notebookRevision:notebook?.revision??null});}catch(e){return failure(e);}}
+async function POSTHandler(req:Request){try{
  const user=await identity(),{revision,body}=await readWrite(req),db=getRawDb();
  if(typeof body.operationId!=='string'||!/^[0-9a-f-]{36}$/i.test(body.operationId))throw new RequestError('Missing operation ID.');
  const operationId=body.operationId,request=JSON.stringify(body),now=new Date().toISOString();
@@ -25,7 +27,7 @@ export async function POST(req:Request){try{
  const row=await read();if(!row)throw new RequestError('Start the review first.',409);
  if(JSON.parse(row.payload).schemaVersion!==1)throw new RequestError('This review has moved to a newer form. Your old draft is kept. Reload to compare and import it.',426,'review_upgrade_required');
  if(row.revision!==revision){const receipt=await replay();if(receipt)return respond(receipt);throw new RequestError('Another tab or cook saved a newer review. Your draft is kept. Download it before loading the shared version.',409,'revision_conflict');}
- let data;try{data=validateReview(JSON.parse(row.source),body.data);}catch(e){throw new RequestError(e instanceof Error?e.message:'Check the answers.',422);}
+ let data;try{data=validateReview(reviewSourceMetadata(JSON.parse(row.source)),body.data);}catch(e){throw new RequestError(e instanceof Error?e.message:'Check the answers.',422);}
  const payload=JSON.stringify(data);
  if(payload.length>750000)throw new RequestError('This review is too large. Download the draft before continuing.',413);
  const results=await db.batch([
@@ -35,3 +37,7 @@ export async function POST(req:Request){try{
  if(!results[0].meta.changes||!results[1].meta.changes){const receipt=await replay();if(receipt)return respond(receipt);throw new RequestError('A newer review was saved. Your draft is preserved.',409,'revision_conflict');}
  return respond({operationId,revision:revision+1,updatedAt:now,updatedBy:user.email});
  }catch(e){return failure(e);}}
+
+export const GET=protectedApi('workspace',GETHandler);
+
+export const POST=protectedApi('workspace',POSTHandler);

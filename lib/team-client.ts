@@ -56,7 +56,7 @@ export class TeamController{
    if(this.disposed)return false;
    if(!res.ok){if(res.status===400||res.status===409)this.emit({pending:this.state.pending.map(p=>p.key===key?{...p,rejected:true}:p)});throw Error(body.error??'Could not confirm this profile change.');}
    if(body.operationId!==command.id)throw Error('Save confirmation is missing. Retry the original profile change.');
-   this.storage.removeItem(key);this.recover();this.emit({notice:'Profile saved. App access is still managed in Sites.'});
+   this.storage.removeItem(key);this.recover();this.emit({notice:this.state.directory?.accessMode==='application'?'Team access saved.':'App permission saved. Sites invitations still apply until the owner completes the access transition.'});
    try{await this.read();}catch(e){this.emit({error:'The profile was saved, but the list could not refresh. '+(e as Error).message});}
    return true;
   }catch(e){this.emit({error:(e as Error).message||'Could not save. Your unfinished change is kept.'});return false;}

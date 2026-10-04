@@ -1,4 +1,5 @@
 'use client';
+import {accessFetch} from '@/lib/access-client';
 
 import {useRef, useState} from 'react';
 import {Button} from '@/components/ui/button';
@@ -17,7 +18,7 @@ export default function Download() {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 60000);
     try {
-      const response = await fetch('/api/private-backup', {cache: 'no-store', signal: controller.signal});
+      const response = await accessFetch('/api/private-backup', {cache: 'no-store', signal: controller.signal});
       if (!response.ok) throw Error(response.status === 401
         ? 'Sign in again before downloading.'
         : 'Could not read the private backup. Try again.');

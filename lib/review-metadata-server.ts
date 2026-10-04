@@ -1,0 +1,5 @@
+// Private catalog identities: imported by server routes only, never a client module.
+import type {ReviewSource} from './data-review';
+export const privateCaseItems:Record<string,string[]>={"garlic": ["17ae3ba8-3711-4ea6-a8ae-2236ee3faa76"], "base": ["ad2d73f3-6aef-4fa1-8185-eb123234ec9b", "b4c07a38-05d5-4168-9570-4b1b4732b27c", "0af6f8eb-7e14-40e8-b899-f5a15994ecf0", "45498745-e911-47c5-89d4-b8ae72b4524e", "2b5c4c91-e768-41d1-accf-12ec8839f62e"], "beef": ["49103b06-4f8a-4324-a18b-e225a9b265e7", "0d719507-aa35-46b0-84aa-99b6a55ec2ec"], "rice": ["2e171551-2162-4d29-92ac-4db4e13a309b"], "noodles": ["0f637c4c-e0b1-48e7-9a15-bd6da32dbd95"], "pork": ["7fad61ec-97e2-4e49-b3f4-9e706bb639df"], "coriander": ["f6ad5efc-ed8f-4030-a8be-6a08057aeddb"], "brown": ["deb7ca6f-6dc9-4a44-a000-900e4a165213"]};
+export const privateExcludedIds=["4944fff7-0113-4752-a719-dc4f4bdb5266", "68195d9c-e6d4-432b-a496-c30a1152e054", "62de3291-4d0f-41af-9038-090459e6e337", "3f1f7a7d-f3d6-420d-80ed-35c2870e664f"];
+export function reviewSourceMetadata(s:ReviewSource):ReviewSource{return {...s,quickCaseItems:privateCaseItems,productionExcludedIds:privateExcludedIds};}

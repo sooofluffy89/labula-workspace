@@ -1,3 +1,5 @@
+import {privateExcludedIds,reviewSourceMetadata} from '@/lib/review-metadata-server';
+import {requireWriteScope} from '@/lib/protected-api';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {RequestError,workspaceRole} from './notebook-server';
@@ -5,7 +7,7 @@ import {validateNotebook,type Notebook} from './notebook';
 import {REVIEW_ID,type ReviewSource} from './data-review';
 import {migrate,type Draft,type Authority,values,list,taskHash,activeEntity} from './review-v2/model';
 import {productionExcluded} from './review-v2/applied';
-import {cases,caseProgress,checkOpen,outputs,productionActive,activeFacts} from './quick-review/model';
+import {caseItemIds,cases,caseProgress,checkOpen,outputs,productionActive,activeFacts} from './quick-review/model';
 import {quickProposal} from './quick-review/proposal';
 import {proposal} from './review-v2/proposals';
 import {groups} from './review-v2/fields';
@@ -16,9 +18,9 @@ import type {Round} from './check-rounds';
 
 type ReviewRow={source:string;payload:string;updated_at:string;updated_by:string};
 type AuthRow={id:string;kind:Authority['kind'];entity_id:string;fingerprint:string;payload:string;actor_email:string;created_at:string};
-async function reviewData(){const row=await getRawDb().prepare('SELECT source,payload,updated_at,updated_by FROM data_reviews WHERE id=?').bind(REVIEW_ID).first<ReviewRow>();if(!row)return null;const source=JSON.parse(row.source) as ReviewSource;return {row,source,draft:migrate(source,JSON.parse(row.payload))};}
+async function reviewData(){const row=await getRawDb().prepare('SELECT source,payload,updated_at,updated_by FROM data_reviews WHERE id=?').bind(REVIEW_ID).first<ReviewRow>();if(!row)return null;const source=reviewSourceMetadata(JSON.parse(row.source)) as ReviewSource;return {row,source,draft:migrate(source,JSON.parse(row.payload))};}
 function related(d:Draft,s:ReviewSource,itemId:string):RelatedReview[]{
- const q=d.quick;const result:RelatedReview[]=q?cases.filter(c=>c.items.includes(itemId)||q.cases.find(x=>x.id===c.id)?.processIds.some(id=>{const p=q.processes.find(x=>x.id===id);return p&&(p.inputId===itemId||outputs(p).some(o=>o.itemId===itemId));})).map(c=>({id:c.id,name:c.name,status:caseProgress(c.id,q,d,s).label,openChecks:q.checks.filter(t=>q.cases.find(x=>x.id===c.id)?.processIds.includes(t.processId)&&checkOpen(t,q,d,s)).length})):[];
+ const q=d.quick;const result:RelatedReview[]=q?cases.filter(c=>caseItemIds(s,c.id).includes(itemId)||q.cases.find(x=>x.id===c.id)?.processIds.some(id=>{const p=q.processes.find(x=>x.id===id);return p&&(p.inputId===itemId||outputs(p).some(o=>o.itemId===itemId));})).map(c=>({id:c.id,name:c.name,status:caseProgress(c.id,q,d,s).label,openChecks:q.checks.filter(t=>q.cases.find(x=>x.id===c.id)?.processIds.includes(t.processId)&&checkOpen(t,q,d,s)).length})):[];
  for(const e of d.entities.filter(e=>!e.archived&&(e.id===itemId||e.sourceId===itemId||e.parentId===itemId||values(e,'STORE-01').item===itemId||list(values(e,'PROC-03'),'outputs').some(o=>o.item===itemId))))if(Object.keys(e.answers).length)result.push({id:e.id,name:e.name,status:'Recorded review · separate from notebook',openChecks:d.tasks.filter(t=>t.targets.some(x=>x.entityId===e.id)&&t.closedHash!==taskHash(d,t)).length});
  return result;
 }
@@ -38,6 +40,7 @@ async function readReview(id:string):Promise<ReviewInformation>{
 }
 
 export async function readInformation(user:ChatGPTUser,target:InformationTarget):Promise<Information>{
+ requireWriteScope(target.kind==='source'?'operations':'workspace');
  const db=getRawDb();
  const member=await db.prepare('SELECT active FROM kitchen_team WHERE user_id=? OR email=?').bind(user.userId,user.email.toLowerCase()).first<{active:number}>();
  if(member&&!member.active)throw new RequestError('Your access is paused. Ask the owner to check your profile.',403);
@@ -62,5 +65,5 @@ export async function readInformation(user:ChatGPTUser,target:InformationTarget)
  let round:Round|null=null;if(stock?.round_id){const r=await db.prepare('SELECT * FROM check_rounds WHERE id=?').bind(stock.round_id).first<{id:Round['id'];days:string;revision:number;updated_at:string;updated_by:string}>();if(r)round={id:r.id,days:JSON.parse(r.days),revision:r.revision,updatedAt:r.updated_at,updatedBy:r.updated_by};}
  let mergedInto:string|null=null;if(!item){const ops=(await db.prepare("SELECT id,request FROM catalog_operations WHERE retired_id=? AND NOT EXISTS (SELECT 1 FROM catalog_operations u WHERE u.undo_of=catalog_operations.id) ORDER BY after_revision DESC LIMIT 1").bind(target.id).all<{id:string;request:string}>()).results;const op=ops[0]?JSON.parse(ops[0].request):null;if(op?.kind==='merge'&&typeof op.targetId==='string')mergedInto=op.targetId;}
  const rd=await reviewData();const stockInfo:StockInformation|null=stock?{included:!!stock.included,track:!!stock.track,groupId:validGroup(stock.group_id),roundId:stock.round_id,round}:null;
- return {kind:'ingredient',id:target.id,item,uses:item?itemVariants(n,item.id):[],inputs:item?n.items.filter(i=>item.inputs.some(x=>x.itemId===i.id)).map(i=>({id:i.id,name:i.name})):[],related:rd?related(rd.draft,rd.source,target.id):[],stock:stockInfo,excluded:productionExcluded(n,target.id),revision:row.revision,mergedInto};
+ return {kind:'ingredient',id:target.id,item,uses:item?itemVariants(n,item.id):[],inputs:item?n.items.filter(i=>item.inputs.some(x=>x.itemId===i.id)).map(i=>({id:i.id,name:i.name})):[],related:rd?related(rd.draft,rd.source,target.id):[],stock:stockInfo,excluded:productionExcluded(n,target.id,privateExcludedIds),revision:row.revision,mergedInto};
 }

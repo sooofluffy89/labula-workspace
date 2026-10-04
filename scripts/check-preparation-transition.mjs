@@ -140,13 +140,13 @@ try{
  assert.equal(calls.length,guardedCalls);assert.equal(JSON.stringify(render().data),guardedPayload);assert.equal(render().preparationBusy,true);guardedRelease();
  console.log('PASS active preparation blocks ordinary/bulk/catalog recovery, import reconciliation and shared-version replacement.');
 
- // First-attempt 401 is known not to have applied; keep local data editable and allow reauthentication + retry.
+ // A denied first attempt keeps its original command and draft for explicit same-account retry.
  h=await reset();setInactive(h,0);h=render();outcomes.push('401');
  await assert.rejects(h.beginPreparation(new AbortController().signal));h=render();
- assert.equal(h.preparationBusy,false);assert.equal(h.unauthorized,true);assert.equal(h.dirty,true);assert.equal(h.getSaveRecovery(),null);assert.equal(receipts.size,0);
- assert.equal(h.data.recipes[0].active,false);assert.equal(server.recipes[0].active,true);setInactive(h,1);
+ assert.equal(h.preparationBusy,false);assert.equal(h.unauthorized,true);assert.equal(h.dirty,true);assert.ok(h.getSaveRecovery());assert.equal(receipts.size,0);
+ assert.equal(h.data.recipes[0].active,false);assert.equal(server.recipes[0].active,true);assertProtected(()=>setInactive(h,1));
  // The transport now represents the same user after signing in again.
- assert.equal(await render().retry(),true);assertSame();assert.equal(server.recipes[0].active,false);assert.equal(server.recipes[1].active,false);
+ assert.equal(await render().retry(),true);assertSame();assert.equal(server.recipes[0].active,false);assert.equal(server.recipes[1].active,true);setInactive(render(),1);
  const reauthenticatedRelease=await render().beginPreparation(new AbortController().signal);reauthenticatedRelease();
  // If an earlier response was lost, a later 401 must retain that exact original receipt.
  h=await reset();setInactive(h,0);h=render();outcomes.push('lost');assert.equal(await h.save(),false);const before401=render().getSaveRecovery();assert.ok(before401);
