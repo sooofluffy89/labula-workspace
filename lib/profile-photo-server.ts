@@ -28,7 +28,7 @@ export async function ownProfile(operationId?:string):Promise<{profile:OwnProfil
 // Retiring a reservation is a D1 CAS. A concurrent commit and retirement cannot
 // both win. Never delete uncertain or committed objects: an export can still
 // hold the immutable pointer captured in its D1 snapshot.
-async function retireUpload(id:string,actor:string){const db=getRawDb();await db.prepare("UPDATE user_photo_uploads SET state='retired' WHERE id=? AND actor_id=? AND state='staged' AND NOT EXISTS(SELECT 1 FROM user_photo_commands WHERE id=?)").bind(id,actor,id).run();const r=await db.prepare('SELECT * FROM user_photo_uploads WHERE id=? AND actor_id=?').bind(id,actor).first<Upload>();if(r?.state==='retired'&&r.object_key)await photoBucket().delete(r.object_key);}
+async function retireUpload(id:string,actor:string){const db=getRawDb();await db.prepare("UPDATE user_photo_uploads SET state='retired' WHERE id=? AND actor_id=? AND state='staged' AND NOT EXISTS(SELECT 1 FROM user_photo_commands WHERE id=?)").bind(id,actor,id).run();const r=await db.prepare('SELECT * FROM user_photo_uploads WHERE id=? AND actor_id=?').bind(id,actor).first<Upload>();if(r?.state==='retired'){if(r.object_key)await photoBucket().delete(r.object_key);await db.prepare("UPDATE user_photo_uploads SET state='retired_clean' WHERE id=? AND actor_id=? AND state='retired'").bind(id,actor).run();}}
 async function cleanExpired(actor:string){const rows=await getRawDb().prepare("SELECT id FROM user_photo_uploads WHERE actor_id=? AND expires_at<? AND state IN ('staged','retired') LIMIT 8").bind(actor,new Date().toISOString()).all<{id:string}>();for(const row of rows.results)await retireUpload(row.id,actor);}
 export async function saveOwnPhoto(command:z.infer<typeof schema>){
  const context=accessContext.getStore();if(!context)throw new RequestError('Sign in required.',401);const actor=context.user.userId,db=getRawDb(),bucket=photoBucket();
@@ -40,7 +40,7 @@ export async function saveOwnPhoto(command:z.infer<typeof schema>){
  const reservation=await db.prepare('SELECT * FROM user_photo_uploads WHERE id=?').bind(command.operationId).first<Upload>();
  if(!reservation||reservation.actor_id!==actor||reservation.fingerprint!==fingerprint)throw new RequestError('This photo operation does not match its original request.',409,'operation_mismatch');
  if(reservation.state==='committed')return ownProfile(command.operationId);
- if(reservation.state==='retired'||reservation.expires_at<=now){await retireUpload(command.operationId,actor);throw new RequestError('This photo attempt expired or conflicted. Load the current profile before saving a new change.',409,'photo_conflict');}
+ if(reservation.state!=='staged'||reservation.expires_at<=now){await retireUpload(command.operationId,actor);throw new RequestError('This photo attempt expired or conflicted. Load the current profile before saving a new change.',409,'photo_conflict');}
  // The object is private and immutable in meaning; an identical replay writes
  // identical canonical bytes. A pointer is published only after put succeeds.
  if(bytes){await bucket.put(key!,Uint8Array.from(bytes),{httpMetadata:{contentType:'image/png',cacheControl:'private, no-store'},customMetadata:{sha256:sha!}});const head=await bucket.head(key!);if(!head||head.size!==bytes.length)throw new RequestError('Photo upload was not confirmed. Retry safely.',503);}
