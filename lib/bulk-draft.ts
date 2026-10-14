@@ -35,11 +35,11 @@ export function makeIngredientDraft(n:Notebook,recipeId:string,text:string,rows:
  const recipe=n.recipes.find(r=>r.id===recipeId);if(!recipe)throw Error('This dish no longer exists.');
  const ids=new Set(rows.flatMap(r=>r.target?.type==='item'?[r.target.id]:[]));
  const resolve=resolveDraft(rows,n.items).resolve;const intents:NonNullable<IngredientDraft['intents']>=[];for(const row of rows){try{const value=resolve(row);intents.push({key:row.key,itemId:value.itemId,name:value.name,kind:value.kind});}catch{}}
- const file:IngredientDraft={intents,format:'labula-ingredient-draft',version:1,recipeId,recipeLabel:recipeTitle(recipe),text,rows,keptNames:validKeptNames(text,keptNames),keptPairs:validKeptPairs(keptPairs,rows,n.items),needsReview,catalog:n.items.filter(i=>ids.has(i.id)).map(({id,name,kind})=>({id,name,kind})),save:recovery?{state:'pending',recovery}:unverified?{state:'unverified'}:{state:'unsubmitted'},...(priorSave?{priorSave}:{})};
+ const file:IngredientDraft={intents,format:'labula-ingredient-draft',version:1,recipeId,recipeLabel:recipeTitle(recipe,n),text,rows,keptNames:validKeptNames(text,keptNames),keptPairs:validKeptPairs(keptPairs,rows,n.items),needsReview,catalog:n.items.filter(i=>ids.has(i.id)).map(({id,name,kind})=>({id,name,kind})),save:recovery?{state:'pending',recovery}:unverified?{state:'unverified'}:{state:'unsubmitted'},...(priorSave?{priorSave}:{})};
  return readIngredientDraft(JSON.stringify(file));
 }
 export function restoreIngredientDraft(file:IngredientDraft,n:Notebook,recipeId:string){
- const recipe=n.recipes.find(r=>r.id===file.recipeId);if(file.recipeId!==recipeId)throw Error(`This list belongs to ${recipe?recipeTitle(recipe):file.recipeLabel}. Open that dish, then choose Restore draft.`);
+ const recipe=n.recipes.find(r=>r.id===file.recipeId);if(file.recipeId!==recipeId)throw Error(`This list belongs to ${recipe?recipeTitle(recipe,n):file.recipeLabel}. Open that dish, then choose Restore draft.`);
  if(!recipe)throw Error('The dish for this draft no longer exists.');
  if(file.save.state==='pending')return {rows:structuredClone(file.save.recovery.command.rows),needsReview:[],keptNames:[],keptPairs:[],text:file.text};
  let rows:DraftRow[];try{rows=file.text.trim()?reconcileDraft(file.text,file.rows,n.items):[];}catch(e){return {rows:structuredClone(file.rows),needsReview:file.needsReview,keptNames:validKeptNames(file.text,file.keptNames),keptPairs:validKeptPairs(file.keptPairs,file.rows,n.items),text:file.text,inputError:validationMessage(e)};}

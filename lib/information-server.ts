@@ -11,9 +11,11 @@ import {caseItemIds,cases,caseProgress,checkOpen,outputs,productionActive,active
 import {quickProposal} from './quick-review/proposal';
 import {proposal} from './review-v2/proposals';
 import {groups} from './review-v2/fields';
-import {menu} from './menu';
 import {itemVariants,type InformationTarget,type Information,type RelatedReview,type ReviewInformation,type SourceInformation,type StockInformation} from './information';
 import {validGroup} from './ingredient-groups';
+import {validStation} from './checking-stations';
+import {approvedProduction,currentProductionInputs} from './approved-production';
+import type {AppliedRecord} from './review-v2/applied';
 import type {Round} from './check-rounds';
 
 type ReviewRow={source:string;payload:string;updated_at:string;updated_by:string};
@@ -58,12 +60,14 @@ export async function readInformation(user:ChatGPTUser,target:InformationTarget)
  if(target.kind==='review')return readReview(target.id);
  if(target.kind==='history')throw new RequestError('Use the filtered activity view.');
  const row=await db.prepare("SELECT payload,revision FROM notebooks WHERE id='kitchen'").first<{payload:string;revision:number}>();if(!row)throw new RequestError('The saved notebook is not available.',404);const n:Notebook=validateNotebook(JSON.parse(row.payload));
- if(target.kind==='recipe'){const recipe=n.recipes.find(r=>r.id===target.id);if(!recipe)throw new RequestError('This recipe variant is unavailable.',404);if(target.item&&!recipe.inputs.some(i=>i.itemId===target.item))throw new RequestError('The ingredient is no longer listed in this variant. Return and refresh its usage.',409);return {kind:'recipe',recipe,dish:menu.find(m=>m.id===recipe.menuId)?.name??recipe.menuId,items:n.items.filter(i=>recipe.inputs.some(p=>p.itemId===i.id)),highlight:target.item};}
+ if(target.kind==='recipe'){const recipe=n.recipes.find(r=>r.id===target.id);if(!recipe)throw new RequestError('This recipe variant is unavailable.',404);if(target.item&&!recipe.inputs.some(i=>i.itemId===target.item))throw new RequestError('The ingredient is no longer listed in this variant. Return and refresh its usage.',409);return {kind:'recipe',recipe,dish:n.dishes.find(m=>m.id===recipe.menuId)?.name??recipe.menuId,items:n.items.filter(i=>recipe.inputs.some(p=>p.itemId===i.id)),highlight:target.item};}
  if(target.kind==='usage'){const found=itemVariants(n,target.item).find(d=>d.id===target.id);if(!found)throw new RequestError('No recorded use remains in this dish. Refresh the ingredient detail.',404);const variants=found.variants.filter(r=>r.active===(target.active??true));if(!variants.length)throw new RequestError('No matching variant remains in this view. Refresh the ingredient detail.',404);if(variants.length===1){const recipe=variants[0];return {kind:'recipe',dish:found.name,recipe,items:n.items.filter(i=>recipe.inputs.some(p=>p.itemId===i.id)),highlight:target.item};}return {kind:'usage',dish:found.name,item:target.item,variants};}
  const item=n.items.find(i=>i.id===target.id)??null;
  const stock=await db.prepare('SELECT included,track,group_id,round_id FROM stock_items WHERE item_id=?').bind(target.id).first<{included:number;track:number;group_id:string|null;round_id:string|null}>();
+ const operational=await db.prepare('SELECT (SELECT text FROM prep_instructions WHERE item_id=?) AS instruction_text,(SELECT revision FROM prep_instructions WHERE item_id=?) AS instruction_revision,(SELECT station_id FROM checking_station_items WHERE item_id=?) AS station_id').bind(target.id,target.id,target.id).first<{instruction_text:string|null;instruction_revision:number|null;station_id:string|null}>();
  let round:Round|null=null;if(stock?.round_id){const r=await db.prepare('SELECT * FROM check_rounds WHERE id=?').bind(stock.round_id).first<{id:Round['id'];days:string;revision:number;updated_at:string;updated_by:string}>();if(r)round={id:r.id,days:JSON.parse(r.days),revision:r.revision,updatedAt:r.updated_at,updatedBy:r.updated_by};}
  let mergedInto:string|null=null;if(!item){const ops=(await db.prepare("SELECT id,request FROM catalog_operations WHERE retired_id=? AND NOT EXISTS (SELECT 1 FROM catalog_operations u WHERE u.undo_of=catalog_operations.id) ORDER BY after_revision DESC LIMIT 1").bind(target.id).all<{id:string;request:string}>()).results;const op=ops[0]?JSON.parse(ops[0].request):null;if(op?.kind==='merge'&&typeof op.targetId==='string')mergedInto=op.targetId;}
+ const applied=(await db.prepare('SELECT payload FROM reviewed_entities WHERE review_id=?').bind(REVIEW_ID).all<{payload:string}>()).results.map(row=>JSON.parse(row.payload) as AppliedRecord),approvedGraph=approvedProduction(n,applied);
  const rd=await reviewData();const stockInfo:StockInformation|null=stock?{included:!!stock.included,track:!!stock.track,groupId:validGroup(stock.group_id),roundId:stock.round_id,round}:null;
- return {kind:'ingredient',id:target.id,item,uses:item?itemVariants(n,item.id):[],inputs:item?n.items.filter(i=>item.inputs.some(x=>x.itemId===i.id)).map(i=>({id:i.id,name:i.name})):[],related:rd?related(rd.draft,rd.source,target.id):[],stock:stockInfo,excluded:productionExcluded(n,target.id,privateExcludedIds),revision:row.revision,mergedInto};
+ return {kind:'ingredient',id:target.id,item,uses:item?itemVariants(n,item.id):[],inputs:item?n.items.filter(i=>currentProductionInputs(n,approvedGraph,item.id).some(x=>x.itemId===i.id)).map(i=>({id:i.id,name:i.name})):[],related:rd?related(rd.draft,rd.source,target.id):[],stock:stockInfo,operational:{instruction:operational?.instruction_text!=null&&operational.instruction_revision!=null?{text:operational.instruction_text,revision:operational.instruction_revision}:null,stationId:validStation(operational?.station_id)},excluded:productionExcluded(n,target.id,privateExcludedIds),revision:row.revision,mergedInto};
 }
