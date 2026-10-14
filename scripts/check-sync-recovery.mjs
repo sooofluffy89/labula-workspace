@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import {harness,sleep} from './sync-harness.mjs';
+const nativeTimeout=globalThis.setTimeout;
+const h=await harness(),{m,day,db}=h,clients=[];
+const until=async(fn)=>{for(let i=0;i<1000&&!fn();i++)await sleep(2);assert.ok(fn(),'expected async state');};
+const client=async(request=h.requester,storage=h.storage(),fast=true)=>{const c=new m.EveningController(h.owner.email,storage,{day},request,fast);clients.push(c);assert.ok(await c.refresh());return c;};
+try{
+ // Exhaust the original series, then allow existing polling/focus hints to recover it.
+ for(const fast of [true,false]){
+  let offline=true,writers=0,maxWriters=0,posts=0;const store=h.storage();const c=await client(async(url,init)=>{if(init?.method==='POST'){posts++;writers++;maxWriters=Math.max(maxWriters,writers);try{if(offline)throw Error('Synthetic offline');return await h.requester(url,init);}finally{writers--;}}return h.requester(url,init);},store,fast);
+  globalThis.setTimeout=(fn,ms,...args)=>nativeTimeout(fn,[2000,4000,8000].includes(ms)?10:ms,...args);
+  c.answer('item-'+(fast?0:1),'missing');assert.equal(await c.flush(),false);
+  await until(()=>c.retryCount===3&&!c.retryTimer&&!c.state.verifying&&!c.state.saving);globalThis.setTimeout=nativeTimeout;
+  assert.equal(c.retryCount,3);const before=posts;c.recoveryAt=Date.now()-m.RECOVERY_COOLDOWN_MS-1;
+  offline=false;await Promise.all([c.recoverConnection(),c.recoverConnection(),c.refreshVisible(),c.recoverConnection()]);await until(()=>!c.state.pending.length&&!c.state.verifying);
+  assert.equal(posts,before+1);assert.equal(maxWriters,1);assert.equal(store.length,0);
+  c.dispose();
+ }
+ // Hints are throttled while the service remains unavailable; auth failures stop automatic writes.
+ let failing=true,requests=0;const throttled=await client(async(url,init)=>{requests++;if(failing&&init?.method==='POST')throw Error('Still offline');return h.requester(url,init);});throttled.answer('item-2','missing');await throttled.flush();throttled.retryCount=3;throttled.recoveryAt=-Infinity;
+ await throttled.recoverConnection();const count=requests;await Promise.all(Array.from({length:20},()=>throttled.recoverConnection()));assert.equal(requests,count);throttled.dispose();failing=false;
+ // Accepted changes during held Retry GET stay as a durable overlay and drain in order.
+ let release,hold=false;const c=await client(async(url,init)=>{const r=await h.requester(url,init);if(hold&&!init?.method){hold=false;await new Promise(done=>release=done);}return r;});hold=true;const retry=c.retry();await until(()=>release);assert.ok(c.answer('item-3','missing'));assert.ok(c.answer('item-4','have'));assert.equal(c.visibleCheck().answers.find(a=>a.itemId==='item-3').value,'missing');assert.equal(c.state.pending.length,2);release();assert.ok(await retry);assert.equal(c.state.pending.length,0);assert.equal(db.prepare("SELECT value FROM evening_answers WHERE item_id='item-3'").get().value,'missing');
+ // A compatible poll is shared once; a pre-intent poll is superseded without waiting.
+ let holdPoll=false,releasePoll,gets=0;const f=await client(async(url,init)=>{if(url.includes('/sync?')){gets++;if(holdPoll){holdPoll=false;const r=await h.requester(url,init);await new Promise(done=>releasePoll=done);return r;}}return h.requester(url,init);});
+ holdPoll=true;const poll=f.refreshVisible();await until(()=>releasePoll);const summary=f.summary();await sleep(5);assert.equal(gets,1);releasePoll();assert.ok(await summary);f.endFinish();await poll;
+ releasePoll=null;holdPoll=true;const stale=f.refreshVisible();await until(()=>releasePoll);assert.ok(f.answer('item-5','have'));await f.flush();const fresh=f.summary();assert.ok(await fresh,'new proof does not wait for held pre-intent poll');assert.equal(gets,3);releasePoll();await stale;assert.equal(f.state.refreshing,false);f.endFinish();
+ // Identity mismatch is a blocked state, never an automatic replay as another cook.
+ let wrong=false,postCount=0;const identity=await client(async(url,init)=>{if(init?.method==='POST'){postCount++;throw Error('Offline');}const r=await h.requester(url,init);return wrong?{...r,body:{...r.body,account:'other@example.test',accountId:'other'}}:r;});identity.answer('item-6','missing');await identity.flush();wrong=true;assert.equal(await identity.retry(),false);assert.equal(identity.state.unauthorized,true);const oldPosts=postCount;assert.equal(await identity.recoverConnection(),false);assert.equal(postCount,oldPosts);identity.dispose();
+ // Fill current draft with actual controller writes, then negotiate compact commit acknowledgement.
+ await f.refresh();for(const a of f.visibleCheck().answers)if(!a.value)f.answer(a.itemId,'missing');await f.flush();const s=await f.summary();assert(s);
+ let failRead=true,dropAck=true,postId,writeCount=0;f.request=async(url,init)=>{if(url.includes('publication=1')&&failRead)throw Error('Synthetic post-commit read failed');const r=await h.requester(url,init);if(init?.method==='POST'&&JSON.parse(init.body).kind==='confirm'){writeCount++;postId=JSON.parse(init.body).id;assert(r.body.publication&&!r.body.snapshot);if(dropAck){dropAck=false;throw Error('Synthetic ACK lost after commit');}}return r;};
+ assert.equal(await f.action(h.command({kind:'confirm',checkId:day,revision:s.check.revision,planRevision:s.check.planRevision,notebookRevision:s.notebookRevision})),false);assert.equal(db.prepare('SELECT count(*) n FROM evening_versions').get().n,1);assert.equal(f.state.pending[0].command.id,postId);
+ assert.ok(await f.retry());await until(()=>!!f.state.freshnessError);assert.equal(f.state.pending.length,0);assert.equal(f.state.publicationLoading,true);assert.equal(m.morningProgress(f.state).complete,false);assert.equal(db.prepare('SELECT count(*) n FROM evening_versions').get().n,1);assert.equal(writeCount,2);
+ failRead=false;assert.ok(await f.retry());assert.equal(writeCount,2,'read recovery never republishes');assert.equal(f.state.publicationLoading,false);assert.equal(f.state.snapshot.check.version,1);assert.ok(f.state.snapshot.check.tasks.length);f.endFinish();
+ // Original legacy POST still has the full snapshot, including replay of a compact operation.
+ const original=JSON.parse(db.prepare('SELECT request FROM evening_commands WHERE id=?').get(postId).request);const legacy=await h.post(m.api,original);assert.equal(legacy.status,200);assert.ok((await legacy.json()).snapshot);
+ // New client tolerates old server responses when negotiation is ignored.
+ const fallback=await client(async(url,init)=>{if(init?.method==='POST'){const copy={...init,headers:{...init.headers}};delete copy.headers['X-Labula-Confirm'];return h.requester(url,copy);}return h.requester(url,init);});assert.ok(await fallback.action(h.command({kind:'correct',checkId:day,revision:f.state.snapshot.check.revision,planRevision:f.state.snapshot.check.planRevision})));const next=await fallback.summary();assert.ok(await fallback.action(h.command({kind:'confirm',checkId:day,revision:next.check.revision,planRevision:next.check.planRevision,notebookRevision:next.notebookRevision})));assert.equal(fallback.state.publicationLoading,undefined);fallback.endFinish();
+ // First publication carries only real transaction-read tasks; no post-commit bootstrap GET.
+ const compact=await client();const current=compact.state.snapshot.check;assert.ok(await compact.action(h.command({kind:'correct',checkId:day,revision:current.revision,planRevision:current.planRevision})));const confirmed=await compact.summary();const cursor=compact.state.snapshot.sync.cursor;h.reset();assert.ok(await compact.action(h.command({kind:'confirm',checkId:day,revision:confirmed.check.revision,planRevision:confirmed.check.planRevision,notebookRevision:confirmed.notebookRevision})));assert.equal(compact.state.publicationLoading,false);assert.equal(compact.state.snapshot.sync.cursor,cursor);assert.equal(compact.state.needsVerification,true);assert.equal(h.metrics.requests.some(r=>r.url.includes('publication=1')),false);assert.equal(compact.state.snapshot.trackedCount,80);assert.deepEqual(compact.state.snapshot.check.tasks.map(t=>[t.itemId,t.ready]),db.prepare('SELECT item_id,ready FROM morning_tasks ORDER BY position').all().map(t=>[t.item_id,!!t.ready]));compact.endFinish();
+ // Ready/Undo during a held verification is ordered and cannot turn an old read into freshness proof.
+ await until(()=>!compact.state.verifying&&!compact.state.refreshing);
+ let releaseReady,holdReady=true;compact.request=async(url,init)=>{const r=await h.requester(url,init);if(holdReady&&!init?.method){holdReady=false;await new Promise(done=>releaseReady=done);}return r;};const verifying=compact.retry();await until(()=>releaseReady);assert.ok(compact.ready('item-3',true));assert.ok(compact.ready('item-3',false));assert.ok(compact.ready('item-3',true));assert.equal(compact.state.pending.length,3);assert.equal(m.morningProgress(compact.state).complete,false);releaseReady();assert.ok(await verifying);assert.equal(compact.visibleCheck().tasks.find(t=>t.itemId==='item-3').ready,true);
+ // Device storage rejection never accepts a new local answer or Ready.
+ const broken=await client();broken.storage.setItem=()=>{throw Error('Full storage');};assert.equal(broken.toggleReady('item-3'),false);assert.equal(broken.state.pending.length,0);
+ console.log('PASS recovery: exhausted fast/legacy retries, throttled hints, one writer, held GET accepts durable answers, current poll reuse and obsolete poll replacement, identity block, lost compact ACK, post-commit read retry, old/new server compatibility, storage rejection.');
+}finally{globalThis.setTimeout=nativeTimeout;for(const c of clients)c.dispose();await sleep(10);db.close();}

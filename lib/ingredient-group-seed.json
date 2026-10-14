@@ -1,0 +1,620 @@
+{
+  "formatVersion": 1,
+  "status": "Implementation input only; not applied to production",
+  "source": {
+    "notebookRevision": 317,
+    "payloadSHA256": "18a0bf846c4d60e09e81405dbb276fe91c08804507cbeeac6b3d1804bc617d47",
+    "verifiedAt": "2026-09-25",
+    "catalogItems": 79,
+    "originalProposalItems": 65
+  },
+  "rules": {
+    "matchBy": "itemId with expectedName and expectedKind verification",
+    "overwriteExistingAssignments": false,
+    "nullMeaning": "No initial assignment; never clear an existing assignment",
+    "newOrChangedItems": "Needs grouping until owner assigns a group"
+  },
+  "groups": [
+    {
+      "id": "vegetables",
+      "label": "Vegetables, herbs & mushrooms",
+      "order": 0
+    },
+    {
+      "id": "pickles",
+      "label": "Pickled & fermented vegetables",
+      "order": 1
+    },
+    {
+      "id": "meat",
+      "label": "Meat & meat preparations",
+      "order": 2
+    },
+    {
+      "id": "eggs-tofu",
+      "label": "Eggs & tofu",
+      "order": 3
+    },
+    {
+      "id": "starches",
+      "label": "Noodles, rice, dough & pulses",
+      "order": 4
+    },
+    {
+      "id": "broths",
+      "label": "Broths & bases",
+      "order": 5
+    },
+    {
+      "id": "sauces",
+      "label": "Sauces, pastes & dips",
+      "order": 6
+    },
+    {
+      "id": "oils",
+      "label": "Oils & fats",
+      "order": 7
+    },
+    {
+      "id": "seasoning",
+      "label": "Seasonings, starches & toppings",
+      "order": 8
+    }
+  ],
+  "unassignedLabel": "Needs grouping",
+  "assignments": [
+    {
+      "itemId": "1850e800-47ba-46a8-856d-520d4cc00a31",
+      "expectedName": "bamboo",
+      "expectedKind": "bought",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "4476754c-e0a0-4874-8d16-f5addc3c2b0e",
+      "expectedName": "beef lard",
+      "expectedKind": "bought",
+      "proposedGroupId": "oils",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "49103b06-4f8a-4324-a18b-e225a9b265e7",
+      "expectedName": "beef shank cubes",
+      "expectedKind": "prep",
+      "proposedGroupId": "meat",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "3f1f7a7d-f3d6-420d-80ed-35c2870e664f",
+      "expectedName": "beef skewer",
+      "expectedKind": "prep",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "68195d9c-e6d4-432b-a496-c30a1152e054",
+      "expectedName": "braised beef shank",
+      "expectedKind": "prep",
+      "proposedGroupId": "meat",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "76f51018-4cd6-48bd-b928-06f17d0fc009",
+      "expectedName": "braised chicken feet",
+      "expectedKind": "prep",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "375f97ee-934c-45ee-9e07-276240e9c7dd",
+      "expectedName": "braised pork feet - bought",
+      "expectedKind": "bought",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "deb7ca6f-6dc9-4a44-a000-900e4a165213",
+      "expectedName": "brown sauce",
+      "expectedKind": "prep",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "6c7e8219-ee37-4c7e-a919-e28908435c6b",
+      "expectedName": "century egg",
+      "expectedKind": "bought",
+      "proposedGroupId": "eggs-tofu",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "29c38749-4f10-445a-b394-4d96bd3cee75",
+      "expectedName": "century egg sauce",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "3ff7c96f-c621-4d38-91f6-ae77b2bfba1a",
+      "expectedName": "changes seasonally - chef's choices",
+      "expectedKind": "prep",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "7b29ad62-7b4a-4fd4-aed3-04d225c7e9de",
+      "expectedName": "chicken broth",
+      "expectedKind": "prep",
+      "proposedGroupId": "broths",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "6374f055-9c5e-4317-a309-21d685f30c36",
+      "expectedName": "Chicken marination powder",
+      "expectedKind": "bought",
+      "proposedGroupId": "seasoning",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "39d06945-f31c-4d90-b7c7-09dda5b4dcae",
+      "expectedName": "chicken thigh with bones",
+      "expectedKind": "bought",
+      "proposedGroupId": "meat",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "39310494-a787-40cd-8fa9-eba54fb9f6da",
+      "expectedName": "chili lime sauce",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "62de3291-4d0f-41af-9038-090459e6e337",
+      "expectedName": "chili mayo",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "822349a1-f502-4a46-a331-0c133ede4fe3",
+      "expectedName": "chili oil",
+      "expectedKind": "bought",
+      "proposedGroupId": "oils",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "80c91ea9-46d3-4ea5-9713-a13f99bf2362",
+      "expectedName": "chili paste",
+      "expectedKind": "bought",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "dc1928e0-5952-41c2-b4ed-80e9f12e1ad2",
+      "expectedName": "chili powder",
+      "expectedKind": "bought",
+      "proposedGroupId": "seasoning",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "8c84d260-f688-4099-af5b-71f3b21cc6a1",
+      "expectedName": "cooked oil",
+      "expectedKind": "prep",
+      "proposedGroupId": "oils",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "f6ad5efc-ed8f-4030-a8be-6a08057aeddb",
+      "expectedName": "coriander",
+      "expectedKind": "bought",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "0a302584-06e7-4154-a951-428ca617e861",
+      "expectedName": "corn starch",
+      "expectedKind": "bought",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "52220dd5-7909-4a06-8a6e-cebd869a69fb",
+      "expectedName": "cucumber",
+      "expectedKind": "bought",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "9a0c05bd-1863-467e-990f-9ed6b02f4795",
+      "expectedName": "eggpant",
+      "expectedKind": "bought",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "7347e2a5-38cd-4d60-a1d3-3671fbcc2d92",
+      "expectedName": "eggplant sauce",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "c6656b65-858d-42d2-a8e1-ab9fe2b44728",
+      "expectedName": "fermented beans",
+      "expectedKind": "bought",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "39c3ccd6-b71d-4b73-ba0e-448f4b2a300c",
+      "expectedName": "fermented chili",
+      "expectedKind": "prep",
+      "proposedGroupId": "pickles",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "0f637c4c-e0b1-48e7-9a15-bd6da32dbd95",
+      "expectedName": "fermented noodles",
+      "expectedKind": "prep",
+      "proposedGroupId": "starches",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "664872b1-dbe8-466d-a16f-33acf80ebec1",
+      "expectedName": "fried dough",
+      "expectedKind": "bought",
+      "proposedGroupId": "starches",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "4944fff7-0113-4752-a719-dc4f4bdb5266",
+      "expectedName": "fried peanuts",
+      "expectedKind": "prep",
+      "proposedGroupId": "seasoning",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "962f0159-3ebe-4c9e-a032-ee897e31b17a",
+      "expectedName": "fried tofu rolls",
+      "expectedKind": "bought",
+      "proposedGroupId": "eggs-tofu",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "c50dbdd3-21aa-4ed9-8e20-f377eb8dc6f4",
+      "expectedName": "garlic powder",
+      "expectedKind": "bought",
+      "proposedGroupId": "seasoning",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "badc0baf-f272-46d6-b543-6c250677424b",
+      "expectedName": "ginger garlic water",
+      "expectedKind": "prep",
+      "proposedGroupId": "broths",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "8448ee40-d0df-41f4-b059-613cd970f2a8",
+      "expectedName": "hotpot chili paste",
+      "expectedKind": "bought",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "ad2d73f3-6aef-4fa1-8185-eb123234ec9b",
+      "expectedName": "labula beef base",
+      "expectedKind": "prep",
+      "proposedGroupId": "broths",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "0d719507-aa35-46b0-84aa-99b6a55ec2ec",
+      "expectedName": "labula beef broth",
+      "expectedKind": "prep",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "a3fe1c6d-4596-483a-abc0-7475766df227",
+      "expectedName": "marinated egg",
+      "expectedKind": "prep",
+      "proposedGroupId": "eggs-tofu",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "fa1681de-719c-4a74-882b-8fe6a67f7c90",
+      "expectedName": "marinated tofu",
+      "expectedKind": "prep",
+      "proposedGroupId": "eggs-tofu",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "00a09187-33cc-43a0-9690-1f880bb49a5a",
+      "expectedName": "marinated woodear",
+      "expectedKind": "prep",
+      "proposedGroupId": "pickles",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "17ae3ba8-3711-4ea6-a8ae-2236ee3faa76",
+      "expectedName": "minced garlic",
+      "expectedKind": "prep",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "7fad61ec-97e2-4e49-b3f4-9e706bb639df",
+      "expectedName": "minced pork",
+      "expectedKind": "prep",
+      "proposedGroupId": "meat",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "0caf3a53-e9d3-499e-bc00-dbba126a7af4",
+      "expectedName": "mountain pepper oil",
+      "expectedKind": "bought",
+      "proposedGroupId": "oils",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "cb968c51-0b4a-4e26-891e-42344655d9a6",
+      "expectedName": "mushroom",
+      "expectedKind": "prep",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "73c1c44b-d48d-4bba-a56c-d0599dc168f9",
+      "expectedName": "mushroom sauce",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "75d883ad-9c0d-4619-8a4f-883a57e6c970",
+      "expectedName": "mustard",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "68051f47-d07e-4ba0-89e2-f983ce26e0cd",
+      "expectedName": "paprika",
+      "expectedKind": "bought",
+      "proposedGroupId": null,
+      "reason": "ambiguous_name"
+    },
+    {
+      "itemId": "5d399a8e-d921-4b0a-a1f7-848a56bacfa7",
+      "expectedName": "pickles",
+      "expectedKind": "bought",
+      "proposedGroupId": "pickles",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "9d932ee2-302e-418d-9c61-716d207e8087",
+      "expectedName": "pork lard",
+      "expectedKind": "bought",
+      "proposedGroupId": "oils",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "4649f2c2-cce8-4d38-acb3-d7ed86fa566f",
+      "expectedName": "potato noodles",
+      "expectedKind": "bought",
+      "proposedGroupId": "starches",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "ddc8a7da-cef8-45dd-b32a-781af65e1143",
+      "expectedName": "potato silk",
+      "expectedKind": "prep",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "4e951771-d60b-4dbe-8483-820c594071c4",
+      "expectedName": "potato starch",
+      "expectedKind": "bought",
+      "proposedGroupId": "seasoning",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "6d03c460-6edb-418c-89b9-23c1ae019609",
+      "expectedName": "purple onion",
+      "expectedKind": "bought",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "6a566705-e046-41e1-8ab7-09397d7c7f8f",
+      "expectedName": "red bell pepper",
+      "expectedKind": "bought",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "37bb0d25-dc8b-42bd-8364-5df3316e6d97",
+      "expectedName": "red pepper oil",
+      "expectedKind": "bought",
+      "proposedGroupId": "oils",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "2e171551-2162-4d29-92ac-4db4e13a309b",
+      "expectedName": "rice",
+      "expectedKind": "prep",
+      "proposedGroupId": "starches",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "80e07b58-2cf8-4156-94ce-da02c3112fc4",
+      "expectedName": "salt",
+      "expectedKind": "bought",
+      "proposedGroupId": "seasoning",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "b4c07a38-05d5-4168-9570-4b1b4732b27c",
+      "expectedName": "sauce box 1",
+      "expectedKind": "prep",
+      "proposedGroupId": null,
+      "reason": "ambiguous_name"
+    },
+    {
+      "itemId": "0af6f8eb-7e14-40e8-b899-f5a15994ecf0",
+      "expectedName": "sauce box 2",
+      "expectedKind": "prep",
+      "proposedGroupId": null,
+      "reason": "ambiguous_name"
+    },
+    {
+      "itemId": "45498745-e911-47c5-89d4-b8ae72b4524e",
+      "expectedName": "sauce box 3",
+      "expectedKind": "prep",
+      "proposedGroupId": null,
+      "reason": "ambiguous_name"
+    },
+    {
+      "itemId": "2b5c4c91-e768-41d1-accf-12ec8839f62e",
+      "expectedName": "sauce box 4",
+      "expectedKind": "bought",
+      "proposedGroupId": null,
+      "reason": "ambiguous_name"
+    },
+    {
+      "itemId": "3aed1514-82fc-4749-b970-551b99a45e59",
+      "expectedName": "seasonal veggies",
+      "expectedKind": "prep",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "37583ca7-a7e8-49b9-a0f3-6fc56c2b2fc8",
+      "expectedName": "sesame",
+      "expectedKind": "bought",
+      "proposedGroupId": "seasoning",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "a1c38502-5fab-4d5c-bded-098e32514f11",
+      "expectedName": "sesame paste",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "da3a716e-e47b-461c-b9f5-060b8cf52cb7",
+      "expectedName": "sichuan pepper powder",
+      "expectedKind": "bought",
+      "proposedGroupId": "seasoning",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "74bf44e4-2018-4305-b636-9b1e2e599627",
+      "expectedName": "silken tofu",
+      "expectedKind": "bought",
+      "proposedGroupId": "eggs-tofu",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "d06d04eb-81cc-449c-9374-28259fd81e9a",
+      "expectedName": "soy sauce",
+      "expectedKind": "bought",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "050ed939-de88-4b75-a2c2-c2c22a6ebe70",
+      "expectedName": "spring onion",
+      "expectedKind": "bought",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "922e7347-b1e6-468b-8f0e-d1c3299b957b",
+      "expectedName": "stir fried pork topping",
+      "expectedKind": "prep",
+      "proposedGroupId": "meat",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "3784d492-6888-4ad6-872c-5d7ea2700f81",
+      "expectedName": "thai chili",
+      "expectedKind": "bought",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "79a32f56-c33f-4ea0-a134-a7279861cf37",
+      "expectedName": "tofu - bought",
+      "expectedKind": "bought",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "37ab2374-f2ef-4504-9cb5-21bfbd73b69b",
+      "expectedName": "tofu sauce",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "cef850e3-6045-4ef2-975a-e1826febacc7",
+      "expectedName": "universal sauce 1",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "384b6ae6-b81f-43bb-80f3-bf4c72f3f805",
+      "expectedName": "Universal sauce 2",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "a15d79aa-cf4c-47d8-a295-fc3eeb681f4c",
+      "expectedName": "vinegar",
+      "expectedKind": "bought",
+      "proposedGroupId": "seasoning",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "a184e18b-c5be-470e-8775-6c006fbaaac3",
+      "expectedName": "woodear",
+      "expectedKind": "bought",
+      "proposedGroupId": "vegetables",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "101f3c92-4d6b-4e1d-b65f-6e68f7d5099f",
+      "expectedName": "woodear maination sauce",
+      "expectedKind": "prep",
+      "proposedGroupId": "sauces",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "57761607-64ca-4455-844c-3d36296edb8f",
+      "expectedName": "xiao mian base",
+      "expectedKind": "prep",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    },
+    {
+      "itemId": "94bab67d-e88c-4384-9ecb-5a4096e5b3e9",
+      "expectedName": "yellow pea",
+      "expectedKind": "prep",
+      "proposedGroupId": "starches",
+      "reason": "name_based_proposal"
+    },
+    {
+      "itemId": "ae908550-323f-4147-9e72-bf668ebce27b",
+      "expectedName": "yellow sauce",
+      "expectedKind": "prep",
+      "proposedGroupId": null,
+      "reason": "outside_original_65_item_proposal"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `evening_answers` ADD `superseded_by` text;

@@ -1,0 +1,41 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {mkdtemp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {DatabaseSync} from 'node:sqlite';
+const dir=await mkdtemp(tmpdir()+'/labula-activity-');
+try{
+ const db=new DatabaseSync(':memory:');for(const f of(await readdir('drizzle')).filter(f=>f.endsWith('.sql')).sort())db.exec(await readFile('drizzle/'+f,'utf8'));
+ let failEvent=false,concurrent=null;
+ const stmt=(sql,args=[])=>({bind(...a){return stmt(sql,a)},async first(){return db.prepare(sql).get(...args)??null},async all(){return {results:db.prepare(sql).all(...args)}},async run(){return this.exec()},exec(){if(failEvent&&sql.includes('INSERT OR IGNORE INTO kitchen_activity')){failEvent=false;throw Error('event write failed')}const s=db.prepare(sql);return s.columns().length?{results:s.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(s.run(...args).changes)}}}});
+ globalThis.activityDb={prepare:stmt,async batch(ss){if(concurrent){const fn=concurrent;concurrent=null;fn();}db.exec('BEGIN');try{const r=ss.map(s=>s.exec());db.exec('COMMIT');return r}catch(e){db.exec('ROLLBACK');throw e}}};
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.activityDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.activityUser','globalThis.activityDb'));
+ await build({stdin:{contents:`export * as evening from './app/api/evening/route';export * as notebookApi from './app/api/notebook/route';export * as r0 from './app/api/activity/route';export * as r1 from './app/api/bulk/route';export * as r2 from './app/api/catalog/route';export * as r3 from './app/api/data-review/route';export * as r4 from './app/api/prep-profile/route';export * as r5 from './app/api/private-backup/route';export * as r6 from './app/api/review-status/route';export * as r7 from './app/api/review-workflow/route';export * as r8 from './app/api/review-workflow/archive/route';export * as r9 from './app/api/reviewed-data/route';export * as stock from './app/api/stock/route';export * as team from './app/api/team/route';export * as activity from './app/api/activity/route';export * from './lib/notebook';export * from './lib/evening-client';export * from './lib/activity';export * from './lib/team-client';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/test.mjs',alias:{'cloudflare:workers':process.cwd()+'/scripts/r2-fixture.ts','@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
+ const m=await import(dir+'/test.mjs');
+ const owner={userId:'owner',email:'jan@bananasport.cz'},cook={userId:'cook',email:'new-cook@example.test'},legacy={userId:'legacy',email:'existing@example.test'};
+ const request=(url,method='GET',body={})=>new Request('http://test.local/api/'+url,{method,...(method!=='GET'?{headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':'0'},body:JSON.stringify(body)}:{})});
+ globalThis.activityUser=owner;assert.equal((await m.notebookApi.GET()).status,200);
+ const add={id:crypto.randomUUID(),kind:'add',name:'New cook',email:cook.email};assert.equal((await m.team.POST(request('team','POST',add))).status,200);
+ assert.equal(db.prepare('SELECT access_role FROM kitchen_team WHERE id=?').get(add.id).access_role,'cook');
+ globalThis.activityUser=legacy;assert.equal((await m.notebookApi.GET()).status,200,'existing invited cook without a profile keeps prior access');await m.team.GET();assert.equal(db.prepare('SELECT access_role FROM kitchen_team WHERE user_id=?').get(legacy.userId).access_role,'legacy');
+ const book=m.initialNotebook();book.items=[m.newItem('Synthetic broth','prep')];db.prepare("UPDATE notebooks SET payload=? WHERE id='kitchen'").run(JSON.stringify(book));
+ globalThis.activityUser=owner;await m.stock.GET();db.prepare("UPDATE stock_items SET track=1,round_id='daily',round_revision=round_revision+1,round_source='owner:synthetic',revision=revision+1").run();const original=db.prepare('SELECT * FROM notebooks').get();
+ globalThis.activityUser=cook;
+ // The unlinked profile is restricted already, before a stock identity call links it.
+ assert.equal((await m.notebookApi.GET()).status,403);assert.equal((await m.notebookApi.PUT(request('notebook','PUT',book))).status,403);
+ for(const api of [m.stock,...Array.from({length:10},(_,i)=>m['r'+i])])for(const method of ['GET','POST'])if(api[method])assert.equal((await api[method](request('probe',method))).status,403);
+ assert.equal((await m.team.POST(request('team','POST',add))).status,403);assert.equal((await m.team.GET(request('team?management=1'))).status,403);
+ let self=await (await m.team.GET()).json();assert.equal(self.members.length,1);assert.equal(self.self.accessRole,'cook');assert.equal(self.self.userId,cook.userId);
+ const read=async()=>{const r=await m.evening.GET(request('evening?day=2026-09-25'));assert.equal(r.status,200);return r.json();};
+ const send=async(c,status=200)=>{const r=await m.evening.POST(request('evening','POST',{id:crypto.randomUUID(),scope:'kitchen',actorId:cook.userId,...c}));assert.equal(r.status,status,await r.clone().text());return r.json();};
+ await send({kind:'start',day:'2026-09-25',targetDay:'2026-09-26'});let s=await read();const itemId=book.items[0].id;
+ await send({kind:'answer',checkId:s.check.id,itemId,revision:0,generation:0,value:'missing',deviceId:crypto.randomUUID(),sequence:1});s=await read();
+ await send({kind:'confirm',checkId:s.check.id,revision:s.check.revision,planRevision:s.check.planRevision,notebookRevision:s.notebookRevision});
+ await send({kind:'ready',checkId:s.check.id,itemId,revision:0,value:true});s=await read();assert.equal(s.check.tasks[0].ready,true);
+ assert.deepEqual(db.prepare('SELECT * FROM notebooks').get(),original);assert.ok(db.prepare("SELECT count(*) n FROM kitchen_activity WHERE actor_id='cook'").get().n>=4);
+ db.prepare("UPDATE kitchen_team SET active=0 WHERE user_id='cook'").run();await send({kind:'ready',checkId:s.check.id,itemId,revision:1,value:false},403);
+ globalThis.activityUser=null;assert.equal((await m.evening.GET(request('evening'))).status,401);assert.equal((await m.notebookApi.GET()).status,401);
+ globalThis.activityUser=owner;assert.equal((await m.notebookApi.GET()).status,200);assert.equal((await m.team.GET(request('team?management=1'))).status,200);
+ console.log('PASS Cook access: every workspace API denied, unlinked and linked Cook, old collaborator preserved, complete evening-to-morning flow, pause, actor history and unchanged recipes');db.close();
+}finally{delete globalThis.activityDb;delete globalThis.activityUser;await rm(dir,{recursive:true,force:true});}

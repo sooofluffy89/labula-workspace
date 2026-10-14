@@ -1,0 +1,69 @@
+import {fixtureAuthSource} from './access-fixture.mjs';
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {mkdtemp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {DatabaseSync} from 'node:sqlite';
+const dir=await mkdtemp(tmpdir()+'/labula-round-tests-');
+const RealDate=Date;let clock='2026-09-27T12:00:00.000Z';
+try{
+ globalThis.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[clock]));}static now(){return RealDate.parse(clock);}};
+ const db=new DatabaseSync(':memory:');db.function('strftime',(format,value)=>{assert.equal(value,'now');return clock;});
+ for(const file of (await readdir('drizzle')).filter(x=>x.endsWith('.sql')).sort())db.exec(await readFile('drizzle/'+file,'utf8'));
+ let failWrite=false;
+ const stmt=(sql,args=[])=>({bind(...values){return stmt(sql,values)},async first(){return db.prepare(sql).get(...args)??null},async all(){return {results:db.prepare(sql).all(...args)}},async run(){return this.exec()},exec(){if(failWrite&&sql.startsWith('UPDATE stock_items SET round_revision')&&sql.includes('WHERE item_id IN')){failWrite=false;throw Error('Synthetic transaction failure');}const q=db.prepare(sql);return q.columns().length?{results:q.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(q.run(...args).changes)}}}});
+ globalThis.roundDb={prepare:stmt,async batch(statements){db.exec('BEGIN');try{const result=statements.map(x=>x.exec());db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}}};
+ await writeFile(dir+'/db.ts','export const getRawDb=()=>globalThis.roundDb;export const getAppAccessMode=()=>"application";');await writeFile(dir+'/auth.ts',fixtureAuthSource('globalThis.roundUser','globalThis.roundDb'));
+ await build({stdin:{contents:`export * as catalog from './app/api/catalog/route';export * as stock from './app/api/stock/route';export * as rounds from './app/api/check-rounds/route';export * as evening from './app/api/evening/route';export * as backup from './app/api/private-backup/route';export * from './lib/notebook';export * from './lib/menu';export * from './lib/check-rounds';export * from './lib/evening';export * from './lib/private-backup';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:dir+'/api.mjs',alias:{'cloudflare:workers':process.cwd()+'/scripts/r2-fixture.ts','@/db':dir+'/db.ts','@/app/chatgpt-auth':dir+'/auth.ts'},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
+ const m=await import(dir+'/api.mjs'),owner={userId:'owner',email:'jan@bananasport.cz'},cook={userId:'cook',email:'cook@example.test'};globalThis.roundUser=owner;
+ const json=async r=>{const b=await r.json();assert.equal(r.status,200,JSON.stringify(b));return b;};
+ await json(await m.stock.GET());
+ const n=m.initialNotebook();n.items=['A Sauce','B Broth','C Noodles','D Herbs','E Salt'].map((name,i)=>({...m.newItem(name,i<2?'prep':'bought'),id:'item-'+i}));n.items[0].inputs=[{itemId:'item-4',amount:null,note:''}];n.items[3].aliases=['Fresh coriander'];
+ n.recipes.find(r=>m.menu.find(d=>d.id===r.menuId)?.category==='Starters').inputs=[{itemId:'item-0',amount:null,note:''}];n.recipes.find(r=>m.menu.find(d=>d.id===r.menuId)?.category==='Main Dishes').inputs=[{itemId:'item-0',amount:null,note:''},{itemId:'item-3',amount:null,note:''}];
+ db.prepare("UPDATE notebooks SET payload=?,revision=1 WHERE id='kitchen'").run(JSON.stringify(n));await json(await m.stock.GET());
+ const post=(api,c)=>api.POST(new Request('http://test.local/api',{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':'0'},body:JSON.stringify(c)}));
+ const read=()=>m.rounds.GET().then(json),even=day=>m.evening.GET(new Request('http://test.local/api/evening?day='+day)).then(json);
+ const cmd=body=>({id:crypto.randomUUID(),actorId:owner.userId,...body});
+ const move=async(ids,roundId)=>{const s=await read();return json(await post(m.rounds,cmd({kind:'members',revision:s.revision,roundId,itemIds:ids})));};
+ const days=async(roundId,ds)=>{const s=await read();return json(await post(m.rounds,cmd({kind:'days',revision:s.revision,roundId,days:ds})));};
+ const e=body=>({id:crypto.randomUUID(),actorId:globalThis.roundUser.userId,scope:'kitchen',...body}),send=async c=>(await json(await post(m.evening,c))).snapshot;
+ db.prepare("UPDATE stock_items SET track=1,round_id='daily',round_revision=round_revision+1,round_source='owner:synthetic',revision=revision+1 WHERE item_id IN ('item-0','item-1','item-2')").run();
+ let s=await read();assert.equal(s.items.filter(i=>i.roundId==='daily').length,3);assert.equal(s.items.filter(i=>i.track).length,3);const savedStock=db.prepare('SELECT item_id,included,track,revision,group_revision FROM stock_items ORDER BY item_id').all();const count=db.prepare('SELECT count(*) n FROM round_timeline').get().n;await read();await read();assert.equal(db.prepare('SELECT count(*) n FROM round_timeline').get().n,count);
+ await move(['item-0','item-1'],'twice-weekly');await move(['item-2'],'weekly');await move(['item-3'],'weekly');
+ assert.deepEqual(db.prepare('SELECT item_id,included,track,revision,group_revision FROM stock_items ORDER BY item_id').all(),savedStock);
+ s=await read();const base={revision:s.revision,roundId:'weekly',kind:'days'};for(const invalid of [[],[1,1],[1,2],[7]])assert.equal((await post(m.rounds,cmd({...base,days:invalid}))).status,400);
+ assert.equal((await post(m.rounds,cmd({kind:'members',revision:s.revision,roundId:null,itemIds:['item-0']}))).status,200);
+ await move(['item-0'],'twice-weekly');s=await read();const original=cmd({kind:'members',revision:s.revision,roundId:'daily',itemIds:['item-4']});assert.equal((await post(m.rounds,original)).status,200);await move(['item-4'],'weekly');assert.equal((await post(m.rounds,original)).status,200);assert.equal((await read()).items.find(i=>i.itemId==='item-4').roundId,'weekly','replay cannot overwrite later decision');
+ assert.equal((await post(m.rounds,cmd({kind:'members',revision:s.revision,roundId:'daily',itemIds:['item-0','item-1']}))).status,409);
+ s=await read();const rollback=cmd({kind:'members',revision:s.revision,roundId:'daily',itemIds:['item-0','item-1']});failWrite=true;assert.equal((await post(m.rounds,rollback)).status,503);assert.equal(db.prepare('SELECT count(*) n FROM round_commands WHERE id=?').get(rollback.id).n,0);assert.equal((await read()).items.find(i=>i.itemId==='item-0').roundId,'twice-weekly');
+ // Cook direct writes are forbidden; their ordinary operations are allowed.
+ db.prepare("INSERT INTO kitchen_team(id,user_id,email,name,access_role,active,revision,created_at) VALUES('cook','cook','cook@example.test','Synthetic Cook','cook',1,0,?)").run(clock);globalThis.roundUser=cook;
+ assert.equal((await m.rounds.GET()).status,403);assert.equal((await post(m.rounds,{...rollback,actorId:'cook'})).status,403);assert.equal((await m.stock.GET()).status,403);globalThis.roundUser=null;assert.equal((await m.rounds.GET()).status,401);globalThis.roundUser=owner;
+ // Real filter functions: OR menu, AND dimensions, alias, nested ingredient and unassigned group.
+ s=await read();assert.deepEqual(m.filteredRoundItems(s.items,'weekly',{...m.emptyRoundFilters,search:'coríander'}).map(i=>i.itemId),['item-3']);assert.equal(m.filteredRoundItems(s.items,'weekly',{...m.emptyRoundFilters,menu:['Starters','Main Dishes']}).length,3);assert.equal(m.filteredRoundItems(s.items,'weekly',{...m.emptyRoundFilters,menu:['Starters'],type:'bought'}).length,1);assert.equal(m.filteredRoundItems(s.items,'weekly',{...m.emptyRoundFilters,current:'other',tracking:'tracked',group:'none'}).length,2);assert.deepEqual(m.toggleCandidates(['hidden','a'],['a','b']),['hidden','a','b']);assert.deepEqual(m.toggleCandidates(['hidden','a','b'],['a','b']),['hidden']);
+ // Fresh schedules, no historical obligations. Sunday is weekly; Monday/Tue tests use clock.
+ assert.equal((await even('2026-09-27')).planning.dueCount,3);
+ clock='2026-09-28T12:00:00.000Z';let plan=await even('2026-09-28');assert.equal(plan.planning.dueCount,3);assert.equal(plan.planning.items.find(i=>i.itemId==='item-2').round.reason,'overdue');
+ let monday=await send(e({kind:'start',day:'2026-09-28',targetDay:'2026-09-29'}));assert.equal(monday.check.answers.length,3);
+ await days('weekly',[5]);await move(['item-1'],'weekly');
+ assert.deepEqual((await even('2026-09-28')).check.answers,monday.check.answers,'snapshot does not change after membership or schedule edits');
+ clock='2026-09-29T12:00:00.000Z';let tuesday=await send(e({kind:'start',day:'2026-09-29',targetDay:'2026-09-30'}));assert.equal(tuesday.check.answers.length,3,'all earlier obligations preserved');
+ const confirmAll=async(day,value='have')=>{let p=await even(day);for(const a of p.check.answers.filter(a=>!a.supersededBy)){p=await send(e({kind:'answer',checkId:day,itemId:a.itemId,revision:a.revision,generation:p.check.version,value,deviceId:crypto.randomUUID(),sequence:1}));}return send(e({kind:'confirm',checkId:day,revision:p.check.revision,planRevision:p.check.planRevision,notebookRevision:p.notebookRevision}));};
+ tuesday=await confirmAll('2026-09-29','missing');assert.equal(tuesday.check.tasks.length,3);assert.equal((await even('2026-09-28')).check.coveredBy,'2026-09-29');assert.ok((await even('2026-09-28')).check.answers.every(a=>a.value===null));
+ clock='2026-09-30T12:00:00.000Z';assert.equal((await even('2026-09-30')).planning.dueCount,0);assert.equal((await post(m.evening,e({kind:'start',day:'2026-09-30',targetDay:'2026-10-01'}))).status,409);
+ let wednesday=await send(e({kind:'start',day:'2026-09-30',targetDay:'2026-10-01',extraItemIds:['item-0']}));assert.equal(wednesday.check.answers[0].round.reason,'extra');assert.equal((await post(m.evening,e({kind:'add-items',checkId:'2026-09-30',revision:wednesday.check.revision,itemIds:['item-3']}))).status,409,'Track Off cannot be added');
+ wednesday=await send(e({kind:'add-items',checkId:'2026-09-30',revision:wednesday.check.revision,itemIds:['item-0','item-1']}));assert.equal(wednesday.check.answers.length,2);await confirmAll('2026-09-30');
+ clock='2026-10-01T12:00:00.000Z';assert.equal((await even('2026-10-01')).planning.dueCount,1,'extra Wednesday does not cover Thursday');await confirmAll('2026-09-28');assert.equal((await even('2026-10-01')).planning.dueCount,1,'late old Monday confirmation cannot cover Thursday');
+ // Correction retains the current published version's coverage and existing Ready task.
+ tuesday=await even('2026-09-29');const task=tuesday.check.tasks[0];tuesday=await send(e({kind:'ready',checkId:tuesday.check.id,itemId:task.itemId,revision:task.revision,value:true}));tuesday=await send(e({kind:'correct',checkId:tuesday.check.id,revision:tuesday.check.revision,planRevision:tuesday.check.planRevision}));assert.equal((await even('2026-10-01')).planning.items.find(i=>i.itemId==='item-2').round.firstDue,null);tuesday=await confirmAll('2026-09-29','missing');assert.ok(tuesday.check.tasks.find(t=>t.itemId===task.itemId).ready);
+ // Off intervals create no debt; same membership resumes without resetting fixed weekdays.
+ db.prepare("UPDATE stock_items SET track=0,revision=revision+1 WHERE item_id='item-2'").run();clock='2026-10-12T12:00:00.000Z';db.prepare("UPDATE stock_items SET track=1,revision=revision+1 WHERE item_id='item-2'").run();assert.equal((await even('2026-10-12')).planning.items.find(i=>i.itemId==='item-2').round.firstDue,null);
+ clock='2026-10-16T12:00:00.000Z';assert.equal((await even('2026-10-16')).planning.items.find(i=>i.itemId==='item-2').round.firstDue,'2026-10-16');
+ assert.equal(m.operationalDay(new RealDate('2026-10-25T02:59:00Z')),'2026-10-24');assert.equal(m.operationalDay(new RealDate('2026-10-25T03:00:00Z')),'2026-10-25');assert.equal(m.operationalDay(new RealDate('2026-03-29T01:59:00Z')),'2026-03-28');assert.equal(m.operationalDay(new RealDate('2026-03-29T02:00:00Z')),'2026-03-29');
+ const archive=await json(await m.backup.GET());assert.ok(m.isCompletePrivateBackup(archive));const legacy=structuredClone(archive);for(const t of ['check_rounds','round_state','round_timeline','round_commands']){delete legacy.tables[t];delete legacy.counts[t];}assert.equal(m.readPrivateBackup(legacy).legacyRounds,true);assert.equal(m.isCompletePrivateBackup(legacy),false);
+ assert.equal(db.prepare("SELECT payload FROM notebooks WHERE id='kitchen'").get().payload,JSON.stringify(n),'all rounds commands preserve original notebook');
+ const catalogPost=async operation=>{const id=crypto.randomUUID(),revision=db.prepare("SELECT revision FROM notebooks WHERE id='kitchen'").get().revision;const res=await m.catalog.POST(new Request('http://test.local/api/catalog',{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':String(revision)},body:JSON.stringify({operationId:id,operation})}));await json(res);return id;};
+ const merged=await catalogPost({kind:'merge',sourceId:'item-2',targetId:'item-3'});s=await read();assert.equal(s.items.find(i=>i.itemId==='item-3').roundId,'weekly');assert.equal(s.items.some(i=>i.itemId==='item-2'),false);await move(['item-3'],'daily');await catalogPost({kind:'undo',operationId:merged});s=await read();assert.equal(s.items.find(i=>i.itemId==='item-3').roundId,'daily','undo preserves later target round choice');assert.equal(s.items.find(i=>i.itemId==='item-2').roundId,'weekly');
+ console.log('PASS check rounds: additive initialization, stable Track, validation, atomic CAS/rollback/replay, owner/Cook/anonymous, filters/nesting, pinned snapshots, overdue/schedule moves/off intervals, explicit extras, coverage/corrections/Ready, Prague DST and full/legacy backups.');
+ db.close();
+}finally{globalThis.Date=RealDate;delete globalThis.roundDb;delete globalThis.roundUser;await rm(dir,{recursive:true,force:true});}

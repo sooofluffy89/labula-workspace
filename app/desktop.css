@@ -1,0 +1,172 @@
+/* Desktop working surface; operational touch lists retain their existing sizing. */
+.desktop-navigation{display:none}
+.information-layout{min-width:0}
+.information-aside{position:fixed;right:0;top:0;bottom:0;width:370px;z-index:35;background:var(--card);border-left:1px solid var(--border);display:flex;flex-direction:column;padding:16px;gap:12px;box-shadow:-6px 0 24px #19212b08}
+.information-aside>header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.information-aside>header h2{font-size:1rem}
+.information-aside .information-scroll{overflow:auto;min-height:0;flex:1;scrollbar-gutter:stable;padding-right:6px}
+.information-aside .information-scroll:focus{outline:none}
+.information-aside h2{font-size:1.25rem;overflow-wrap:anywhere}
+.information-aside p,.information-aside small{overflow-wrap:anywhere}
+.information-aside .actions{gap:6px}
+.information-aside button{white-space:normal}
+.detail-tabs{margin-top:12px}
+.detail-tabs>[role=tablist]{width:100%;display:flex}
+.detail-tabs>[role=tablist]>button{flex:1;min-width:0;font-size:.875rem}
+.information-aside .prep-instruction-editor textarea{width:100%;min-height:150px}
+.filter-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0}
+.filter-chips button{min-height:32px!important;font-size:.875rem;padding:4px 8px;border:1px solid var(--border);border-radius:5px;background:var(--card)}
+.personal-views{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:.875rem}
+.personal-views select{max-width:170px}
+.personal-view-editor{padding:12px;background:var(--card);border:1px solid var(--border);margin:8px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admin-table{table-layout:fixed;width:100%}
+.admin-table th,.admin-table td{white-space:normal;overflow-wrap:anywhere}
+.admin-table caption{text-align:left}
+.admin-table .group-row td{background:var(--muted);font-weight:600;padding:4px 8px!important}
+.admin-table .group-row .actions{justify-content:space-between}
+.admin-table .group-row button{font-weight:600}
+.admin-table [data-active=true]{background:var(--accent)}
+.admin-table td small{display:block;color:var(--muted-foreground)}
+.admin-table .table-item{font-weight:600;text-align:left;display:block;text-decoration:none;color:var(--foreground)}
+.admin-table .table-item:hover{color:var(--primary);text-decoration:underline}
+.admin-table .instruction-cell button{max-width:100%;text-align:left;color:var(--primary);font-size:.875rem}
+.instruction-excerpt{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;color:var(--muted-foreground);font-size:.875rem}
+.admin-table .select-column{width:42px}
+.admin-table input[type=checkbox]{min-height:0;width:18px;height:18px;accent-color:var(--primary)}
+.admin-table .row-actions{display:flex;gap:4px;flex-wrap:wrap}
+.desktop-table{display:none}
+.admin-toolbar{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin:8px 0}
+.admin-toolbar label{display:flex;flex-direction:column;font-size:.875rem;gap:3px;min-width:0}
+.admin-toolbar>input{flex:1;min-width:180px}
+.admin-toolbar select{border:1px solid var(--border);border-radius:5px;padding:6px;background:var(--card);max-width:100%;min-height:36px}
+@media(min-width:1100px){
+ .information-layout .kitchen-stock-work .app-frame{max-width:none;padding:14px 24px 48px}
+ .desktop-navigation{display:block;position:fixed;left:0;top:0;bottom:0;width:200px;z-index:30;border-right:1px solid var(--border);background:#fff}
+ .desktop-navigation [data-slot=sidebar-wrapper]{min-height:100%;height:100%;width:100%}
+ .desktop-navigation [data-slot=sidebar]{width:100%;background:#fff}
+ .desktop-navigation nav{padding:22px 12px}
+ .desktop-brand{display:block;color:var(--primary);font-weight:900;font-size:1.7rem;letter-spacing:-.06em;padding:0 10px 20px}
+ .desktop-brand small{display:block;font-size:.7rem;letter-spacing:.09em;color:var(--muted-foreground);margin-top:3px}
+ .desktop-navigation section{margin:10px 0 17px}
+ .desktop-navigation h2{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-foreground);padding:0 10px 6px}
+ .desktop-navigation button{display:flex;width:100%;justify-content:start;gap:9px;min-height:36px;height:auto;padding:8px 10px;font-size:.875rem;white-space:normal;text-align:left}
+ .desktop-navigation button svg{width:16px;flex-shrink:0}
+ .desktop-navigation button[aria-current=page]{background:var(--accent);color:var(--primary);font-weight:700}
+ .kitchen-workspace,.kitchen-stock-work{margin-left:200px;min-width:0}
+ .information-layout-open>.kitchen-workspace,.information-layout-open>.kitchen-stock-work{margin-right:370px}
+ .kitchen-stock-work .app-header,.kitchen-workspace .app-header{display:flex!important;min-height:62px;padding:10px 24px}
+ .app-header .brand{display:none}
+ .app-header>.actions{width:100%;justify-content:flex-end}
+ .app-header .status-line{margin-right:auto}
+ .app-header .actions button{min-height:34px;height:34px}
+ .kitchen-stock-work .app-frame,.kitchen-workspace .app-frame{max-width:none;padding:14px 24px 48px}
+ .topline,.main-tabs>[role=tablist]{display:none!important}
+ .main-tabs{gap:0!important}
+ .compact-review{display:flex!important;gap:12px!important;padding:6px 0!important;margin:0 0 12px!important;border:0!important;background:none!important;align-items:center!important;font-size:.875rem}
+ .compact-review>div{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+ .compact-review p{font-size:.875rem}
+ .compact-review>div>p+p{display:none}
+ .kitchen-stock-work .compact-review{display:none!important}
+ .kitchen-stock-work .stock-work-nav,.kitchen-stock-work .operations-links{display:none}
+ .kitchen-stock-work .stock-people{margin:0 0 10px}
+ .stock-management{max-width:none}
+ .stock-management h1{font-size:1.5rem;margin:0}
+ .stock-management .view-heading{margin-bottom:6px}
+ .stock-management .view-heading p{font-size:.875rem;max-width:80ch}
+ .stock-management .stock-counts{margin:4px 0;font-size:.875rem}
+ .stock-management .stock-save-state>p{font-size:.875rem;margin:3px 0}
+ .stock-management .stock-save-state>.actions:empty{display:none}
+ .stock-management .stock-result{margin:6px 0}
+ .stock-management .rounds-view>p{font-size:.875rem;margin:4px 0}
+ .stock-management .rounds-view>div[role=status]:empty,.stock-management .rounds-view>p[role=status]:empty{display:none}
+ .stock-management .rounds-view>.actions:first-child{float:right}
+ .stock-management .rounds-view>p.muted{font-size:.8rem}
+ .stock-home-entry{padding:10px 14px!important;margin-bottom:12px!important}
+ .stock-home-entry p{display:none}
+ .kitchen-insights .insight-heading{margin:0}
+ .kitchen-insights .insight-intro{margin:4px 0 8px;font-size:.875rem}
+ .desktop-table{display:block;min-width:0}
+ .mobile-admin-list{display:none}
+ .desktop-table [data-slot=table-container]{max-height:calc(100dvh - 310px);overflow:auto;border:1px solid var(--border);border-radius:6px;background:var(--card);scrollbar-gutter:stable}
+ .admin-table th{position:sticky;top:0;z-index:2;background:#edf0f2;padding:8px;font-size:.875rem}
+ .admin-table td{padding:6px 8px!important;font-size:.875rem;vertical-align:middle}
+ .admin-table td button[data-slot=button]{min-height:30px;height:auto;font-size:.875rem;padding:4px 7px}
+ .admin-table .name-column{width:25%}
+ .admin-table .instruction-column{width:24%}
+ .admin-table .action-column{width:15%}
+ .admin-table .round-instruction{display:block;border:0;padding:0}
+ .admin-table .round-instruction-preview{display:none}
+ .admin-table .round-instruction button{white-space:normal}
+ .admin-toolbar input,.admin-toolbar button,.admin-toolbar select,.personal-views button{min-height:34px!important;height:auto}
+ .stock-management .round-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px}
+ .round-filter-grid fieldset{grid-column:1/-1}
+ .stock-management .round-review-bar{position:sticky;bottom:0;padding:8px 12px}
+ .stock-management .round-review-bar p{margin:0}
+ .information-layout-open .admin-table .name-column{width:30%}
+ .information-layout-open .admin-table .optional-column{display:none}
+ .information-layout-open .stock-management .round-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:1099px){.admin-toolbar>input{width:100%}.personal-views{width:100%}.filter-chips button{min-height:44px!important}.admin-toolbar select{min-height:44px}.detail-tabs>[role=tablist]{height:auto}.detail-tabs>[role=tablist]>button{min-height:44px}}
+
+.admin-help{font-size:.875rem;color:var(--muted-foreground);margin:3px 0}
+.admin-help summary{cursor:pointer}
+@media(min-width:1100px){
+ .kitchen-stock-work .stock-workflow.stock-management{max-width:none;width:100%}
+ .stock-management .stock-save-state{padding:0;border:0;background:none;margin:0}
+ .stock-management .stock-identity{min-height:24px;margin:0 0 4px;font-size:.875rem}
+ .stock-management .stock-identity .actions{display:none}
+ .stock-management .manage-round-link{display:none}
+ .stock-management .admin-toolbar{align-items:center}
+ .stock-management .admin-toolbar label{flex-direction:row;align-items:center}
+ .stock-management .admin-toolbar>input{max-width:340px}
+ .stock-management .admin-toolbar .personal-views{margin-left:auto}
+ .stock-management .admin-toolbar .actions button{min-height:34px}
+ .stock-management .stock-view .view-heading{margin-bottom:2px}
+ .stock-management .admin-table .action-column{width:90px}
+ .stock-management .desktop-table [data-slot=table-container]{max-height:calc(100dvh - 290px)}
+ .information-layout-open .stock-management .admin-toolbar .personal-views{margin-left:0}
+}
+@media(min-width:1100px){
+ .stock-management .rounds-view{max-width:none;margin:0}
+ .stock-management .rounds-view .actions{margin:4px 0;gap:6px}
+ .stock-management .rounds-view .admin-table .actions{margin:0}
+ .stock-management .rounds-view .round-search{margin:8px 0;gap:8px;align-items:center}
+ .stock-management .rounds-view .round-search>label{flex:0 1 auto;display:flex;gap:6px}
+ .stock-management .rounds-view .round-search>input{min-height:34px}
+ .stock-management .rounds-view .admin-table button{min-height:30px}
+ .stock-management .rounds-view .admin-table th button{padding:0}
+ .stock-management .rounds-view .admin-table .instruction-cell button{padding:0;height:auto}
+}
+
+@media(min-width:1100px){.stock-management .admin-table .round-instruction{margin:0!important;gap:0}.stock-management .admin-table .group-row button{min-height:28px}.stock-management .admin-table .group-row .actions{margin:0}.stock-management .admin-table .instruction-excerpt{-webkit-line-clamp:1}.stock-management .rounds-view .filter-chips button{min-height:30px}}
+
+@media(min-width:1100px){
+ .stock-management .stock-view>.view-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+ .stock-management .stock-view>.stock-save-state{display:inline-block;margin-right:16px}
+ .stock-management .stock-view>.stock-counts{display:inline-block}
+ .stock-management .round-search.admin-toolbar>input{max-width:260px}
+ .stock-management .round-search.admin-toolbar>label{font-size:.8rem}
+ .stock-management .rounds-view>.admin-help{float:right}
+}
+
+.reviewed-dashboard-details summary{cursor:pointer;font-weight:600}.reviewed-dashboard-context{font-size:.875rem;color:var(--muted-foreground);margin:4px 0 10px}
+@media(min-width:1100px){
+ .kitchen-workspace .stock-home-entry{display:none}
+ .kitchen-workspace .compact-review{margin-bottom:6px!important}
+ .kitchen-workspace .kitchen-insights .insight-heading{margin-bottom:4px}
+ .kitchen-workspace .kitchen-insights .insight-scope{margin-bottom:4px;padding-bottom:0}
+ .kitchen-workspace .insight-tabs>[role=tablist]>button{min-height:36px;padding:6px;font-size:.875rem}
+ .kitchen-workspace .kitchen-insights .insight-toolbar{margin:8px 0 0;gap:10px}
+ .kitchen-workspace .summary-context{margin:6px 0 8px;gap:4px;font-size:.875rem}
+ .kitchen-workspace .summary-card{padding:16px}
+ .stock-management .stock-view>.view-heading{margin-bottom:0}
+ .stock-management .admin-table td{padding:4px 8px!important}
+ .stock-management .desktop-table [data-slot=table-container]{max-height:calc(100dvh - 270px)}
+}
+
+@media(min-width:1100px){
+ .stock-management .rounds-view>h1{margin:0 0 4px}
+ .stock-management .round-selection-summary{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px 10px;margin:4px 0}
+ .stock-management .round-selection-summary>p{font-size:.875rem;margin:0}
+ .stock-management .rounds-view .admin-toolbar button,.stock-management .rounds-view .round-selection-summary button,.stock-management .rounds-view>.actions>button{min-height:34px;height:auto;padding:5px 8px}
+}

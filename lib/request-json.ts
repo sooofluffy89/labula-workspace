@@ -1,0 +1,18 @@
+import {accessFetch} from './access-client';
+export const REQUEST_TIMEOUT_MS=30_000;
+export class RequestTimeoutError extends Error {
+ constructor(){super('The connection took too long. The save may have reached the server. Retry to check its result safely.');this.name='RequestTimeoutError';}
+}
+// No application state is changed inside the work promise: a late reply is harmless.
+export async function requestJson<T>(url:string,init:RequestInit={}):Promise<{res:Response;body:T}>{
+ if(['/api/stock','/api/information','/api/operations'].includes(url.split('?')[0])||url.startsWith('/api/evening')){
+  const original=init.headers;
+  if(original instanceof Headers||Array.isArray(original)){const headers=new Headers(original);headers.set('X-Labula-Stations','4');init={...init,headers};}
+  else init={...init,headers:{...original,'X-Labula-Stations':'4'}};
+ }
+ const controller=new AbortController();let timer:ReturnType<typeof setTimeout>|undefined;
+ const cancel=()=>controller.abort(init.signal?.reason);if(init.signal?.aborted)cancel();else init.signal?.addEventListener('abort',cancel,{once:true});
+ const deadline=new Promise<never>((_,reject)=>{timer=setTimeout(()=>{reject(new RequestTimeoutError());controller.abort();},REQUEST_TIMEOUT_MS);});
+ try{return await Promise.race([(async()=>{const res=await accessFetch(url,{...init,signal:controller.signal});const body=await res.json() as T;return {res,body};})(),deadline]);}
+ finally{clearTimeout(timer);init.signal?.removeEventListener('abort',cancel);}
+}

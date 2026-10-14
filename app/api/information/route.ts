@@ -1,0 +1,9 @@
+import {protectedApi} from '@/lib/protected-api';
+import {identity,respond,failure,RequestError} from '@/lib/notebook-server';
+import {informationTarget} from '@/lib/information';
+import {readInformation} from '@/lib/information-server';
+import {stationClientResponse} from '@/lib/station-client-compatibility';
+export const dynamic='force-dynamic';
+async function GETHandler(req:Request){try{const user=await identity('operations'),q=new URL(req.url).searchParams;let raw:unknown;try{raw=JSON.parse(q.get('target')??'null');}catch{throw new RequestError('Invalid information link.');}const target=informationTarget.parse(raw);return respond(stationClientResponse(req,{account:user.email,data:await readInformation(user,target)}));}catch(e){return failure(e);}}
+
+export const GET=protectedApi('operations',GETHandler);
