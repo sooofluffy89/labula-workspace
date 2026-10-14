@@ -19,6 +19,20 @@ try{
  input().props.onChange({target:{value:'0,5'}});render();assert.deepEqual(saved,[0.5]);assert.equal(input().props['aria-invalid'],false);input().props.onBlur();render();assert.equal(input().props.value,'0.5');assert.equal(dirty.at(-1),false);
  input().props.onChange({target:{value:''}});render();assert.deepEqual(saved,[0.5,null]);
  props.onChange=()=>false;render();input().props.onChange({target:{value:'3'}});render();assert.equal(input().props.value,'3');assert.equal(input().props['aria-invalid'],true);assert.match(text(tree),/could not be applied/);nodes('button').find(n=>text(n)==='Reset value').props.onClick();render();assert.equal(input().props.value,'');assert.equal(input().props['aria-invalid'],false);
+ // A focused but untouched field must not turn a newer peer value into an edit.
+ let peerWrites=[];
+ reset(m.QuantityValue,{label:'Peer quantity',value:5,disabled:false,onChange:value=>peerWrites.push(value)});
+ input().props.onFocus();props.value=9;render();input().props.onBlur();render();
+ assert.deepEqual(peerWrites,[],'leaving an untouched focused quantity must not overwrite a refreshed peer value');
+ assert.equal(input().props.value,'9','the refreshed value remains visible after leaving the field');
+ // Invalid local text survives a peer refresh and can be reset to its new base.
+ reset(m.QuantityValue,{label:'Peer quantity',value:5,disabled:false,onChange:value=>peerWrites.push(value)});
+ input().props.onFocus();input().props.onChange({target:{value:'invalid local'}});render();props.value=9;render();
+ assert.equal(input().props.value,'invalid local');input().props.onBlur();render();assert.equal(input().props.value,'invalid local');
+ assert.deepEqual(peerWrites,[]);nodes('button').find(n=>text(n)==='Reset value').props.onClick();render();assert.equal(input().props.value,'9');
+ reset(m.QuantityValue,{label:'Peer quantity',value:5,disabled:false,onChange:value=>{peerWrites.push(value);props.value=value;}});
+ input().props.onFocus();input().props.onChange({target:{value:'7'}});render();props.value=9;render();input().props.onBlur();render();
+ assert.deepEqual(peerWrites,[7],'blur does not reapply an earlier valid edit over a peer refresh');assert.equal(input().props.value,'9');
  const item={...m.newItem('Synthetic unit item'),id:'measure-ui-item'},part={itemId:item.id,amount:2,unit:'g',pieceMeaning:'',conversion:null,note:'Keep note'};let writes=[],scopeDirty=[];
  reset(m.RecipeUnit,{item,part,disabled:false,onChange:value=>writes.push(value),onDraftChange:value=>scopeDirty.push(value)});
  nodes('select')[0].props.onChange({target:{value:'pcs'}});render();assert.equal(writes.length,0,'unit selection alone cannot reinterpret existing amount');assert.equal(button('Save new unit').props.disabled,true);assert.equal(scopeDirty.at(-1),true);

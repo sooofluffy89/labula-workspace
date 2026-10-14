@@ -12,8 +12,8 @@ const quantityError=(min?:number)=>min===undefined?'Enter a quantity greater tha
 /** Keeps invalid or rejected text local, visible, and out of persisted calculations. */
 export function QuantityValue({label,value,disabled,onChange,onDraftChange,min,placeholder='Not set'}:QuantityProps){
  const [draft,setDraft]=useState(value===null?'':String(value)),[error,setError]=useState('');
- const editing=useRef(false),pending=useRef(false),notify=useRef(onDraftChange);notify.current=onDraftChange;
- useEffect(()=>{if(!editing.current&&!pending.current)setDraft(value===null?'':String(value));},[value]);
+ const editing=useRef(false),edited=useRef(false),pending=useRef(false),notify=useRef(onDraftChange);notify.current=onDraftChange;
+ useEffect(()=>{if((!editing.current||!edited.current)&&!pending.current)setDraft(value===null?'':String(value));},[value]);
  useEffect(()=>()=>notify.current?.(false),[]);
  const report=(next:boolean)=>{pending.current=next;notify.current?.(next);};
  const apply=(text:string)=>{
@@ -28,7 +28,7 @@ export function QuantityValue({label,value,disabled,onChange,onDraftChange,min,p
   catch{setError('This value could not be applied. It is kept here; check the save notice and try again.');report(true);return false;}
   setError('');report(false);return true;
  };
- return <span className="recipe-quantity-field"><Input aria-label={label} aria-invalid={!!error} inputMode="decimal" value={draft} placeholder={placeholder} disabled={disabled} onFocus={()=>{editing.current=true;}} onChange={e=>{if(disabled)return;editing.current=true;setDraft(e.target.value);apply(e.target.value);}} onBlur={()=>{editing.current=false;if(apply(draft))setDraft(draft.trim()?String(Number(draft.replace(',','.'))):'');}}/>{error&&<span className="recipe-quantity-error" role="alert">{error}<button type="button" className="recipe-quantity-cancel" disabled={disabled} onClick={()=>{setDraft(value===null?'':String(value));setError('');editing.current=false;report(false);}}>Reset value</button></span>}</span>;
+ return <span className="recipe-quantity-field"><Input aria-label={label} aria-invalid={!!error} inputMode="decimal" value={draft} placeholder={placeholder} disabled={disabled} onFocus={()=>{editing.current=true;edited.current=false;}} onChange={e=>{if(disabled)return;editing.current=true;edited.current=true;setDraft(e.target.value);apply(e.target.value);}} onBlur={()=>{editing.current=false;if(!pending.current){setDraft(value===null?'':String(value));}edited.current=false;}}/>{error&&<span className="recipe-quantity-error" role="alert">{error}<button type="button" className="recipe-quantity-cancel" disabled={disabled} onClick={()=>{setDraft(value===null?'':String(value));setError('');editing.current=false;edited.current=false;report(false);}}>Reset value</button></span>}</span>;
 }
 
 export function RecipeUnit({item,part,disabled,onChange,onDraftChange}:{item:Item;part:RecipeInput;disabled:boolean;onChange:(part:RecipeInput)=>boolean|void;onDraftChange?:DraftChange}){
