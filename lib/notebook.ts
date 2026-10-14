@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { menu } from './menu';
 import {profileSchema,emptyProfile,validateProfile} from './prep-profile';
 import {baseInputAmount,inputUnit,measurementText} from './recipe-quantity';
+import {ingredientsReviewed} from './ingredient-review';
 
 const amount = z.number().finite().positive().max(1e9).nullable();
 const nonnegative = z.number().finite().min(0).max(1e9).nullable();
@@ -33,7 +34,7 @@ export const itemSchema = z.object({
 export const recipeSchema = z.object({ id:z.string().min(1).max(100), menuId:z.string().min(1).max(100), variant:z.string().trim().min(1).max(160),
   portions:amount, inputs:z.array(inputSchema).max(150), notes:text, active:z.boolean(), recorded:z.boolean(), weekdayPortions:nonnegative, busyPortions:nonnegative,
   reviewStatus:reviewStatusSchema.default('unverified'),reviewNote:text.default(''),
-  workshop:workshopSchema.optional(),
+  workshop:workshopSchema.optional(),ingredientsReviewed:z.boolean().optional(),
 });
 export const notebookSchema = z.object({schemaVersion:z.literal(4),reviewSourceRevision:z.string().max(100).optional(),dishes:z.array(dishSchema).max(500),processes:z.array(processSchema).max(1000),scenarios:z.array(savedScenarioSchema).max(100), distinctPairs:z.array(z.tuple([z.string(),z.string()])).max(5000), items:z.array(itemSchema).max(1000), recipes:z.array(recipeSchema).max(500), equipment:z.object({blastChiller:z.enum(['unknown','yes','no']),notes:text})});
 export type RecipeInput = z.infer<typeof inputSchema>;
@@ -61,6 +62,7 @@ export function validateNotebook(input:unknown):Notebook {
  const checkInputs=(inputs:RecipeInput[])=>{const seen=new Set<string>();for(const i of inputs){if(!ids.has(i.itemId))throw new Error('An ingredient no longer exists.');if(seen.has(i.itemId))throw new Error('An ingredient is listed twice in one recipe. Keep one entry for each ingredient.');seen.add(i.itemId);const item=n.items.find(item=>item.id===i.itemId)!;if(i.conversion&&(i.conversion.from!==inputUnit(i,item)||i.conversion.to!==item.unit||i.conversion.from===i.conversion.to))throw Error('The saved conversion must match this recipe unit and the current catalog base unit.');}};
  const rids=new Set<string>();const variantKeys=new Set<string>();
  for(const r of n.recipes){const d=dishes.get(r.menuId);if(!d)throw new Error('Unknown menu dish.');if(r.active&&d.state!=='ready')throw Error('Only ready dishes may be on the menu.');if(rids.has(r.id))throw new Error('Duplicate recipe ID.');rids.add(r.id);const key=r.menuId+':'+normalizeName(r.variant);if(variantKeys.has(key))throw new Error('That variant already exists for this dish.');variantKeys.add(key);checkInputs(r.inputs);if(r.recorded&&!completeRecipe(r))throw new Error('Add the ingredient list before marking a recipe recorded.');if(r.reviewStatus==='verified'&&(!r.recorded||!r.inputs.length))throw Error('Verify the complete ingredient list first.');}
+ for(const r of n.recipes)if(r.ingredientsReviewed&&(!r.recorded||!r.inputs.length))throw Error('Check the complete ingredient list before marking ingredients reviewed.');
  for(const r of n.recipes)if(r.workshop){const w=r.workshop;if(new Set(w.steps.map(s=>s.id)).size!==w.steps.length||new Set(w.decisions.map(s=>s.id)).size!==w.decisions.length)throw Error('Review steps and decisions must retain unique identities.');if(r.reviewStatus==='verified'&&(!w.processChecked||!w.steps.length||w.steps.some(s=>!s.text.trim())||w.decisions.some(s=>!s.done)))throw Error('Check the process and resolve open decisions before finishing this variant.');}
  for(const d of n.dishes)if(!n.recipes.some(r=>r.menuId===d.id))throw new Error('Every menu listing must retain at least one recipe.');
  const processIds=new Set<string>(),producer=new Map<string,ProductionProcess>();for(const p of n.processes){if(processIds.has(p.id))throw Error('Duplicate production process ID.');processIds.add(p.id);checkInputs(p.inputs);checkInputs(p.outputs);for(const o of p.outputs){if(producer.has(o.itemId))throw Error('An item can have only one current production process.');producer.set(o.itemId,p);}if(p.inputs.some(i=>p.outputs.some(o=>o.itemId===i.itemId)))throw Error('A process cannot consume its own output.');}
@@ -105,7 +107,9 @@ export function exportDishIngredientsCsv(n:Notebook,scope:'all'|'current'='all')
  const rows:unknown[][]=[['Dish','Variant','Ingredient / preparation','Item type','Active','Ingredient list confirmed','Recipe portions','Amount','Entered unit','Piece meaning','Base conversion','Preparation / note']];
  const byId=new Map(n.items.map(i=>[i.id,i]));
  for(const r of n.recipes.filter(r=>scope==='all'||r.active&&n.dishes.some(d=>d.id===r.menuId&&d.state==='ready'))){const title=n.dishes.find(d=>d.id===r.menuId)?.name??r.menuId;if(!r.inputs.length)rows.push([title,r.variant,'','',r.active,r.recorded,r.portions,'','','','','']);for(const part of r.inputs){const item=byId.get(part.itemId)!;rows.push([title,r.variant,item.name,item.kind==='prep'?'House-made preparation':'Bought ingredient',r.active,r.recorded,r.portions,part.amount,inputUnit(part,item),part.pieceMeaning??'',part.conversion?`1 ${part.conversion.from} = ${part.conversion.factor} ${part.conversion.to}`:inputUnit(part,item)!==item.unit?'Not recorded':'Same as catalog',part.note]);}}
- return '\uFEFF'+rows.map((row,index)=>[...row,index===0?'Export scope':scope==='current'?'Current menu':'All items'].map(safeCsvCell).join(',')).join('\r\n');
+ // Keep the existing ingredient columns and append the separate check scope.
+ let recipeRow=0;const statuses=n.recipes.filter(r=>scope==='all'||r.active&&n.dishes.some(d=>d.id===r.menuId&&d.state==='ready')).flatMap(r=>Array(Math.max(r.inputs.length,1)).fill(ingredientsReviewed(r)));
+ return '\uFEFF'+rows.map((row,index)=>[...row,index===0?'Export scope':scope==='current'?'Current menu':'All items',index===0?'Ingredients reviewed':statuses[recipeRow++]].map(safeCsvCell).join(',')).join('\r\n');
 }
 
 /** Deterministic payload migration. Database callers persist this under a revision CAS. */

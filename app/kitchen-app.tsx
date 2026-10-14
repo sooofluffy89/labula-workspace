@@ -2,6 +2,7 @@
 import {MenuScopeProvider} from './menu-scope-context';
 import {menuUsage} from '@/lib/menu-scope';
 import {DishWorkspace} from './dish-workspace';
+import {withIngredientCatalog} from '@/lib/ingredient-review';
 import {CatalogWorkspace} from './catalog-workspace';
 import {MenuScenarioPlanner,StockSetupDialog} from './menu-scenarios';
 import {exportProductionCsv} from '@/lib/production';
@@ -102,7 +103,7 @@ export default function KitchenApp({account=''}:{account?:string}={}){
  const selectedItem=data.items.find(i=>i.id===editing);
  const chooseDish=(id:string)=>{setDishOpenRequest(v=>v+1);setSelected(id);setTab('recipes');};
  const createItem:CreateItem=(name,done)=>setCreating({name,done});
- const commitItem=(item:Item)=>{const next={...data,items:data.items.map(i=>i.id===item.id?item:i)};try{validateNotebook(next);}catch(e){return validationMessage(e);}update(()=>next);toast.success('Item updated across all recipes.');return null;};
+ const commitItem=(item:Item)=>{const next=withIngredientCatalog(data,data.items.map(i=>i.id===item.id?item:i));try{validateNotebook(next);}catch(e){return validationMessage(e);}update(()=>next);toast.success('Item changes added to the notebook.');return null;};
  const exportData=(kind:'json'|'csv')=>{try{download(`labula-kitchen-${new Date().toISOString().slice(0,10)}.${kind}`,kind==='json'?JSON.stringify(makeNotebookDraft(data,nb.getSavedBase(),nb.user,Object.values(aliasDrafts).filter(hasAliasChanges),nb.getSaveRecovery(),nb.getCatalogRecovery(),nb.getBulkRecovery(),getPrepDraft()),null,2):exportDishIngredientsCsv(data,'current'),kind==='json'?'application/json':'text/csv;charset=utf-8');}catch(e){toast.error(validationMessage(e));}};
  useEffect(()=>{const exportLocal=()=>exportData('json');window.addEventListener(accessDraftEvent,exportLocal);window.dispatchEvent(new CustomEvent(accessDraftAvailableEvent,{detail:true}));return()=>{window.removeEventListener(accessDraftEvent,exportLocal);window.dispatchEvent(new CustomEvent(accessDraftAvailableEvent,{detail:false}));};});
  useEffect(()=>registerSignOutWork(()=>nb.loaded&&(nb.dirty||nb.saving||nb.operationPending||nb.savePending||aliasDirty||prepDirty)?{label:'Recipe notebook draft',safe:true,value:makeNotebookDraft(data,nb.getSavedBase(),nb.user,Object.values(aliasDrafts).filter(hasAliasChanges),nb.getSaveRecovery(),nb.getCatalogRecovery(),nb.getBulkRecovery(),getPrepDraft())}:null));

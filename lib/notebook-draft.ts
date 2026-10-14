@@ -1,3 +1,4 @@
+import {ingredientContentChanged,ingredientsReviewed} from './ingredient-review';
 import {hasMeasurementMetadata,measurement,measurementText} from './recipe-quantity';
 import {prepDraftSchema,type PrepDraft} from './prep-draft';
 import {z} from 'zod';
@@ -82,9 +83,10 @@ export function planNotebookRestore(file:NotebookDraft,shared:Notebook,decisions
   dest.inputs=current.inputs.filter(p=>wanted.has(p.itemId));for(const id of wanted)if(!currentIds.has(id))dest.inputs.push({itemId:id,amount:null,note:''});
   const ingredientsChanged=!same(current.inputs,dest.inputs);
   dest.active=choose('active:'+current.id,recipeTitle(current,shared)+' · on the menu',original?.active,imported.active,current.active,v=>v?'Active':'Inactive');
-  if(ingredientsChanged){dest.recorded=false;dest.reviewStatus='unverified';if(dest.workshop)dest.workshop={...dest.workshop,processChecked:false};notices.add('Restored ingredient lists are In progress. Confirm Completed after checking the full list.');}
+  if(ingredientsChanged){dest.recorded=false;dest.ingredientsReviewed=false;dest.reviewStatus='unverified';if(dest.workshop)dest.workshop={...dest.workshop,processChecked:false};notices.add('Restored ingredient lists are In progress. Confirm Completed after checking the full list.');}
   else dest.recorded=choose('recorded:'+current.id,recipeTitle(current,shared)+' · ingredient list confirmation',original?.recorded,imported.recorded,current.recorded,v=>v?'Completed':'Not confirmed',imported.recorded&&!current.recorded);
   if(!dest.inputs.length)dest.recorded=false;
+  if(!dest.recorded&&dest.ingredientsReviewed)dest.ingredientsReviewed=false;
  }
  if(!same(file.notebook.dishes,shared.dishes)||!same(file.notebook.processes,shared.processes)||!same(file.notebook.scenarios,shared.scenarios))notices.add('Dish details, production and saved scenarios require an owner or Manager restore. They remain in the imported file.');
  let error='';try{validateNotebook(next);validateOrdinaryEdit(shared,next);serializeNotebook(next);}catch(e){error=e instanceof Error?e.message:'Review the selected changes.';}
@@ -176,16 +178,23 @@ function planManagedNotebookRestore(file:NotebookDraft,shared:Notebook,decisions
  for(const imported of file.notebook.recipes){const id=recipeMap.get(imported.id),menuId=dishMap.get(imported.menuId);if(!id||!menuId)continue;const current=shared.recipes.find(r=>r.id===id),old=id===imported.id?base?.recipes.find(r=>r.id===imported.id):undefined;
   if(current&&current.menuId!==menuId){mappingErrors.add(`Variant “${imported.variant}” belongs to a different current dish. Map it to a variant under the selected dish.`);continue;}
   const label=(next.dishes.find(d=>d.id===menuId)?.name??menuId)+' · '+imported.variant,incoming=mapParts(imported.inputs,label);let dest=next.recipes.find(r=>r.id===id);
-  if(!dest){dest={...structuredClone(imported),id,menuId,inputs:incoming,active:false,recorded:false,reviewStatus:'unverified'};next.recipes.push(dest);notices.add(`${label}: a restored new variant starts unconfirmed and unverified.`);}
+  if(!dest){dest={...structuredClone(imported),id,menuId,inputs:incoming,active:false,recorded:false,ingredientsReviewed:false,reviewStatus:'unverified'};next.recipes.push(dest);notices.add(`${label}: a restored new variant starts unconfirmed and unverified.`);}
   const initial=current??dest;
   for(const field of ['variant','portions','notes','weekdayPortions','busyPortions','reviewNote'] as const)(dest as unknown as Record<string,unknown>)[field]=choose('recipe:'+imported.id+':'+field,label+' · '+restoreFieldLabel(field),old?.[field],imported[field],initial[field]);
   if(imported.workshop)dest.workshop=choose('recipe:'+imported.id+':workshop',label+' · menu review',old?.workshop,imported.workshop,initial.workshop);
   if(current)dest.inputs=mergeParts(imported.id,label,incoming,current.inputs,baseParts(old?.inputs));
   dest.active=choose('active:'+imported.id,label+' · on menu',old?.active,imported.active,initial.active,v=>v?'On menu':'Off menu');
-  const ingredientChange=!current||!same(current.inputs,dest.inputs)||current.portions!==dest.portions;
-  if(ingredientChange){dest.recorded=false;dest.reviewStatus='unverified';notices.add(`${label}: restored ingredient or portion changes require a fresh list confirmation and verification.`);}
+  const ingredientChange=!current||ingredientContentChanged(current,dest,shared.items,next.items);
+  if(ingredientChange){dest.recorded=false;dest.ingredientsReviewed=false;dest.reviewStatus='unverified';notices.add(`${label}: restored ingredient or portion changes require a fresh list confirmation and verification.`);}
   else{dest.recorded=choose('recorded:'+imported.id,label+' · ingredient list confirmation',old?.recorded,imported.recorded,current.recorded,v=>v?'Ingredients listed':'Not confirmed',imported.recorded&&!current.recorded);dest.reviewStatus=choose('recipe:'+imported.id+':reviewStatus',label+' · review status',old?.reviewStatus,imported.reviewStatus,current.reviewStatus);}
-  if(!dest.inputs.length){dest.recorded=false;dest.reviewStatus='unverified';}
+  if(!ingredientChange&&current){
+   if(imported.ingredientsReviewed!==undefined)dest.ingredientsReviewed=choose('recipe:'+imported.id+':ingredientsReviewed',label+' · ingredient review',old?.ingredientsReviewed,imported.ingredientsReviewed,ingredientsReviewed(current),v=>v?'Ingredients reviewed':'To review',imported.ingredientsReviewed&&!ingredientsReviewed(current));
+   else if(current.ingredientsReviewed!==undefined)dest.ingredientsReviewed=current.ingredientsReviewed;
+   else if(ingredientsReviewed(current)&&dest.reviewStatus!=='verified')dest.ingredientsReviewed=true;
+  }
+  if(!dest.inputs.length){dest.recorded=false;if(dest.ingredientsReviewed!==undefined)dest.ingredientsReviewed=false;dest.reviewStatus='unverified';}
+  if(!dest.recorded&&dest.ingredientsReviewed)dest.ingredientsReviewed=false;
+  if(!ingredientChange&&current&&ingredientsReviewed(current)&&dest.ingredientsReviewed===undefined&&!same(dest.workshop,current.workshop))dest.ingredientsReviewed=true;
   if(dest.workshop&&(ingredientChange||!same(dest.workshop,current?.workshop))){dest.workshop={...dest.workshop,processChecked:false};dest.reviewStatus='unverified';}
  }
  const processMap=domainMap('process',file.notebook.processes,shared.processes,base?.processes);

@@ -17,29 +17,32 @@ try{
 
  const issues=m.reviewIssues(n,n.recipes[0]);
  assert.equal(new Set(issues.map(i=>i.id)).size,issues.length,'each issue needs a stable unique navigation target');
- for(const kind of ['list','portions','amount','conversion','process','step','followup'])assert(issues.some(i=>i.kind===kind),'expose the concrete '+kind+' gap');
- for(const issue of issues){assert(issue.message.trim());assert(['ingredients','portions','process','decisions'].includes(issue.target));assert.equal(typeof issue.blocking,'boolean');}
+ for(const kind of ['portions','amount','conversion'])assert(issues.some(i=>i.kind===kind),'expose the concrete '+kind+' gap');
+ for(const issue of issues){assert(issue.message.trim());assert(['ingredients','portions'].includes(issue.target));assert.equal(typeof issue.blocking,'boolean');}
  assert(issues.some(i=>i.kind==='amount'&&i.itemId===unknown.id&&i.target==='ingredients'&&!i.blocking));
  assert(issues.some(i=>i.kind==='conversion'&&i.itemId===counted.id&&i.target==='ingredients'&&!i.blocking));
  assert(issues.some(i=>i.kind==='portions'&&i.target==='portions'&&!i.blocking));
- assert(issues.some(i=>i.kind==='step'&&i.stepId==='guidance-step'&&i.target==='process'&&i.blocking));
- assert(issues.some(i=>i.kind==='followup'&&i.target==='decisions'&&i.blocking));
+ assert(issues.every(i=>!i.blocking),'process steps and open tests do not block checking ingredients');
+ assert(!issues.some(i=>['process','step','followup'].includes(i.kind)),'ingredient guidance excludes process and follow-up gates');
  assert.notEqual(m.reviewSummary(n,n.recipes[0]),'To review','the summary must describe actual remaining work');
- assert(!m.reviewReady(n.recipes[0]));
+ assert(m.reviewReady(n.recipes[0]),'a nonempty ingredient list is eligible for its own check');
+ assert(!m.menuReviewComplete(n.recipes[0]),'unreviewed records do not inherit completion');
+ const empty={...n.recipes[0],inputs:[]};assert(!m.reviewReady(empty));assert(m.reviewIssues(n,empty).some(i=>i.kind==='list'&&i.blocking));
 
  const ready=structuredClone(n);
  Object.assign(ready.recipes[0],{recorded:true,reviewStatus:'verified',workshop:{...ready.recipes[0].workshop,processChecked:true,steps:[{id:'guidance-step',phase:'before',text:'Prepare the garnish.'}],decisions:ready.recipes[0].workshop.decisions.map(d=>({...d,done:true}))}});
  m.validateNotebook(ready);
- assert(m.reviewReady(ready.recipes[0]),'unknown amounts, portions and conversion do not prevent checking the list and process');
+ assert(m.reviewReady(ready.recipes[0]),'unknown amounts, portions and conversion do not prevent checking ingredients');
  const remaining=m.reviewIssues(ready,ready.recipes[0]);
  assert(remaining.length>=3);assert(remaining.every(i=>!i.blocking),'checked-with-quantity-gaps remains eligible to finish');
- assert.match(m.reviewLabel(ready,ready.recipes[0]),/quantities pending/);
+ assert.equal(m.reviewLabel(ready,ready.recipes[0]),'Ingredients reviewed');
  assert.match(m.reviewSummary(ready,ready.recipes[0]),/amount|portion|conversion|quantit/i,'remaining quantitative work stays visible');
 
  const legacy=structuredClone(ready);delete legacy.recipes[0].workshop;
- assert(m.reviewIssues(legacy,legacy.recipes[0]).some(i=>i.kind==='process'&&i.blocking),'legacy list verification must not claim a checked process');
+ assert(m.ingredientsReviewed(legacy.recipes[0]),'known verified legacy ingredient lists remain checked without claiming any process state');
+ assert(!m.reviewIssues(legacy,legacy.recipes[0]).some(i=>i.blocking),'missing historical process does not block ingredient check');
  const malformed=structuredClone(ready);malformed.recipes[0].workshop.steps[0].text='  ';
- assert(m.reviewIssues(malformed,malformed.recipes[0]).some(i=>i.kind==='step'&&i.blocking));
+ assert(!m.reviewIssues(malformed,malformed.recipes[0]).some(i=>i.kind==='step'),'blank process steps do not enter ingredient guidance');
 
  const checked=ready.recipes[0];
  checked.workshop.beforeMinutes=6;checked.workshop.beforeTiming={basis:'batch',portions:12,evidence:'estimate'};
@@ -59,7 +62,7 @@ try{
  assert.deepEqual(noteOnly.recipes[0].inputs[0],{...checked.inputs[0],note:'New cut'});
  assert.deepEqual(noteOnly.recipes.find(r=>r.id===otherId),ready.recipes.find(r=>r.id===otherId));
  assert.deepEqual(noteOnly.processes,ready.processes);
- const older=structuredClone(ready);delete older.recipes[0].inputs[0].pieceMeaning;
+ const older=structuredClone(ready);Object.assign(older.recipes[0],{ingredientsReviewed:false,recorded:false,reviewStatus:'unverified'});delete older.recipes[0].inputs[0].pieceMeaning;
  assert.throws(()=>m.validateOrdinaryEdit(ready,older,true),/preserve saved ingredient units/);
 
  const emptyTime=m.phaseTimeSummary(undefined,'before');
@@ -80,5 +83,5 @@ try{
  assert.deepEqual(restored.next.recipes[0].inputs[0],shared.recipes[0].inputs[0],'default restore retains the shared complete measurement');
  restored=m.planNotebookRestore(draft(local,ready),shared,{[conflict]:'draft'}, {},true);
  assert.equal(restored.error,'');assert.deepEqual(restored.next.recipes[0].inputs[0],local.recipes[0].inputs[0],'explicit resolution restores amount, meaning and conversion together');
- console.log('PASS menu review guidance: concrete navigable gaps, checked-with-unknown eligibility, legacy scope, no-op checks, scoped piece meaning, explicit conversions, time summaries, export and atomic recovery.');
+ console.log('PASS menu review guidance: concrete navigable gaps, ingredient-only unknown eligibility, legacy scope, no-op checks, scoped piece meaning, explicit conversions, time summaries, export and atomic recovery.');
 }finally{await rm(dir,{recursive:true,force:true});}
