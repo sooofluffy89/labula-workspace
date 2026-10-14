@@ -29,8 +29,8 @@ export function addDishVariant(n:Notebook,id:string,name:string):Notebook{
 export function patchDishVariant(n:Notebook,id:string,patch:Partial<Recipe>):Notebook{
  const recipe=n.recipes.find(r=>r.id===id);if(!recipe)throw new Error('This variant no longer exists.');const dish=n.dishes.find(d=>d.id===recipe.menuId);if(patch.active&&dish?.state!=='ready')throw new Error('Add the dish to the menu before activating a variant.');
  if(patch.variant!==undefined){patch={...patch,variant:named(patch.variant,'variant name')};if(n.recipes.some(r=>r.id!==id&&r.menuId===recipe.menuId&&normalizeName(r.variant)===normalizeName(patch.variant!)))throw new Error('That variant already exists for this dish.');}
- const ingredientsChanged='inputs' in patch||'portions' in patch;
- const processChanged=patch.workshop!==undefined&&JSON.stringify([patch.workshop.steps,patch.workshop.beforeMinutes,patch.workshop.orderMinutes])!==JSON.stringify([recipe.workshop?.steps??[],recipe.workshop?.beforeMinutes??null,recipe.workshop?.orderMinutes??null])||patch.notes!==undefined&&patch.notes!==recipe.notes;
+ const ingredientsChanged=patch.inputs!==undefined&&JSON.stringify(patch.inputs)!==JSON.stringify(recipe.inputs)||patch.portions!==undefined&&patch.portions!==recipe.portions;
+ const processChanged=patch.workshop!==undefined&&JSON.stringify([patch.workshop.steps,patch.workshop.beforeMinutes,patch.workshop.orderMinutes,patch.workshop.beforeTiming,patch.workshop.orderTiming])!==JSON.stringify([recipe.workshop?.steps??[],recipe.workshop?.beforeMinutes??null,recipe.workshop?.orderMinutes??null,recipe.workshop?.beforeTiming,recipe.workshop?.orderTiming])||patch.notes!==undefined&&patch.notes!==recipe.notes;
  const workshop=patch.workshop??recipe.workshop;
  return {...n,recipes:n.recipes.map(r=>r.id===id?{...r,...patch,...(ingredientsChanged?{recorded:false}:{}),...(ingredientsChanged||processChanged?{reviewStatus:'unverified' as const,...(workshop?{workshop:{...workshop,processChecked:false}}:{})}:{})}:r)};
 }

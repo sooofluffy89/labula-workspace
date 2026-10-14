@@ -1,3 +1,4 @@
+import {baseInputAmount,inputUnit,measurementText} from './recipe-quantity';
 import {menuScope} from './menu-scope';
 import {approvedProduction,type ApprovedProductionTask} from './approved-production';
 import {duplicatePairs} from './catalog';
@@ -7,7 +8,7 @@ import {appliedProductionItems,productionExcluded,type AppliedRecord} from './re
 export const processForItem=(n:Notebook,id:string)=>n.processes.find(p=>p.outputs.some(o=>o.itemId===id));
 /** Explicit process is the current source; retained per-item fields are historical. */
 export const productionInputs=(n:Notebook,id:string):RecipeInput[]=>processForItem(n,id)?.inputs??n.items.find(i=>i.id===id)?.inputs??[];
-export function outputAmount(n:Notebook,id:string){const p=processForItem(n,id);return p?(p.outputs.find(o=>o.itemId===id)?.amount??null):(n.items.find(i=>i.id===id)?.yieldAmount??null);}
+export function outputAmount(n:Notebook,id:string){const p=processForItem(n,id);const item=n.items.find(i=>i.id===id),output=p?.outputs.find(o=>o.itemId===id);return p?(item&&output?baseInputAmount(output,item):null):(item?.yieldAmount??null);}
 export function newProcess(n:Notebook,id:string):ProductionProcess{
  const item=n.items.find(i=>i.id===id);if(!item)throw Error('Item no longer exists.');const b=item.prepProfile.batch;
  const conversion=b?.output.unit==='kg'&&item.unit==='g'?1000:b?.output.unit==='l'&&item.unit==='ml'?1000:b?.output.unit===item.unit||b?.output.unit==='pieces'&&item.unit==='pcs'?1:null;
@@ -103,10 +104,10 @@ export function scenarioNotebook(n:Notebook,recipeIds:string[],fingerprint:strin
 }
 export const matchesCatalogName=(item:Item,q:string)=>[item.name,...item.aliases].some(name=>normalizeName(name).includes(normalizeName(q)));
 
-/** Task work appears once. Component rows carry amounts in the referenced item's base unit. */
+/** Task work appears once. Component rows retain their entered units and explicit conversion notes. */
 export function exportProductionCsv(n:Notebook,records:AppliedRecord[]=[],scope:'all'|'current'='all'){
  const eligible=menuScope(n,records).menu;
  const rows:unknown[][]=[['Record type','Task ID','Task name','Item ID','Item name','Amount per batch','Base unit','Person-minutes per batch','Unattended minutes per batch','Batches per week','External use','Review status','Review source','Method / note']];
- for(const p of n.processes.filter(p=>scope==='all'||p.outputs.some(o=>eligible.has(o.itemId)))){rows.push(['task',p.id,p.name,'','','','',p.activeMinutes,p.passiveMinutes,p.batchesPerWeek,p.externalUse,p.reviewStatus,p.sourceReviewId,p.method]);for(const [kind,parts] of [['input',p.inputs],['output',p.outputs]] as const)for(const part of parts){const item=n.items.find(i=>i.id===part.itemId);rows.push([kind,p.id,p.name,part.itemId,item?.name??'',part.amount,item?.unit??'','','','','','','',part.note]);}}
+ for(const p of n.processes.filter(p=>scope==='all'||p.outputs.some(o=>eligible.has(o.itemId)))){rows.push(['task',p.id,p.name,'','','','',p.activeMinutes,p.passiveMinutes,p.batchesPerWeek,p.externalUse,p.reviewStatus,p.sourceReviewId,p.method]);for(const [kind,parts] of [['input',p.inputs],['output',p.outputs]] as const)for(const part of parts){const item=n.items.find(i=>i.id===part.itemId);rows.push([kind,p.id,p.name,part.itemId,item?.name??'',part.amount,item?inputUnit(part,item):'','','','','','','',part.note+(item?' · '+measurementText(part,item):'')]);}}
  return '\uFEFF'+rows.map((row,index)=>[...row,index===0?'Export scope':scope==='current'?'Current menu':'All items'].map(safeCsvCell).join(',')).join('\r\n');
 }

@@ -1,3 +1,4 @@
+import {inputUnit} from './recipe-quantity';
 import {menuUsage} from './menu-scope';
 import type {AppliedRecord} from './review-v2/applied';
 import {appliedProductionItems,productionExcluded} from './review-v2/applied';
@@ -42,7 +43,7 @@ export function repeatedWorkRows(rows:InsightRow[]){return rows.filter(r=>r.item
 export function outputText(r:InsightRow){
  if(r.productionHeld)return 'Production outside review';if(r.reviewed)return 'See approved process samples';
  if(r.scopeReview)return 'Labula amount not separated';
- if(r.process){const o=r.process.outputs.find(o=>o.itemId===r.item.id);return o?.amount!=null?`${numberText(o.amount)} ${r.item.unit} · current task`:'Current task output not known';}
+ if(r.process){const o=r.process.outputs.find(o=>o.itemId===r.item.id);return o?.amount!=null?`${numberText(o.amount)} ${inputUnit(o,r.item)} · current task`:'Current task output not known';}
  if(!batchCompletion(r.item.prepProfile).applicable)return 'No advance batch';
  const o=r.batch?.output;if(!o||o.unknown||!positive(o.amount)||!o.unit)return 'Not known';
  return o.unit==='other'?`${numberText(o.amount)} · unit entered: “${o.unitOther.trim()}”`:`${numberText(o.amount)} ${o.unit}`;

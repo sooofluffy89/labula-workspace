@@ -1,3 +1,4 @@
+import {hasMeasurementMetadata,measurement,measurementText} from './recipe-quantity';
 import {prepDraftSchema,type PrepDraft} from './prep-draft';
 import {z} from 'zod';
 import {migrateNotebook,newItem,recipeTitle,validateNotebook,type Notebook,type Item,type RecipeInput,normalizeName} from './notebook';
@@ -129,7 +130,7 @@ function planManagedNotebookRestore(file:NotebookDraft,shared:Notebook,decisions
   for(const id of all){const before=old?.find(p=>p.itemId===id),draft=incoming.find(p=>p.itemId===id),now=current.find(p=>p.itemId===id),name=next.items.find(i=>i.id===id)?.name??id;
    if(!choose('input:'+key+':'+id,label+' · '+name,old?!!before:undefined,!!draft,!!now,v=>v?'Listed':'Not listed'))continue;
    if(!draft){if(now)result.push({...now});continue;}
-   const part:RecipeInput={itemId:id,amount:choose('amount:'+key+':'+id,label+' · '+name+' amount',before?.amount,draft.amount,now?.amount??null),note:choose('input-note:'+key+':'+id,label+' · '+name+' note',before?.note,draft.note,now?.note??'')};result.push(part);
+   const item=next.items.find(i=>i.id===id)!;const explicit=[before,draft,now].some(p=>p&&hasMeasurementMetadata(p));const chosen=explicit?choose('measurement:'+key+':'+id,label+' · '+name+' amount and unit',before?measurement(before,item):undefined,measurement(draft,item),now?measurement(now,item):{amount:null,unit:item.unit,pieceMeaning:'',conversion:null},v=>measurementText({...v,itemId:id,note:''},item)):null;const note=choose('input-note:'+key+':'+id,label+' · '+name+' note',before?.note,draft.note,now?.note??'');const part:RecipeInput=chosen?(now&&same(measurement(now,item),chosen)?{...now,note}:{itemId:id,amount:chosen.amount,note,unit:chosen.unit,pieceMeaning:chosen.pieceMeaning,conversion:chosen.conversion}):{itemId:id,amount:choose('amount:'+key+':'+id,label+' · '+name+' amount',before?.amount,draft.amount,now?.amount??null),note};result.push(part);
   }return result;
  };
  // Restore only after every source ingredient has an explicit identity mapping.
