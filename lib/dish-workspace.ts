@@ -7,7 +7,7 @@ export function emptyDishVariant(menuId:string,variant='Standard'):Recipe{return
 export function addDish(n:Notebook,name:string,category:Category,copyId?:string):{notebook:Notebook;id:string}{
  const title=named(name,'dish name');if(n.dishes.some(d=>normalizeName(d.name)===normalizeName(title)))throw new Error('A dish with this name already exists. Choose a different name.');
  const source=copyId?n.dishes.find(d=>d.id===copyId):undefined;if(copyId&&!source)throw new Error('The source dish no longer exists.');
- const id=crypto.randomUUID();const recipes=source?n.recipes.filter(r=>r.menuId===copyId).map(r=>({...r,id:crypto.randomUUID(),menuId:id,inputs:r.inputs.map(p=>({...p})),active:false,recorded:false,reviewStatus:'unverified' as const})):[emptyDishVariant(id)];
+ const id=crypto.randomUUID();const recipes=source?n.recipes.filter(r=>r.menuId===copyId).map(r=>({...r,id:crypto.randomUUID(),menuId:id,inputs:r.inputs.map(p=>({...p})),...(r.workshop?{workshop:{...structuredClone(r.workshop),processChecked:false}}:{}),active:false,recorded:false,reviewStatus:'unverified' as const})):[emptyDishVariant(id)];
  return {id,notebook:{...n,dishes:[...n.dishes,{id,name:title,category,note:source?.note??'',state:'draft'}],recipes:[...n.recipes,...recipes]}};
 }
 export function updateDish(n:Notebook,id:string,patch:{name?:string;category?:Category;note?:string}):Notebook{
@@ -29,7 +29,10 @@ export function addDishVariant(n:Notebook,id:string,name:string):Notebook{
 export function patchDishVariant(n:Notebook,id:string,patch:Partial<Recipe>):Notebook{
  const recipe=n.recipes.find(r=>r.id===id);if(!recipe)throw new Error('This variant no longer exists.');const dish=n.dishes.find(d=>d.id===recipe.menuId);if(patch.active&&dish?.state!=='ready')throw new Error('Add the dish to the menu before activating a variant.');
  if(patch.variant!==undefined){patch={...patch,variant:named(patch.variant,'variant name')};if(n.recipes.some(r=>r.id!==id&&r.menuId===recipe.menuId&&normalizeName(r.variant)===normalizeName(patch.variant!)))throw new Error('That variant already exists for this dish.');}
- const ingredientsChanged='inputs' in patch||'portions' in patch;return {...n,recipes:n.recipes.map(r=>r.id===id?{...r,...patch,...(ingredientsChanged?{recorded:false,reviewStatus:'unverified' as const}:{})}:r)};
+ const ingredientsChanged='inputs' in patch||'portions' in patch;
+ const processChanged=patch.workshop!==undefined&&JSON.stringify([patch.workshop.steps,patch.workshop.beforeMinutes,patch.workshop.orderMinutes])!==JSON.stringify([recipe.workshop?.steps??[],recipe.workshop?.beforeMinutes??null,recipe.workshop?.orderMinutes??null])||patch.notes!==undefined&&patch.notes!==recipe.notes;
+ const workshop=patch.workshop??recipe.workshop;
+ return {...n,recipes:n.recipes.map(r=>r.id===id?{...r,...patch,...(ingredientsChanged?{recorded:false}:{}),...(ingredientsChanged||processChanged?{reviewStatus:'unverified' as const,...(workshop?{workshop:{...workshop,processChecked:false}}:{})}:{})}:r)};
 }
 export function appendRecipeInputs(inputs:RecipeInput[],ids:readonly string[]):RecipeInput[]{const existing=new Set(inputs.map(p=>p.itemId));const next=[...inputs];for(const itemId of ids)if(!existing.has(itemId)){existing.add(itemId);next.push({itemId,amount:null,note:''});}if(next.length>150)throw new Error('A recipe can contain up to 150 items.');return next;}
 export function replaceRecipeInput(inputs:RecipeInput[],source:string,target:string):RecipeInput[]{if(source===target)return inputs;if(!inputs.some(p=>p.itemId===source))throw new Error('The ingredient to replace is no longer in this recipe.');if(inputs.some(p=>p.itemId===target))throw new Error('That ingredient is already in this recipe. Remove or edit its existing entry.');return inputs.map(p=>p.itemId===source?{...p,itemId:target}:p);}

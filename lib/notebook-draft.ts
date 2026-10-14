@@ -81,7 +81,7 @@ export function planNotebookRestore(file:NotebookDraft,shared:Notebook,decisions
   dest.inputs=current.inputs.filter(p=>wanted.has(p.itemId));for(const id of wanted)if(!currentIds.has(id))dest.inputs.push({itemId:id,amount:null,note:''});
   const ingredientsChanged=!same(current.inputs,dest.inputs);
   dest.active=choose('active:'+current.id,recipeTitle(current,shared)+' · on the menu',original?.active,imported.active,current.active,v=>v?'Active':'Inactive');
-  if(ingredientsChanged){dest.recorded=false;dest.reviewStatus='unverified';notices.add('Restored ingredient lists are In progress. Confirm Completed after checking the full list.');}
+  if(ingredientsChanged){dest.recorded=false;dest.reviewStatus='unverified';if(dest.workshop)dest.workshop={...dest.workshop,processChecked:false};notices.add('Restored ingredient lists are In progress. Confirm Completed after checking the full list.');}
   else dest.recorded=choose('recorded:'+current.id,recipeTitle(current,shared)+' · ingredient list confirmation',original?.recorded,imported.recorded,current.recorded,v=>v?'Completed':'Not confirmed',imported.recorded&&!current.recorded);
   if(!dest.inputs.length)dest.recorded=false;
  }
@@ -178,12 +178,14 @@ function planManagedNotebookRestore(file:NotebookDraft,shared:Notebook,decisions
   if(!dest){dest={...structuredClone(imported),id,menuId,inputs:incoming,active:false,recorded:false,reviewStatus:'unverified'};next.recipes.push(dest);notices.add(`${label}: a restored new variant starts unconfirmed and unverified.`);}
   const initial=current??dest;
   for(const field of ['variant','portions','notes','weekdayPortions','busyPortions','reviewNote'] as const)(dest as unknown as Record<string,unknown>)[field]=choose('recipe:'+imported.id+':'+field,label+' · '+restoreFieldLabel(field),old?.[field],imported[field],initial[field]);
+  if(imported.workshop)dest.workshop=choose('recipe:'+imported.id+':workshop',label+' · menu review',old?.workshop,imported.workshop,initial.workshop);
   if(current)dest.inputs=mergeParts(imported.id,label,incoming,current.inputs,baseParts(old?.inputs));
   dest.active=choose('active:'+imported.id,label+' · on menu',old?.active,imported.active,initial.active,v=>v?'On menu':'Off menu');
   const ingredientChange=!current||!same(current.inputs,dest.inputs)||current.portions!==dest.portions;
   if(ingredientChange){dest.recorded=false;dest.reviewStatus='unverified';notices.add(`${label}: restored ingredient or portion changes require a fresh list confirmation and verification.`);}
   else{dest.recorded=choose('recorded:'+imported.id,label+' · ingredient list confirmation',old?.recorded,imported.recorded,current.recorded,v=>v?'Ingredients listed':'Not confirmed',imported.recorded&&!current.recorded);dest.reviewStatus=choose('recipe:'+imported.id+':reviewStatus',label+' · review status',old?.reviewStatus,imported.reviewStatus,current.reviewStatus);}
   if(!dest.inputs.length){dest.recorded=false;dest.reviewStatus='unverified';}
+  if(dest.workshop&&(ingredientChange||!same(dest.workshop,current?.workshop))){dest.workshop={...dest.workshop,processChecked:false};dest.reviewStatus='unverified';}
  }
  const processMap=domainMap('process',file.notebook.processes,shared.processes,base?.processes);
  for(const imported of file.notebook.processes){const id=processMap.get(imported.id);if(!id)continue;const current=shared.processes.find(p=>p.id===id),old=id===imported.id?base?.processes.find(p=>p.id===imported.id):undefined;
