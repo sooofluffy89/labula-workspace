@@ -1,3 +1,4 @@
+import {tmpdir} from 'node:os';
 import assert from 'node:assert/strict';
 import {writeFile} from 'node:fs/promises';
 import {harness,sleep} from './sync-harness.mjs';
@@ -22,4 +23,4 @@ for(const withComment of (process.env.PREP_NOTES_BASELINE?[false]:[false,true]))
  results.push({scenario,withComment,run,httpDelayMs:60,sqlDelayMs:2,peerPollIntervalMs:interval,localMaxMs:Math.max(...taps),firstServerCommitMs:firstCommit-start,lastServerCommitMs:lastCommit-start,noteServerCommitMs:noteId?commits.find(c=>c.ids.includes(noteId)).at-start:null,allAcknowledgedMs:acknowledgedAt-start,finishSummaryMs,confirmMs,lastCommitToPeerMs:visibleAt-lastCommit,actionToPeerMs:visibleAt-start,commentReadMs,writes,totalWithPeer:{http:h.metrics.http,bytes:h.metrics.bytes,sqlTrips:h.metrics.trips}});
  c.dispose();notes?.dispose();peer.dispose();h.db.close();
 }
-await writeFile(process.env.PREP_NOTES_BENCH_OUT??'/private/tmp/labula-prep-notes-benchmark.json',JSON.stringify({environment:'Actual controllers, route handlers and in-memory SQLite transactions. Synthetic 60 ms HTTP RTT, 2 ms SQL RTT. Second client polls at 2500 ms from burst start. Timings include committed writes, not only local UI. No production writes.',results},null,2));console.log(JSON.stringify(results));
+await writeFile(process.env.PREP_NOTES_BENCH_OUT??tmpdir()+'/labula-prep-notes-benchmark.json',JSON.stringify({environment:'Actual controllers, route handlers and in-memory SQLite transactions. Synthetic 60 ms HTTP RTT, 2 ms SQL RTT. Second client polls at 2500 ms from burst start. Timings include committed writes, not only local UI. No production writes.',results},null,2));console.log(JSON.stringify(results));

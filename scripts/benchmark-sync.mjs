@@ -1,7 +1,8 @@
+import {tmpdir} from 'node:os';
 import {harness,sleep} from './sync-harness.mjs';
 import {writeFile,copyFile,mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
-const out=process.env.SYNC_OUT??'/private/tmp/labula-sync-benchmark.json';
+const out=process.env.SYNC_OUT??tmpdir()+'/labula-sync-benchmark.json';
 const httpDelay=Number(process.env.SYNC_HTTP_MS??60),sqlDelay=Number(process.env.SYNC_SQL_MS??2),runs=Number(process.env.SYNC_RUNS??5),results=[];
 for(const scenario of (process.env.SYNC_SATURDAY?['Saturday: 40 daily + 20 twice-weekly + 20 weekly']:['80 answers and Finish','30 Ready']))for(let run=0;run<runs;run++){
  const h=await harness({httpDelay,sqlDelay,saturday:!!process.env.SYNC_SATURDAY,bundlePath:process.env.SYNC_BUNDLE});

@@ -1,3 +1,4 @@
+import {tmpdir} from 'node:os';
 import assert from 'node:assert/strict';
 import {writeFile} from 'node:fs/promises';
 import {harness,sleep} from './sync-harness.mjs';
@@ -14,4 +15,4 @@ for(const scenario of ['publish to peer','Ready to peer'])for(let run=1;run<=5;r
  const acknowledgedAt=performance.now();await delivered;const commit=h.metrics.commits.at(-1)?.at;assert.ok(commit);
  results.push({scenario,run,intervalMs:interval,commitToPeerMs:visibleAt-commit,actionToPeerMs:visibleAt-start,acknowledgedMs:acknowledgedAt-start,http:h.metrics.http,bytes:h.metrics.bytes,sqlTrips:h.metrics.trips});owner.dispose();peer.dispose();h.db.close();
 }
-await writeFile(process.env.SYNC_PEER_OUT??'/private/tmp/labula-sync-peer.json',JSON.stringify({environment:'Real SQLite/API/controllers; 60 ms synthetic HTTP + 2 ms SQL round trip; configured polling interval; UI painting measured separately in browser',results},null,2));console.log(JSON.stringify(results));
+await writeFile(process.env.SYNC_PEER_OUT??tmpdir()+'/labula-sync-peer.json',JSON.stringify({environment:'Real SQLite/API/controllers; 60 ms synthetic HTTP + 2 ms SQL round trip; configured polling interval; UI painting measured separately in browser',results},null,2));console.log(JSON.stringify(results));

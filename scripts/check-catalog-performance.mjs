@@ -1,4 +1,4 @@
-// Run from the Labula project: node /private/tmp/labula-catalog-performance.mjs
+// Run from the Labula project: node scripts/check-catalog-performance.mjs
 // --reference also runs the intentionally slow, original 300-item algorithm.
 // --worker additionally measures Node worker-thread/event-loop responsiveness.
 // --project /path/to/project and --output /path/to/results.json are optional.

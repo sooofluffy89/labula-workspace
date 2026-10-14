@@ -159,7 +159,7 @@ try{
  // Migration initialized exactly the proved three current IDs; replay of the
  // initialization is not part of login and never reactivates disabled people.
  const migration=await readFile('drizzle/0018_application_access.sql','utf8');assert.match(migration,/WHERE user_id IN/);assert(!/UPDATE kitchen_team SET access_enabled=1;/.test(migration));
- await writeFile('/Users/johnny/Documents/LABULA/team-access-jednoduse-release-2026-10-04/route-coverage.json',JSON.stringify(inventory,null,2));
+ await writeFile(dir+'/route-coverage.json',JSON.stringify(inventory,null,2));
  assert.deepEqual(gaps,[],'No sensitive read or commit authorization gaps');
  console.log('PASS application access: '+inventory.length+' direct API methods; anonymous/unlisted/disabled; first-link race; owner/self protection; access/stock separation; complete four-role guard matrix; invalid role/DB failure fail closed; expected-account identity mismatch; withheld read and sensitive GET demotion; invalid-role commit rollback; Evening batch/Finish/Ready revocation; review manager-to-legacy demotion; transactional revocation/demotion; original lost-ACK retry; concurrent identities and zero leaked guard rows.');
 }finally{db.close();delete globalThis.accessTestDb;delete globalThis.accessTestIdentity;await rm(dir,{recursive:true,force:true});}

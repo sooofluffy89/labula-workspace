@@ -1,5 +1,5 @@
 {
-  "name": "site-creator-vinext-starter",
+  "name": "labula-workspace",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -12,7 +12,12 @@
     "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "check": "node scripts/check-all.mjs"
+    "db:migrate:local": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 migrations apply DB --local --config wrangler.local.json --persist-to .wrangler/state",
+    "db:setup:local": "node scripts/setup-local-db.mjs",
+    "cloud:setup": "npm run install:ci && npm run db:setup:local",
+    "check": "node scripts/check-all.mjs",
+    "typecheck": "tsc --noEmit",
+    "validate": "npm run typecheck && npm run check && npm run build"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
