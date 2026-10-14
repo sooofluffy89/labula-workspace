@@ -11,6 +11,46 @@ export function sharedRecipeUses(n:Notebook,itemId:string){return n.recipes.filt
 export function recipeQuantityGaps(n:Notebook,r:Recipe){const gaps:string[]=[];if(!r.inputs.length)gaps.push('Ingredient list');if(r.portions===null)gaps.push('Recipe portions');for(const p of r.inputs){const item=n.items.find(i=>i.id===p.itemId);if(p.amount===null)gaps.push('Amount: '+(item?.name??p.itemId));else if(item&&baseInputAmount(p,item)===null)gaps.push('Conversion: '+item.name);}return gaps;}
 export function reviewLabel(n:Notebook,r:Recipe){return menuReviewComplete(r)?recipeQuantityGaps(n,r).length?'Recipe checked · quantities pending':'Recipe checked':r.reviewStatus==='needs-review'?'Kitchen test pending':r.reviewStatus==='verified'&&!r.workshop?'List verified · process pending':'To review';}
 export function reviewUsage(n:Notebook,records:AppliedRecord[]=[],ready=true){const scope=menuScope(n,ready?records:[]);return {scope,complete:ready&&!scope.gaps.length,forItem:(id:string)=>{const use=scope.usage.get(id),direct=use?.direct??new Set<string>(),indirect=new Set([...(use?.all??[])].filter(id=>!direct.has(id)));return {direct,indirect,all:use?.all??new Set<string>()};}};}
+export type ReviewIssue={id:string;kind:'list'|'portions'|'amount'|'conversion'|'process'|'step'|'followup';message:string;blocking:boolean;target:'ingredients'|'portions'|'process'|'decisions';itemId?:string;stepId?:string};
+/** Read-only guidance: missing quantities remain optional for a first recipe check. */
+export function reviewIssues(n:Notebook,r:Recipe):ReviewIssue[]{
+ const issues:ReviewIssue[]=[];
+ if(!r.inputs.length)issues.push({id:'ingredients',kind:'list',message:'Add the ingredient list',blocking:true,target:'ingredients'});
+ else if(!r.recorded)issues.push({id:'list-check',kind:'list',message:'Check the ingredient list with Wen',blocking:true,target:'ingredients'});
+ if(r.portions===null)issues.push({id:'portions',kind:'portions',message:'Record how many portions this recipe makes',blocking:false,target:'portions'});
+ for(const part of r.inputs){const item=n.items.find(i=>i.id===part.itemId),name=item?.name??part.itemId;
+  if(part.amount===null)issues.push({id:'amount:'+part.itemId,kind:'amount',message:'Record the amount of '+name,blocking:false,target:'ingredients',itemId:part.itemId});
+  else if(item&&baseInputAmount(part,item)===null)issues.push({id:'conversion:'+part.itemId,kind:'conversion',message:'Record a conversion for '+name,blocking:false,target:'ingredients',itemId:part.itemId});
+ }
+ const w=r.workshop,steps=w?.steps??[];
+ if(!steps.length)issues.push({id:'process-steps',kind:'process',message:'Add the preparation or service steps',blocking:true,target:'process'});
+ else{for(const step of steps.filter(s=>!s.text.trim()))issues.push({id:'step:'+step.id,kind:'step',message:`Describe ${step.phase==='before'?'prep':'service'} step ${steps.filter(s=>s.phase===step.phase).findIndex(s=>s.id===step.id)+1}`,blocking:true,target:'process',stepId:step.id});
+  if(!w?.processChecked)issues.push({id:'process-check',kind:'process',message:'Check the process with Wen',blocking:true,target:'process'});
+ }
+ for(const decision of w?.decisions.filter(d=>!d.done)??[])issues.push({id:'followup:'+decision.id,kind:'followup',message:(decision.kind==='test'?'Kitchen test: ':'Decision: ')+decision.text,blocking:true,target:'decisions'});
+ return issues;
+}
+export function reviewSummary(n:Notebook,r:Recipe):string{
+ const issues=reviewIssues(n,r),parts:string[]=[];const count=(kind:ReviewIssue['kind'])=>issues.filter(i=>i.kind===kind).length;
+ if(count('amount'))parts.push(`${count('amount')} ${count('amount')===1?'amount':'amounts'} missing`);
+ if(count('portions'))parts.push('portions not recorded');
+ if(count('conversion'))parts.push(`${count('conversion')} ${count('conversion')===1?'conversion':'conversions'} missing`);
+ if(count('list'))parts.push(r.inputs.length?'list not checked':'ingredient list not recorded');
+ if(count('step'))parts.push(`${count('step')} ${count('step')===1?'step needs':'steps need'} detail`);
+ if(count('process'))parts.push(r.workshop?.steps.length?'process not checked':'process not recorded');
+ if(count('followup')){const tests=r.workshop?.decisions.filter(d=>!d.done&&d.kind==='test').length??0;parts.push(tests?`${tests} kitchen ${tests===1?'test':'tests'} open`:`${count('followup')} ${count('followup')===1?'decision':'decisions'} open`);}
+ const prefix=menuReviewComplete(r)?'Recipe checked':r.recorded&&r.workshop?.processChecked&&!issues.some(i=>i.blocking)?'Ready to finish':'';
+ return [prefix,...parts.slice(0,2),...(parts.length>2?[`+${parts.length-2} more`]:[])].filter(Boolean).join(' · ')||'Ready to finish';
+}
+export function phaseTimeSummary(workshop:RecipeWorkshop|undefined,phase:'before'|'order'):string{
+ const minutes=phase==='before'?workshop?.beforeMinutes:workshop?.orderMinutes,timing=phase==='before'?workshop?.beforeTiming:workshop?.orderTiming;
+ const basis=timing?.basis&&timing.basis!=='unknown'?timing.basis:null;
+ const parts=[minutes==null?'Time not recorded':`${minutes} min${basis?' / '+basis:''}`];
+ if(minutes!=null&&!basis)parts.push('scope not recorded');else if(minutes==null&&basis)parts.push('per '+basis);
+ if(timing?.portions!=null)parts.push(`${timing.portions} ${timing.portions===1?'portion':'portions'}`);
+ if(timing?.evidence&&timing.evidence!=='unknown')parts.push(timing.evidence);
+ return parts.join(' · ');
+}
 /** Only per-recipe preparation notes change. Catalog and production sources stay authoritative. */
 export function applySharedPreparation(n:Notebook,itemId:string,recipeIds:readonly string[],note:string,flagTest=true):Notebook{
  const available=new Set(sharedRecipeUses(n,itemId).map(r=>r.id));

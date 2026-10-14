@@ -1,12 +1,13 @@
 import {build} from 'esbuild';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,rm} from 'node:fs/promises';
+import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 const dir=await mkdtemp(path.join(tmpdir(),'labula-dish-workspace-'));
 try{
  const react=path.join(dir,'react.mjs'),ui=path.join(dir,'ui.mjs'),outfile=path.join(dir,'test.mjs');
  await writeFile(react,`export const Fragment='Fragment';export const jsx=(type,props)=>({type,props});export const jsxs=jsx;export function useState(initial){const h=globalThis.hooks,i=h.cursor++;if(!(i in h.values))h.values[i]=typeof initial==='function'?initial():initial;return [h.values[i],v=>{h.values[i]=typeof v==='function'?v(h.values[i]):v;}];}export const useMemo=fn=>fn();export const useRef=initial=>{const h=globalThis.hooks,i=h.cursor++;return h.values[i]??(h.values[i]={current:initial});};export function useEffect(fn,deps){const h=globalThis.hooks,i=h.cursor++;if(!h.values[i]||deps.some((x,j)=>x!==h.values[i][j])){h.values[i]=deps;fn();}}`);
+ await writeFile(react,`${await readFile(react,'utf8')}\nexport const useLayoutEffect=useEffect;`);
  await writeFile(ui,`export const Button='Button',Input='Input',Textarea='Textarea',Select='Select',SelectTrigger='SelectTrigger',SelectContent='SelectContent',SelectItem='SelectItem',SelectValue='SelectValue',Dialog='Dialog',DialogContent='DialogContent',DialogHeader='DialogHeader',DialogTitle='DialogTitle',DialogDescription='DialogDescription',Plus='Plus',Trash2='Trash2',Copy='Copy',Archive='Archive',ChevronDown='ChevronDown',ChevronRight='ChevronRight',ArrowRight='ArrowRight',Sun='Sun',Flame='Flame',Layers='Layers',Download='Download',CheckCircle2='CheckCircle2';export const toast={success:message=>globalThis.notices.push(message),error:message=>globalThis.notices.push(message)};`);
  await build({stdin:{contents:"export {DishWorkspace} from './app/dish-workspace';export {IngredientRows} from './app/recipe-ui';export * from './lib/dish-workspace';export {initialNotebook,newItem,validateNotebook} from './lib/notebook';export {directUsage} from './lib/direct-usage';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile,jsx:'automatic',logLevel:'silent',plugins:[{name:'primitives',setup(b){b.onResolve({filter:/^react(?:\/jsx-runtime)?$/},()=>({path:react}));b.onResolve({filter:/^@\/components\/ui\/|^lucide-react$|^sonner$/},()=>({path:ui}));}}]});
  const m=await import(outfile);globalThis.notices=[];
