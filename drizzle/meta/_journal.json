@@ -141,6 +141,13 @@
       "when": 1791126413265,
       "tag": "0019_minor_nighthawk",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1791976640816,
+      "tag": "0020_menu_scope",
+      "breakpoints": true
     }
   ]
 }

@@ -4,7 +4,7 @@ import {profileEmpty,equivalentProfiles} from './prep-profile';
 import { z } from 'zod';
 import {directUsage,compareUsage,type DirectUsage} from './direct-usage';
 import {prepareName,preparedScore} from './name-matching';
-import { normalizeName,newItem,validateNotebook,dependencyIds,safeCsvCell,type Item,type Notebook,type RecipeInput } from './notebook';
+import { normalizeName,newItem,validateNotebook,dependencyIds,usageMap,safeCsvCell,type Item,type Notebook,type RecipeInput } from './notebook';
 
 export const namesOf=(i:Item)=>[i.name,...i.aliases];
 export const exactItem=(items:Item[],name:string)=>items.find(i=>namesOf(i).some(n=>normalizeName(n)===normalizeName(name)));
@@ -99,8 +99,8 @@ export function applyOperation(n:Notebook,op:Exclude<CatalogOperation,{kind:'und
  if(op.kind==='distinct'){if(op.a===op.b||[op.a,op.b].some(id=>!n.items.some(i=>i.id===id)))throw new Error('Choose two different catalog items.');next.distinctPairs=next.distinctPairs.filter(p=>pairKey(...p)!==pairKey(op.a,op.b));if(op.different)next.distinctPairs.push([op.a,op.b]);summary=op.different?'Marked two items as different':'Reopened a different-items decision';}
  return {next:validateNotebook(next),summary};}
 
-export function matrixCell(n:Notebook,itemId:string,menuId:string){const variants=n.recipes.filter(r=>r.active&&r.menuId===menuId);const present=variants.filter(r=>r.inputs.some(p=>p.itemId===itemId));const pending=variants.filter(r=>!r.recorded);return {state:present.length?'used':pending.length?'unknown':'absent',variants,present,pending} as const;}
+export function matrixCell(n:Notebook,itemId:string,menuId:string,usage?:ReturnType<typeof usageMap>){const variants=n.recipes.filter(r=>r.active&&r.menuId===menuId);const present=variants.filter(r=>usage?usage.get(itemId)?.recipes.has(r.id):r.inputs.some(p=>p.itemId===itemId));const pending=variants.filter(r=>!r.recorded);return {state:present.length?'used':pending.length?'unknown':'absent',variants,present,pending} as const;}
 export const activeDishes=(n:Notebook)=>directUsage(n).dishes;
 export function directCount(n:Notebook,itemId:string,index:DirectUsage=directUsage(n)){return index.itemDishes.get(itemId)?.size??0;}
-export function matrixItems(n:Notebook,filter:string,index:DirectUsage=directUsage(n)){return [...n.items].filter(i=>{const count=index.itemDishes.get(i.id)?.size??0;return filter==='shared'?count>1:filter==='single'?count===1:true;}).sort((a,b)=>compareUsage(index,a.id,b.id));}
-export function exportMatrix(n:Notebook,filter='all'){const index=directUsage(n),dishes=index.dishes;const rows:unknown[][]=[['Ingredient / preparation','Type','Recorded in menu dishes',...dishes.map(d=>d.name)]];for(const item of matrixItems(n,filter,index))rows.push([item.name,item.kind,directCount(n,item.id,index),...dishes.map(d=>{const c=matrixCell(n,item.id,d.id);return c.state==='used'?'Used':c.state==='unknown'?'Unknown — list unfinished':'Not listed — lists complete';})]);return '\uFEFF'+rows.map(row=>row.map(safeCsvCell).join(',')).join('\r\n');}
+export function matrixItems(n:Notebook,filter:string,index:DirectUsage=directUsage(n)){return [...n.items].filter(i=>{const count=index.itemDishes.get(i.id)?.size??0;return count>0&&(filter==='shared'?count>1:filter==='single'?count===1:true);}).sort((a,b)=>compareUsage(index,a.id,b.id));}
+export function exportMatrix(n:Notebook,filter='all',index:DirectUsage=directUsage(n),usage?:ReturnType<typeof usageMap>){const dishes=index.dishes;const rows:unknown[][]=[['Ingredient / preparation','Type','Recorded in menu dishes',...dishes.map(d=>d.name)]];for(const item of matrixItems(n,filter,index))rows.push([item.name,item.kind,directCount(n,item.id,index),...dishes.map(d=>{const c=matrixCell(n,item.id,d.id,usage);return c.state==='used'?'Used':c.state==='unknown'?'Unknown — list unfinished':'Not listed — lists complete';})]);return '\uFEFF'+rows.map(row=>row.map(safeCsvCell).join(',')).join('\r\n');}

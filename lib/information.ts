@@ -17,7 +17,7 @@ export const informationTarget=z.discriminatedUnion('kind',[
 export type InformationTarget=z.infer<typeof informationTarget>;
 export function informationHash(target:InformationTarget){return '#info='+encodeURIComponent(JSON.stringify(target));}
 export function parseInformationHash(hash:string):InformationTarget|null{try{if(!hash.startsWith('#info='))return null;const r=informationTarget.safeParse(JSON.parse(decodeURIComponent(hash.slice(6))));return r.success?r.data:null;}catch{return null;}}
-export function itemVariants(n:Notebook,itemId:string){return n.dishes.flatMap(d=>{const variants=n.recipes.filter(r=>r.menuId===d.id&&r.inputs.some(i=>i.itemId===itemId));return variants.length?[{id:d.id,name:d.name,variants}]:[];});}
+export function itemVariants(n:Notebook,itemId:string,inputsFor?:(id:string)=>ReadonlyArray<{itemId:string}>){const reaches=(id:string,path=new Set<string>()):boolean=>{if(id===itemId)return true;if(!inputsFor||path.has(id))return false;return inputsFor(id).some(p=>reaches(p.itemId,new Set(path).add(id)));};return n.dishes.flatMap(d=>{const variants=n.recipes.filter(r=>r.menuId===d.id&&r.inputs.some(i=>reaches(i.itemId)));return variants.length?[{id:d.id,name:d.name,variants}]:[];});}
 export type RelatedReview={id:string;name:string;status:string;openChecks:number};
 export type StockInformation={included:boolean;track:boolean;groupId:string|null;roundId:string|null;round:Round|null};
 export type IngredientInformation={kind:'ingredient';item:Item|null;id:string;uses:ReturnType<typeof itemVariants>;inputs:{id:string;name:string}[];related:RelatedReview[];stock:StockInformation|null;operational?:{instruction:{text:string;revision:number}|null;stationId:string|null};excluded:boolean;revision:number;mergedInto:string|null};

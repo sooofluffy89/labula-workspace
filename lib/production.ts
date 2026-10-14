@@ -1,3 +1,4 @@
+import {menuScope} from './menu-scope';
 import {approvedProduction,type ApprovedProductionTask} from './approved-production';
 import {duplicatePairs} from './catalog';
 import {normalizeName,safeCsvCell,type Notebook,type Item,type ProductionProcess,type RecipeInput} from './notebook';
@@ -36,7 +37,8 @@ export type ProductionTask={id:string;name:string;outputs:string[];weeklyMinutes
 export type MenuProjection={recipeIds:Set<string>;dishIds:Set<string>;required:Set<string>;produced:Set<string>;tasks:Map<string,ProductionTask>;gaps:string[];bought:number;prep:number;knownWeeklyMinutes:number;knownTasks:number;recordedSampleMinutes:number;recordedSampleContributions:number};
 export function projectMenu(n:Notebook,recipeIds?:ReadonlySet<string>,reviewed:AppliedRecord[]=[],protectedIds?:string[]):MenuProjection{
  const selected=n.recipes.filter(r=>(recipeIds?recipeIds.has(r.id):r.active)&&n.dishes.some(d=>d.id===r.menuId&&d.state!=='archived'));
- const required=new Set<string>(),produced=new Set<string>(),tasks=new Map<string,ProductionTask>(),gaps=new Set<string>(),items=new Map(n.items.map(i=>[i.id,i])),held=appliedProductionItems(reviewed),approved=approvedProduction(n,reviewed),sampleWork=new Map<string,number>(),sampleConflicts=new Set<string>();
+ const selection=new Set(selected.map(r=>r.id)),scope=menuScope({...n,dishes:n.dishes.map(d=>selected.some(r=>r.menuId===d.id)?{...d,state:'ready'}:d),recipes:n.recipes.map(r=>({...r,active:selection.has(r.id)}))},reviewed);
+ const required=new Set<string>(),produced=new Set<string>(),tasks=new Map<string,ProductionTask>(),gaps=new Set<string>(),items=new Map(n.items.map(i=>[i.id,i])),held=appliedProductionItems(reviewed),approved=scope.graph,sampleWork=new Map<string,number>(),sampleConflicts=new Set<string>();
  const unavailable=!!n.reviewSourceRevision&&!reviewed.length;
  for(const gap of approved.gaps)gaps.add(gap);
  if(unavailable)gaps.add('Approved composition records are unavailable; current production dependencies and work cannot be established');
@@ -77,9 +79,10 @@ export function projectMenu(n:Notebook,recipeIds?:ReadonlySet<string>,reviewed:A
   else{const inputs=item.inputs;if(item.kind==='prep'){if(!inputs.length)gaps.add(item.name+': preparation composition not recorded');if(item.prepProfile.workflow!=='supplied'&&item.prepProfile.workflow!=='order')addTask(item);}else if(item.prepProfile.workflow==='ahead'||item.prepProfile.workflow==='hybrid')addTask(item);for(const input of inputs)visit(input.itemId,next);}
  };
  for(const r of selected){if(!r.recorded||!r.inputs.length)gaps.add((n.dishes.find(d=>d.id===r.menuId)?.name??r.menuId)+' · '+r.variant+': ingredient list unfinished');for(const input of r.inputs)visit(input.itemId,new Set());}
- for(const item of n.items)if(item.externalUse||productionExcluded(n,item.id,protectedIds))visit(item.id,new Set());
+ for(const id of scope.outside)visit(id,new Set());
  for(const p of n.processes)if(p.externalUse)for(const output of p.outputs)visit(output.itemId,new Set());
  for(const source of approved.tasks.values())if(source.external)for(const output of source.outputs)visit(output,new Set());
+ for(const gap of scope.gaps)gaps.add(gap);
  const known=[...tasks.values()].filter(task=>task.weeklyMinutes!==null);
  return {recipeIds:new Set(selected.map(r=>r.id)),dishIds:new Set(selected.map(r=>r.menuId)),required,produced,tasks,gaps:[...gaps],bought:[...required].filter(id=>items.get(id)?.kind==='bought').length,prep:[...required].filter(id=>items.get(id)?.kind==='prep').length,knownWeeklyMinutes:known.reduce((sum,task)=>sum+task.weeklyMinutes!,0),knownTasks:known.length,recordedSampleMinutes:[...sampleWork.values()].reduce((sum,minutes)=>sum+minutes,0),recordedSampleContributions:sampleWork.size};
 }
@@ -101,8 +104,9 @@ export function scenarioNotebook(n:Notebook,recipeIds:string[],fingerprint:strin
 export const matchesCatalogName=(item:Item,q:string)=>[item.name,...item.aliases].some(name=>normalizeName(name).includes(normalizeName(q)));
 
 /** Task work appears once. Component rows carry amounts in the referenced item's base unit. */
-export function exportProductionCsv(n:Notebook){
+export function exportProductionCsv(n:Notebook,records:AppliedRecord[]=[],scope:'all'|'current'='all'){
+ const eligible=menuScope(n,records).menu;
  const rows:unknown[][]=[['Record type','Task ID','Task name','Item ID','Item name','Amount per batch','Base unit','Person-minutes per batch','Unattended minutes per batch','Batches per week','External use','Review status','Review source','Method / note']];
- for(const p of n.processes){rows.push(['task',p.id,p.name,'','','','',p.activeMinutes,p.passiveMinutes,p.batchesPerWeek,p.externalUse,p.reviewStatus,p.sourceReviewId,p.method]);for(const [kind,parts] of [['input',p.inputs],['output',p.outputs]] as const)for(const part of parts){const item=n.items.find(i=>i.id===part.itemId);rows.push([kind,p.id,p.name,part.itemId,item?.name??'',part.amount,item?.unit??'','','','','','','',part.note]);}}
- return '\uFEFF'+rows.map(row=>row.map(safeCsvCell).join(',')).join('\r\n');
+ for(const p of n.processes.filter(p=>scope==='all'||p.outputs.some(o=>eligible.has(o.itemId)))){rows.push(['task',p.id,p.name,'','','','',p.activeMinutes,p.passiveMinutes,p.batchesPerWeek,p.externalUse,p.reviewStatus,p.sourceReviewId,p.method]);for(const [kind,parts] of [['input',p.inputs],['output',p.outputs]] as const)for(const part of parts){const item=n.items.find(i=>i.id===part.itemId);rows.push([kind,p.id,p.name,part.itemId,item?.name??'',part.amount,item?.unit??'','','','','','','',part.note]);}}
+ return '\uFEFF'+rows.map((row,index)=>[...row,index===0?'Export scope':scope==='current'?'Current menu':'All items'].map(safeCsvCell).join(',')).join('\r\n');
 }

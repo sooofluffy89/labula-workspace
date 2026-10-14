@@ -1,5 +1,6 @@
-import {appliedProductionItems,productionExcluded,type AppliedRecord} from './review-v2/applied';
-import {directUsage} from './direct-usage';
+import {menuUsage} from './menu-scope';
+import type {AppliedRecord} from './review-v2/applied';
+import {appliedProductionItems,productionExcluded} from './review-v2/applied';
 import {normalizeName,type Item,type Notebook,type ProductionProcess} from './notebook';
 import {processForItem} from './production';
 import {approvedProduction} from './approved-production';
@@ -15,7 +16,7 @@ export const numberText=(n:number)=>new Intl.NumberFormat('en-GB',{maximumFracti
 
 /** Read-only projection. Menu activation and source answers are never rewritten. */
 export function kitchenInsights(n:Notebook,reviewed:AppliedRecord[]=[],protectedIds?:string[]) :InsightRow[]{
- const usage=directUsage(n),replaced=new Set([...appliedProductionItems(reviewed),...approvedProduction(n,reviewed).held]);
+ const usage=menuUsage(n,reviewed),replaced=new Set([...appliedProductionItems(reviewed),...approvedProduction(n,reviewed).held]);
  return n.items.filter(i=>usage.itemDishes.has(i.id)).map(item=>{
   const p=item.prepProfile,process=processForItem(n,item.id),productionHeld=productionExcluded(n,item.id,protectedIds),wasReviewed=replaced.has(item.id)||!!process?.sourceReviewId,batch=productionHeld||wasReviewed||process?undefined:p.batch;
   // A mention is a conservative review flag, not proof that an item belongs to one location.

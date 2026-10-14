@@ -1,4 +1,5 @@
 'use client';
+import {useMenuRecords} from './menu-scope-context';
 import {useEffect,useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {Progress} from '@/components/ui/progress';
@@ -7,7 +8,8 @@ import {resumePreparation,changedPrepEntry,type PrepDraft} from '@/lib/prep-draf
 import type {Notebook} from '@/lib/notebook';
 
 export function PreparationPrompt({notebook,draft,account,draftError,onOpen}:{notebook:Notebook;draft:PrepDraft|null;account:string;draftError:boolean;onOpen:(options?:{startItemId?:string;itemId?:string;remaining?:boolean})=>void}){
- const progress=preparationProgress(notebook),resume=resumePreparation(notebook,draft);
+ const records=useMenuRecords();
+ const progress=preparationProgress(notebook,records),resume=resumePreparation(notebook,draft,records);
  const [expanded,setExpanded]=useState(false),[limit,setLimit]=useState(10);
  const preferenceKey='labula-preparation-completed-scope:'+account.toLowerCase();
  const [completedBefore,setCompletedBefore]=useState<string[]>(()=>{try{const ids=JSON.parse(localStorage.getItem(preferenceKey)??'[]');return Array.isArray(ids)?ids.filter((id:unknown)=>typeof id==='string'):[];}catch{return [];}});

@@ -95,11 +95,11 @@ export function exportCsv(n:Notebook):string{
  return '\uFEFF'+rows.map(row=>row.map(safeCsvCell).join(',')).join('\r\n');
 }
 
-export function exportDishIngredientsCsv(n:Notebook):string{
+export function exportDishIngredientsCsv(n:Notebook,scope:'all'|'current'='all'):string{
  const rows:unknown[][]=[['Dish','Variant','Ingredient / preparation','Item type','Active','Ingredient list confirmed']];
  const byId=new Map(n.items.map(i=>[i.id,i]));
- for(const r of n.recipes){const title=n.dishes.find(d=>d.id===r.menuId)?.name??r.menuId;if(!r.inputs.length)rows.push([title,r.variant,'','',r.active,r.recorded]);for(const part of r.inputs){const item=byId.get(part.itemId)!;rows.push([title,r.variant,item.name,item.kind==='prep'?'House-made preparation':'Bought ingredient',r.active,r.recorded]);}}
- return '\uFEFF'+rows.map(row=>row.map(safeCsvCell).join(',')).join('\r\n');
+ for(const r of n.recipes.filter(r=>scope==='all'||r.active&&n.dishes.some(d=>d.id===r.menuId&&d.state==='ready'))){const title=n.dishes.find(d=>d.id===r.menuId)?.name??r.menuId;if(!r.inputs.length)rows.push([title,r.variant,'','',r.active,r.recorded]);for(const part of r.inputs){const item=byId.get(part.itemId)!;rows.push([title,r.variant,item.name,item.kind==='prep'?'House-made preparation':'Bought ingredient',r.active,r.recorded]);}}
+ return '\uFEFF'+rows.map((row,index)=>[...row,index===0?'Export scope':scope==='current'?'Current menu':'All items'].map(safeCsvCell).join(',')).join('\r\n');
 }
 
 /** Deterministic payload migration. Database callers persist this under a revision CAS. */

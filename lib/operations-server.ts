@@ -9,6 +9,9 @@ import {calendarVersion,deadlineAt,isOpenDay,nextOpenDay,openDaysBack,previousOp
 import {calendarObligation,type Timeline} from './check-rounds';
 import {measureDay,outcomeCommandSchema,summarizeDays,type HistoryBundle,type HistoryEvent,type PublishedCheck,type Outcome,type DayMeasure,type OperationsFilters,type OperationsPage,jsonState} from './operations';
 import {stationIdSchema,stationLabel} from './checking-stations';
+import {latestMenuSourceSql} from './menu-scope-server';
+import {menuTimeline,menuIntervals} from './menu-scope-timeline';
+import {scopeSource,type MenuScopeSource} from './menu-scope';
 import {csvCell} from './activity';
 
 async function archiveAccess(user:ChatGPTUser,analytics=false){requireWriteScope(analytics?'management':'workspace');await readOperationalAccess(user);if(await workspaceRole(user)==='cook')throw new RequestError('Your Cook role includes operational check details only.',403);if(analytics&&!await canManage(user))throw new RequestError('Only the owner or a Manager can view Operations overview.',403);}
@@ -27,17 +30,19 @@ async function loadBundles(from:string,to:string,asOf:string,checkId?:string):Pr
   db.prepare('SELECT * FROM morning_tasks WHERE check_id IN(SELECT value FROM json_each(?)) ORDER BY position').bind(ids),
   db.prepare('SELECT * FROM evening_versions WHERE check_id IN(SELECT value FROM json_each(?)) AND created_at<=? ORDER BY version').bind(ids,asOf),
   db.prepare('SELECT rowid AS seq,* FROM kitchen_activity WHERE check_id IN(SELECT value FROM json_each(?)) AND recorded_at<=? ORDER BY recorded_at,rowid LIMIT 100001').bind(ids,asOf),
-  db.prepare('SELECT * FROM operating_outcomes WHERE check_id IN(SELECT value FROM json_each(?)) AND created_at<=? ORDER BY created_at,rowid LIMIT 100001').bind(ids,asOf),
+  db.prepare('SELECT * FROM operating_outcomes WHERE check_id IN(SELECT value FROM json_each(?)) AND created_at<=? ORDER BY created_at,rowid LIMIT 100001').bind(ids,asOf),db.prepare(latestMenuSourceSql),
  ]);
+ const scope=rows[5].results[0]?scopeSource(rows[5].results[0] as MenuScopeSource):undefined;
  const events=bounded(rows[3].results as HistoryEvent[],'history'),outcomes=bounded(rows[4].results as Outcome[],'outcome history');
  return checks.map(c=>{
   const versions=(rows[2].results as {check_id:string;version:number;payload:string;created_at:string;created_by:string}[]).filter(v=>v.check_id===c.id).map(v=>({...v,payload:JSON.parse(v.payload)} as PublishedCheck));
   const ev=events.filter(e=>e.check_id===c.id),latest=versions.at(-1),lastState=ev.filter(e=>e.category==='evening'&&['confirm','correct'].includes(e.action)).at(-1);
-  const tasks:MorningTask[]=(latest?.payload.answers.filter(a=>a.value==='missing'&&!a.supersededBy)??[]).map(a=>{
+  const tasks:MorningTask[]=(latest?.payload.answers.filter(a=>a.value==='missing'&&!a.supersededBy&&(!a.suspended||latest.payload.priorTasks?.some(t=>t.itemId===a.itemId)))??[]).map(a=>{
    const prior=latest!.payload.priorTasks?.find(t=>t.itemId===a.itemId&&!t.cancelled&&t.catalogId===a.catalogId);
    let t:MorningTask={itemId:a.itemId,catalogId:a.catalogId,name:a.name,kind:a.kind,position:a.position,ready:prior?.ready??false,cancelled:false,revision:prior?.revision??0,updatedAt:prior?.ready?prior.updatedAt:latest!.created_at,updatedBy:prior?.ready?prior.updatedBy:latest!.created_by,mappingValid:true,groupId:a.groupId??null};
    for(const e of ev.filter(e=>e.category==='morning'&&e.action==='ready'&&e.item_id===a.itemId)){const after=jsonState(e.after_value);if(e.recorded_at<latest!.created_at||typeof after.planVersion==='number'&&after.planVersion<latest!.version||e.recorded_at===latest!.created_at&&after.planVersion===undefined)continue;if(typeof after.ready==='boolean')t={...t,ready:after.ready,updatedAt:e.recorded_at,updatedBy:e.actor_name,revision:Number(after.revision??t.revision)};}
    const stored=(rows[1].results as Record<string,unknown>[]).find(r=>r.check_id===c.id&&r.item_id===a.itemId&&r.catalog_id===a.catalogId);if(stored&&c.version===latest?.version&&String(stored.updated_at)<=asOf&&Number(stored.revision)>t.revision)t={...t,ready:!!stored.ready,cancelled:!!stored.cancelled,revision:Number(stored.revision),updatedAt:String(stored.updated_at),updatedBy:String(stored.updated_by)};
+   if(scope&&c.target_day>=operationalDay()&&asOf>=new Date().toISOString().slice(0,10))t={...t,suspended:!scope.operational.has(t.catalogId),menuScope:scope.state(t.catalogId)};
    return t;
   });
   const answers=(rows[0].results as Record<string,unknown>[]).filter(a=>a.check_id===c.id).map(answer).map(a=>{if(!a.updatedAt||a.updatedAt<=asOf)return a;const old=latest?.payload.answers.find(x=>x.itemId===a.itemId);let restored={...a,...old,value:old?.value??null,updatedAt:old?.updatedAt??'',updatedBy:old?.updatedBy??''};for(const e of ev.filter(e=>e.item_id===a.itemId&&e.category==='evening'&&e.action==='answer'&&(!latest||e.recorded_at>latest.created_at))){const state=jsonState(e.after_value);if(state.value==='have'||state.value==='missing')restored={...restored,value:state.value,updatedAt:e.recorded_at,updatedBy:e.actor_name};}return restored;});
@@ -59,14 +64,16 @@ async function expectedDays(calendar:Awaited<ReturnType<typeof readCalendarVersi
  const timelineRows=(await db.prepare('SELECT * FROM round_timeline WHERE recorded_at<=? ORDER BY seq LIMIT 100001').bind(asOf).all<{seq:number;item_id:string;round_id:string|null;days:string;schedule_revision:number;active:number;recorded_at:string;source:string}>()).results;
  bounded(timelineRows,'round timeline');
  const timelines=timelineRows.map(e=>({seq:e.seq,itemId:e.item_id,roundId:e.round_id,days:JSON.parse(e.days),scheduleRevision:e.schedule_revision,active:!!e.active,recordedAt:e.recorded_at,source:e.source} as Timeline));
+ const sources=(await db.prepare('SELECT * FROM menu_scope_sources WHERE seq IN (SELECT max(seq) FROM menu_scope_sources WHERE recorded_at<=? GROUP BY notebook_revision) ORDER BY seq').bind(asOf).all<MenuScopeSource>()).results,intervals=menuIntervals(sources);
  const coverage=(await db.prepare("SELECT v.check_id,v.created_at,json_extract(a.value,'$.catalogId') AS item_id FROM evening_versions v,json_each(v.payload,'$.answers') a WHERE v.created_at<=? AND json_extract(a.value,'$.value') IS NOT NULL AND json_extract(a.value,'$.supersededBy') IS NULL AND v.version=(SELECT max(x.version) FROM evening_versions x WHERE x.check_id=v.check_id AND x.created_at<=?) ORDER BY v.check_id").bind(asOf,asOf).all<{check_id:string;created_at:string;item_id:string}>()).results;
  bounded(coverage,'confirmed coverage');
  const ids=[...new Set(timelines.map(t=>t.itemId))],out:DayMeasure[]=[];
+ const effective=new Map(ids.map(id=>[id,menuTimeline(id,timelines,sources,intervals)]));
  for(let day=from;day&&day<=to;day=shiftDay(day,1)){
   if(!isOpenDay(day,calendar)||bundles.some(b=>b.check.target_day===day))continue;
   const evening=previousOpenDay(day,calendar);if(!calendarVersion(evening,calendar)||evening<calendar[0].effectiveDay)continue;
   const end=deadlineAt(evening,'evening',calendar)??asOf;
-  const due=ids.some(id=>{const events=timelines.filter(t=>t.itemId===id&&t.recordedAt<=end&&operationalDay(new Date(t.recordedAt))<=evening);if(!events.at(-1)?.active)return false;const covered=coverage.filter(c=>c.item_id===id&&c.check_id<evening&&c.created_at<=end).at(-1)?.check_id??null;return !!calendarObligation(events,evening,covered,calendar);});
+  const due=ids.some(id=>{const events=effective.get(id)!.filter(t=>t.recordedAt<=end&&operationalDay(new Date(t.recordedAt))<=evening);if(!events.at(-1)?.active)return false;const covered=coverage.filter(c=>c.item_id===id&&c.check_id<evening&&c.created_at<=end).at(-1)?.check_id??null;return !!calendarObligation(events,evening,covered,calendar);});
   if(!due)continue;
   const ed=deadlineAt(evening,'evening',calendar),md=deadlineAt(day,'morning',calendar);
   out.push({id:evening,targetDay:day,stage:'expected',version:0,startedAt:null,startedBy:null,firstAnswerAt:null,lastAnswerAt:null,confirmedAt:null,confirmedBy:null,firstReadyAt:null,lastReadyAt:null,eveningDeadline:ed,morningDeadline:md,handover:!ed?'unknown':ed>asOf?'pending':'not-confirmed',readiness:!md?'unknown':md>asOf?'pending':'no-plan',tasks:[],currentTasks:0,currentReady:0,changes:0,addedAfter:0,removedAfter:0,coverageFrom:calendar[0].createdAt,reason:'An evening check was due; no check for this morning was recorded.'});
