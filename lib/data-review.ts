@@ -36,7 +36,7 @@ const targeted: {names:string[];fields:Field[]}[]=[
 ];
 export function cards(source:ReviewSource,data:ReviewData):Card[]{
  const list:Card[]=[{id:'session',section:'Start',title:'People, period & current routine',fields:sessionFields}];
- for(const r of source.notebook.recipes)list.push({id:`dish:${r.id}`,section:'Dishes',title:recipeTitle(r),fields:data.answers[`dish:${r.id}`]?.values.status==='Removed'?dishFields.filter(f=>['status','statusDetail'].includes(f.key)):dishFields,previous:r});
+ for(const r of source.notebook.recipes)list.push({id:`dish:${r.id}`,section:'Dishes',title:recipeTitle(r,source.notebook),fields:data.answers[`dish:${r.id}`]?.values.status==='Removed'?dishFields.filter(f=>['status','statusDetail'].includes(f.key)):dishFields,previous:r});
  for(const item of catalog(source,data)){
   const original=source.notebook.items.find(i=>i.id===item.id),out=excluded(item.name);
   const fs=itemFields.map(field=>{

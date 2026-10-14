@@ -1,13 +1,13 @@
-import {menu} from './menu';
+import type {Dish} from './notebook';
 import type {Item,Notebook,RecipeInput} from './notebook';
 
 export const directUsageNote='Counts show listed direct use. Unfinished lists and unlisted preparation contents may hide further use.';
-export type DirectUsage={dishes:typeof menu;items:Map<string,Item>;dishItems:Map<string,Set<string>>;itemDishes:Map<string,Set<string>>;bought:number;prep:number};
+export type DirectUsage={dishes:Dish[];items:Map<string,Item>;dishItems:Map<string,Set<string>>;itemDishes:Map<string,Set<string>>;bought:number;prep:number};
 /** A dish is the union of direct inputs in its active variants, regardless of completion. */
 export function directUsage(notebook:Notebook,selection?:ReadonlySet<string>):DirectUsage{
  const items=new Map(notebook.items.map(i=>[i.id,i]));const dishItems=new Map<string,Set<string>>();
  for(const r of notebook.recipes){if(!r.active||(selection&&!selection.has(r.menuId)))continue;let ids=dishItems.get(r.menuId);if(!ids){ids=new Set();dishItems.set(r.menuId,ids);}for(const p of r.inputs)if(items.has(p.itemId))ids.add(p.itemId);}
- const dishes=menu.filter(d=>dishItems.has(d.id));const itemDishes=new Map<string,Set<string>>();
+ const dishes=notebook.dishes.filter(d=>dishItems.has(d.id));const itemDishes=new Map<string,Set<string>>();
  for(const d of dishes)for(const id of dishItems.get(d.id)!){let ids=itemDishes.get(id);if(!ids){ids=new Set();itemDishes.set(id,ids);}ids.add(d.id);}
  let bought=0,prep=0;for(const id of itemDishes.keys()){if(items.get(id)!.kind==='prep')prep++;else bought++;}
  return {dishes,items,dishItems,itemDishes,bought,prep};

@@ -51,7 +51,7 @@ export function planBulk(n:Notebook,command:BulkCommand){
 export function applyBulkCommand(n:Notebook,command:BulkCommand){
  const plan=planBulk(n,command),next=structuredClone(n),recipe=next.recipes.find(r=>r.id===command.recipeId)!;
  for(const addition of plan.additions){let id=addition.itemId;if(!id){const item=newItem(addition.name,addition.kind);next.items.push(item);id=item.id;}recipe.inputs.push({itemId:id,amount:null,note:''});}
- if(plan.count)recipe.recorded=false;
+ if(plan.count){recipe.recorded=false;recipe.reviewStatus='unverified';}
  const result=validateNotebook(next);serializeNotebook(result);return result;
 }
 

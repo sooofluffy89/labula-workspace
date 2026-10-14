@@ -26,6 +26,7 @@ export function preparationQueue(n:Notebook){const index=directUsage(n);return n
 export function applyProfileCommand(n:Notebook,c:ProfileCommand){
  const next=structuredClone(n),item=next.items.find(i=>i.id===c.itemId);if(!item)throw Error('This item was removed or merged. Keep your draft and open its current catalog entry.');
  if(!sameProfile(item.prepProfile,c.base))throw Error('These preparation answers changed. Load the latest answers and compare before saving.');
+ if(next.processes.some(p=>p.outputs.some(o=>o.itemId===item.id))&&JSON.stringify(item.prepProfile.batch)!==JSON.stringify(c.next.batch))throw Error('This item uses a current production task. Edit its batch and work figures in Production; your older batch draft is kept.');
  item.prepProfile=validateProfile(c.next);return validateNotebook(next);
 }
 export function makePrepEntry(p:PrepProfile){return {base:structuredClone(p),value:structuredClone(p),step:'preparation' as const};}

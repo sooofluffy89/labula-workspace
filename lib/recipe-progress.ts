@@ -1,5 +1,4 @@
 import type { Notebook, Recipe } from './notebook';
-import { menu } from './menu';
 
 export type RecipeStatus = 'not-started' | 'in-progress' | 'completed' | 'inactive';
 export const statusLabels: Record<RecipeStatus, string> = {
@@ -18,8 +17,8 @@ export function dishProgress(recipes: Recipe[], menuId: string) {
   return { status, completed, total: active.length };
 }
 export function notebookProgress(notebook: Notebook) {
-  const dishes = new Map(menu.map(d => [d.id, dishProgress(notebook.recipes, d.id)]));
+  const dishes = new Map(notebook.dishes.map(d => [d.id, dishProgress(notebook.recipes, d.id)]));
   const counts: Record<RecipeStatus, number> = { 'not-started': 0, 'in-progress': 0, completed: 0, inactive: 0 };
   for (const dish of dishes.values()) counts[dish.status]++;
-  return { dishes, counts, active: menu.length - counts.inactive };
+  return { dishes, counts, active: notebook.dishes.length - counts.inactive };
 }
