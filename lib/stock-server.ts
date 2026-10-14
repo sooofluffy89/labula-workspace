@@ -9,7 +9,7 @@ import {stockCommandSchema,type StockCommand,type StockSnapshot} from './stock';
 import {groupCommandSchema,type GroupCommand,validGroup} from './ingredient-groups';
 import groupSeed from './ingredient-group-seed.json';
 import {usageMap,type Notebook} from './notebook';
-import {menu,categories} from './menu';
+import {categories} from './menu';
 
 type StockRow={item_id:string;included:number;track:number;revision:number;updated_at:string;updated_by:string;group_id:string|null;group_revision:number;group_source:string|null;station_id:string|null;station_revision:number;station_updated_at:string|null;station_updated_by:string|null};
 type Receipt={id:string;actor_id:string;request:string;result:string};
@@ -47,7 +47,7 @@ export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
  const items=saved.items.map(item=>{
   const row=rows.get(item.id);
   const usedBy=usage.get(item.id)?.all;
-  const itemCategories=categories.filter(category=>menu.some(dish=>dish.category===category&&usedBy?.has(dish.id)));
+  const itemCategories=categories.filter(category=>saved.dishes.some(dish=>dish.category===category&&usedBy?.has(dish.id)));
   // A newly committed catalog item may arrive between initialization and this read.
   return {itemId:item.id,name:item.name,aliases:item.aliases,kind:item.kind,categories:itemCategories,included:row?!!row.included:true,track:row?!!row.track:false,revision:row?.revision??0,updatedAt:row?.updated_at??'',updatedBy:row?.updated_by??'',groupId:validGroup(row?.group_id),groupRevision:row?.group_revision??0,groupSource:row?.group_source??null,stationId:validStation(row?.station_id),stationRevision:row?.station_revision??0,stationUpdatedAt:row?.station_updated_at??null,stationUpdatedBy:row?.station_updated_by??null};
  });
