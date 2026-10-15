@@ -9,7 +9,7 @@ export const privateBackupTables = [
   'operating_calendar_versions', 'operating_commands', 'operating_outcomes',
   'prep_instructions', 'prep_instruction_versions', 'prep_note_commands', 'prep_feedback',
   'team_commands', 'check_rounds', 'round_state', 'round_timeline', 'round_commands',
-  'checking_station_items', 'checking_station_commands', 'access_write_guards', 'team_access_state', 'workspace_runtime_policy',
+  'checking_station_items', 'checking_station_commands', 'access_write_guards', 'team_access_state', 'workspace_runtime_policy', 'workspace_runtime_policy_commands',
   'user_photos', 'user_photo_commands', 'user_photo_uploads',
 ] as const;
 
@@ -21,6 +21,7 @@ export type PrivateBackup = {
   access?: 1;
   profiles?: 1;
   runtimePolicy?: 1;
+  runtimeMaintenance?: 1;
   photos?: {userId:string;revision:number;objectKey:string;sha256:string;size:number;mime:'image/png';dataBase64:string}[];
   capturedAt: string;
   tables: Record<string, unknown[]>;
@@ -57,6 +58,8 @@ export function readPrivateBackup(value:unknown){
  if(typeof value!=='object'||!value)return null;
  const b=value as PrivateBackup;
  const upgraded={...b,tables:{...b.tables},counts:{...b.counts}};
+ if(b.runtimeMaintenance===1&&!Array.isArray(b.tables?.workspace_runtime_policy_commands))return null;
+ if(b.runtimeMaintenance===undefined&&b.tables?.workspace_runtime_policy_commands===undefined){upgraded.tables.workspace_runtime_policy_commands=[];upgraded.counts.workspace_runtime_policy_commands=0;}
  if(b.runtimePolicy===1&&!Array.isArray(b.tables?.workspace_runtime_policy))return null;
  if(b.runtimePolicy===undefined&&b.tables?.workspace_runtime_policy===undefined){upgraded.tables.workspace_runtime_policy=[];upgraded.counts.workspace_runtime_policy=0;}
  if(b.menuScope===1&&b.tables?.menu_scope_sources===undefined)return null;

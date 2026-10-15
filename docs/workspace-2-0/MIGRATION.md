@@ -48,6 +48,23 @@ existing transaction guard, and freeze triggers for every business table. It
 does not freeze production automatically or reject existing clients before an
 explicit policy change. The backup inventory includes this new control table.
 
+Migration `0024_workspace_runtime_owner_control.sql` adds only the immutable
+`workspace_runtime_policy_commands` release audit and its policy-transition
+triggers. The existing, enabled Owner can use `/workspace-maintenance` when
+native production database mutation tools are unavailable. The page reads the
+current policy and audit and offers only Pause writes or Resume writes (minimum
+client version 2). Its dedicated API verifies the real server identity, existing
+Owner membership, matching Origin and account, strict action input, operation ID
+and expected revision. An SQL insert trigger rechecks Owner access and revision
+and applies the exact transition atomically with the receipt. Exact retries
+return the original receipt. This narrow control remains available while frozen;
+an existing minimum client version above 2 blocks this version's Resume action
+in both HTTP and SQL, so a future compatibility policy cannot be downgraded.
+it grants no general write bypass, restore, SQL, account creation or role change.
+Audit rows cannot be updated or deleted. The complete backup includes them with
+`runtimeMaintenance: 1`; historical backups missing this marker/table remain
+readable as pre-control exports.
+
 Applied migrations are not edited. Production data is not copied into a local
 D1 or a test fixture. Local migration commands keep `--local` and
 `.wrangler/state`; tests create only synthetic records.
@@ -81,6 +98,11 @@ difference is the absence of historical `evening_checks.plan_policy_version`
 becoming `1`. The known new `workspace_runtime_policy` control table and its
 freeze/minimum-version changes are reported separately in `runtimePolicy`;
 they never disappear from the report or count as deployment approval.
+The explicit maintenance audit is likewise reported in `runtimeMaintenance`.
+Only valid appended policy transitions are separate release-control changes;
+deleting or changing an already captured audit row fails preservation. The
+transition chain and its final policy must match. A frozen artifact comparison
+must have zero appended maintenance actions; inspect this field explicitly.
 Capture timestamps and database SELECT row ordering do not represent changes.
 Changing quantities while preserving item counts still fails. An unexpected new empty
 table, a deleted history row, a changed receipt or `Ready` reset also fails.
@@ -161,8 +183,10 @@ admission rolls back the entire transaction. Old deployed code inserts the guard
 without a version, so its SQL default is 1 and it cannot bypass a minimum of 2.
 All business-table INSERT/UPDATE/DELETE operations also have freeze triggers,
 covering legacy initialization outside the guarded transaction. The policy
-control table is changed only through the protected operational database access;
-there is no public HTTP toggle or unrestricted restore route. New persistent
+control table is changed through protected operational database access or the
+dedicated existing-Owner maintenance page described above. The release audit is
+the only additional control-table freeze exception and has its own immutable,
+owner-and-revision-checked transition triggers. New persistent
 tables must extend both backup coverage and freeze trigger coverage.
 
 Mature Today, Menu, notebook, settings and complete-backup reads stay usable;
@@ -273,6 +297,13 @@ retained browser recovery, exact retries and no sign-out. It freezes a mature
 published plan and reads real Morning/Evening, Menu, notebook, stock, rounds,
 calendar, team, instructions and complete backup without changing the database.
 It also checks that the operational helper is permanently local-only.
+
+`node scripts/check-workspace-maintenance.mjs` executes the real dedicated API
+and migration triggers on synthetic SQLite: denied identities and roles,
+unlinked accounts, account/origin/input checks, frozen status and resume,
+idempotent retries, revision and revocation races, atomic audit/policy rollback,
+immutable audit and withheld reads after revocation. Restaurant data stays
+unchanged throughout these control operations.
 
 `node scripts/check-workspace-policy-notebook-recovery.mjs` exercises the actual
 notebook hook for save, catalog and bulk operations with both 428 and 503. It

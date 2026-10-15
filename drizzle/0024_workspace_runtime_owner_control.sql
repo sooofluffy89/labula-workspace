@@ -1,0 +1,33 @@
+CREATE TABLE `workspace_runtime_policy_commands` (
+	`operation_id` text PRIMARY KEY NOT NULL,
+	`actor_id` text NOT NULL,
+	`request` text NOT NULL,
+	`action` text NOT NULL,
+	`expected_revision` integer NOT NULL,
+	`prior_write_paused` integer NOT NULL,
+	`prior_min_client_version` integer NOT NULL,
+	`write_paused` integer NOT NULL,
+	`min_client_version` integer NOT NULL,
+	`revision` integer NOT NULL,
+	`recorded_at` text NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX workspace_runtime_policy_commands_revision ON workspace_runtime_policy_commands(revision);
+--> statement-breakpoint
+CREATE TRIGGER workspace_maintenance_owner BEFORE INSERT ON workspace_runtime_policy_commands
+BEGIN
+ SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM kitchen_team t JOIN kitchen_owner o ON o.id='owner' AND o.user_id=t.user_id WHERE t.user_id=NEW.actor_id AND t.access_enabled=1) THEN RAISE(ABORT,'maintenance_access_revoked') END;
+ SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM workspace_runtime_policy p WHERE p.id='kitchen' AND p.revision=NEW.expected_revision AND p.write_paused=NEW.prior_write_paused AND p.min_client_version=NEW.prior_min_client_version) THEN RAISE(ABORT,'maintenance_revision_conflict') END;
+ SELECT CASE WHEN NEW.expected_revision<0 OR NEW.revision!=NEW.expected_revision+1 OR NOT ((NEW.action='pause' AND NEW.prior_write_paused=0 AND NEW.write_paused=1 AND NEW.min_client_version=NEW.prior_min_client_version) OR (NEW.action='resume' AND NEW.prior_write_paused=1 AND NEW.prior_min_client_version<=2 AND NEW.write_paused=0 AND NEW.min_client_version=2)) THEN RAISE(ABORT,'maintenance_invalid_transition') END;
+END;
+--> statement-breakpoint
+CREATE TRIGGER workspace_maintenance_apply AFTER INSERT ON workspace_runtime_policy_commands
+BEGIN
+ UPDATE workspace_runtime_policy SET write_paused=NEW.write_paused,min_client_version=NEW.min_client_version,revision=NEW.revision,updated_at=NEW.recorded_at WHERE id='kitchen' AND revision=NEW.expected_revision;
+END;
+--> statement-breakpoint
+CREATE TRIGGER workspace_maintenance_immutable_update BEFORE UPDATE ON workspace_runtime_policy_commands
+BEGIN SELECT RAISE(ABORT,'maintenance_audit_immutable'); END;
+--> statement-breakpoint
+CREATE TRIGGER workspace_maintenance_immutable_delete BEFORE DELETE ON workspace_runtime_policy_commands
+BEGIN SELECT RAISE(ABORT,'maintenance_audit_immutable'); END;
