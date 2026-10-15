@@ -23,9 +23,17 @@ const conflict=(message='This check changed. Refresh, review the shared answers 
 export async function readEvening(user:ChatGPTUser,selection:EveningSelection={day:operationalDay()}):Promise<EveningSnapshot>{
  return (await readEveningContext(user,selection)).snapshot;
 }
-async function readEveningContext(user:ChatGPTUser,selection:EveningSelection){
+// A committed receipt remains recoverable by its original actor even when the
+// collaborator is paused. This path never bootstraps or writes business data.
+export async function readEveningReceipt(user:ChatGPTUser,operationId:string):Promise<EveningSnapshot>{
+ const receipt=await getRawDb().prepare('SELECT result FROM evening_commands WHERE id=? AND actor_id=? AND applied=1').bind(operationId,user.userId).first<{result:string}>();
+ if(!receipt)throw new RequestError('This saved operation is not available to this account.',403);
+ const result=JSON.parse(receipt.result) as {checkId:string};
+ return (await readEveningContext(user,{day:result.checkId},false)).snapshot;
+}
+async function readEveningContext(user:ChatGPTUser,selection:EveningSelection,initialize=true){
  const selected='day' in selection?dateSchema.parse(selection.day):dateSchema.parse(selection.morningDay);
- await initializeStock(user);const db=getRawDb();
+ if(initialize)await initializeStock(user);const db=getRawDb();
  // Planning, catalog, calendar, selected rows and the sync high water share one
  // transaction. Reuse those inputs only within this read/command; writes still CAS.
  const planning=await readPlanning(selected,[

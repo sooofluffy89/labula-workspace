@@ -33,9 +33,9 @@ try{
  // body parsing, domain validation or idempotent replay, with no mutation.
  const inventory=[];
  for(let i=0;i<routes.length;i++){
-  const path=routes[i].slice(8,-9);const source=await readFile(routes[i],'utf8'),diagnostics=path==='workspace-diagnostics';assert(/protectedApi\(/.test(source)||/export \{POST,dynamic\} from/.test(source)||(diagnostics&&/export const GET=workspaceDiagnostics;/.test(source)),routes[i]);
+  const path=routes[i].slice(8,-9);const source=await readFile(routes[i],'utf8');const maintenance=path==='workspace-maintenance',diagnostics=path==='workspace-diagnostics';assert(/protectedApi\(/.test(source)||/export \{POST,dynamic\} from/.test(source)||(maintenance&&/export const GET=workspaceMaintenance;\s*export const POST=workspaceMaintenance;/.test(source))||(diagnostics&&/export const GET=workspaceDiagnostics;/.test(source)),routes[i]);
   for(const method of ['GET','POST','PUT','DELETE','PATCH'])if(m['r'+i][method]){
-   const scope=source.match(new RegExp('export const '+method+"=protectedApi\\('([^']+)'"))?.[1]??'workspace';inventory.push({path,method,scope,diagnostics,roles:diagnostics?['owner']:scope==='management'?['owner','manager']:scope==='workspace'?['owner','manager','legacy']:['owner','manager','cook','legacy']});for(const [user,status] of [[null,401],[users.unlisted,403],[users.disabled,403]]){const before=dump();const response=await auth.run(user,()=>m['r'+i][method](request(path,method)));assert.equal(response.status,status,routes[i]+' '+method);assert.match(response.headers.get('cache-control'),/no-store/);assert.equal(dump(),before,'denied request is read-only');}
+   const scope=source.match(new RegExp('export const '+method+"=protectedApi\\('([^']+)'"))?.[1]??'workspace';inventory.push({path,method,scope,maintenance,diagnostics,roles:maintenance||diagnostics?['owner']:scope==='management'?['owner','manager']:scope==='workspace'?['owner','manager','legacy']:['owner','manager','cook','legacy']});for(const [user,status] of [[null,401],[users.unlisted,403],[users.disabled,403]]){const before=dump();const response=await auth.run(user,()=>m['r'+i][method](request(path,method)));assert.equal(response.status,status,routes[i]+' '+method);assert.match(response.headers.get('cache-control'),/no-store/);assert.equal(dump(),before,'denied request is read-only');}
   }
  }
  assert.equal(inventory.length,routes.reduce((n,r)=>n+Object.keys(m['r'+routes.indexOf(r)]).filter(k=>['GET','POST','PUT','DELETE','PATCH'].includes(k)).length,0));assert(inventory.length>=30);assert.equal(db.prepare('SELECT count(*) n FROM kitchen_team WHERE user_id=?').get('unlisted').n,0);
@@ -46,7 +46,7 @@ try{
  // request-scoped member roles; allowed malformed writes may fail validation.
  for(const entry of inventory)for(const role of ['owner','manager','cook','legacy']){
   const probe=m.protectedApi(entry.scope,async()=>Response.json({guardPassed:true}));const response=await auth.run(users[role],()=>probe(request(entry.path,entry.method))),body=await response.json();
-  if(!entry.diagnostics){if(!entry.roles.includes(role)){assert.equal(response.status,403,entry.path+' '+entry.method+' '+role);}
+  if(!entry.maintenance&&!entry.diagnostics){if(!entry.roles.includes(role)){assert.equal(response.status,403,entry.path+' '+entry.method+' '+role);}
   else {assert.equal(response.status,200,entry.path+' '+entry.method+' '+role+' should pass central guard');assert.equal(body.guardPassed,true);}}
   const actual=await call(users[role],entry.path,entry.method),actualBody=await actual.json();entry.actualRoles??={};entry.actualRoles[role]={status:actual.status,code:actualBody.code??null};
   if(!entry.roles.includes(role))assert.equal(actual.status,403,entry.path+' '+entry.method+' '+role+' actual route denies');
@@ -58,7 +58,7 @@ try{
  const identityRequest=request('team');identityRequest.headers.set('X-Labula-Account-Id','owner');
  const mismatch=await json(await auth.run(users.manager,()=>api('team').GET(identityRequest)),403);assert.equal(mismatch.code,'account_changed');
  const beforeFailure=dump();queryFailure=true;
- try{for(const entry of inventory){const denied=await json(await call(users.owner,entry.path,entry.method),503);assert.equal(denied.code,entry.diagnostics?'diagnostics_unavailable':'access_check_failed');}}finally{queryFailure=false;}
+ try{for(const entry of inventory){const denied=await json(await call(users.owner,entry.path,entry.method),503);assert.equal(denied.code,entry.maintenance?'maintenance_unavailable':entry.diagnostics?'diagnostics_unavailable':'access_check_failed');}}finally{queryFailure=false;}
  assert.equal(dump(),beforeFailure,'DB failure must not create legacy access');
  // Post-handler recheck must withhold a notebook that was read before revocation.
  beforeQuery=(sql)=>{if(sql.startsWith('SELECT payload,revision,updated_at,updated_by FROM notebooks')){beforeQuery=null;db.prepare("UPDATE kitchen_team SET access_enabled=0 WHERE user_id='legacy'").run();}};
