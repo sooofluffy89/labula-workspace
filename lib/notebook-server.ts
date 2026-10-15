@@ -26,6 +26,7 @@ export async function owner(user:ChatGPTUser){
  // Bind the explicitly configured owner's verified dispatch identity once. Later checks use the site-scoped stable user ID.
  // The bundled loopback-only development identity is removed from production by Vite.
  const expectedEmail=import.meta.env.DEV?'seedy@sites.test':'jan@bananasport.cz';
+ const existing=await getRawDb().prepare('SELECT user_id FROM kitchen_owner WHERE id=?').bind('owner').first<{user_id:string}>();if(existing)return existing.user_id===user.userId;
  if(user.email.toLowerCase()===expectedEmail)await getRawDb().prepare('INSERT INTO kitchen_owner (id,user_id) VALUES (?,?) ON CONFLICT(id) DO NOTHING').bind('owner',user.userId).run();
  const record=await getRawDb().prepare('SELECT user_id FROM kitchen_owner WHERE id=?').bind('owner').first<{user_id:string}>();return record?.user_id===user.userId;
 }
@@ -36,7 +37,9 @@ export async function canManage(user:ChatGPTUser){
  return !!await getRawDb().prepare(`SELECT 1 FROM ${managementUsersSql} WHERE user_id=?`).bind(user.userId).first();
 }
 export async function readNotebook(user:ChatGPTUser):Promise<Row>{
- const db=getRawDb();await db.prepare('INSERT INTO notebooks (id,payload,revision,updated_at,updated_by) VALUES (?,?,?,?,?) ON CONFLICT(id) DO NOTHING').bind('kitchen',notebookPayload(initialNotebook()),0,new Date().toISOString(),user.email).run();
+ const db=getRawDb(),existing=await db.prepare('SELECT payload,revision,updated_at,updated_by FROM notebooks WHERE id=?').bind('kitchen').first<Row>();
+ if(existing){const parsed=JSON.parse(existing.payload);if(parsed.schemaVersion===4){validateNotebook(parsed);return existing;}}
+ else await db.prepare('INSERT INTO notebooks (id,payload,revision,updated_at,updated_by) VALUES (?,?,?,?,?) ON CONFLICT(id) DO NOTHING').bind('kitchen',notebookPayload(initialNotebook()),0,new Date().toISOString(),user.email).run();
  for(let attempt=0;attempt<4;attempt++){const row=await db.prepare('SELECT payload,revision,updated_at,updated_by FROM notebooks WHERE id=?').bind('kitchen').first<Row>();if(!row)throw Error('Notebook missing');const parsed=JSON.parse(row.payload);if(parsed.schemaVersion===4){validateNotebook(parsed);return row;}const migrated=migrateNotebook(parsed);await db.prepare('UPDATE notebooks SET payload=?,revision=revision+1,updated_at=?,updated_by=? WHERE id=? AND revision=?').bind(notebookPayload(migrated),new Date().toISOString(),user.email,'kitchen',row.revision).run();}
  throw new RequestError('The notebook changed while loading. Please try again.',409);
 }

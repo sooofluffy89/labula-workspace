@@ -1,6 +1,7 @@
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {accessContext,RequestError,type AccessScope} from './access-context';
+import {readWorkspaceRuntimePolicy,workspacePolicyFailure} from './workspace-runtime-policy';
 export type AccessMember={id:string;user_id:string|null;email:string;name:string;active:number;access_role:string;revision:number;access_enabled:number;last_sign_in_at:string|null;is_owner?:number};
 export async function permittedMember(user:ChatGPTUser,link=true):Promise<AccessMember>{
  const db=getRawDb();
@@ -8,6 +9,7 @@ export async function permittedMember(user:ChatGPTUser,link=true):Promise<Access
  if(!row?.access_enabled)throw new RequestError('Access not granted. Your local work is kept. Ask the owner to allow your ChatGPT sign-in email.',403,'access_not_granted');
  if(!row.user_id){
   if(!link)throw new RequestError('Sign in to link your allowed account.',403,'access_not_linked');
+  if((await readWorkspaceRuntimePolicy(db)).write_paused){const failure=workspacePolicyFailure('workspace_write_paused');throw new RequestError(failure.error,failure.status,failure.code);}
   const now=new Date().toISOString(),id=crypto.randomUUID();
   // The link is an authorization bootstrap, performed without a request write
   // context: the SQL itself requires the exact pre-authorized, unclaimed email.
@@ -30,6 +32,6 @@ export async function accessRole(user:ChatGPTUser,scope:AccessScope='operations'
 }
 export async function recordSignIn(user:ChatGPTUser){
  // Explicit top-level/session visit, never the operational polling loop.
- await getRawDb().prepare('UPDATE kitchen_team SET last_sign_in_at=? WHERE user_id=? AND access_enabled=1').bind(new Date().toISOString(),user.userId).run();
+ await getRawDb().prepare("UPDATE kitchen_team SET last_sign_in_at=? WHERE user_id=? AND access_enabled=1 AND EXISTS(SELECT 1 FROM workspace_runtime_policy WHERE id='kitchen' AND write_paused=0)").bind(new Date().toISOString(),user.userId).run();
 }
 export function currentAccessUser(){return accessContext.getStore()?.user;}
