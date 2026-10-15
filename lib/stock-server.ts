@@ -18,23 +18,12 @@ type Receipt={id:string;actor_id:string;request:string;result:string};
 const seed=JSON.stringify(groupSeed.assignments.filter(row=>row.proposedGroupId));
 // Read the *saved* catalog inside SQL. A missing entry is new, an explicit tombstone is not.
 export async function initializeStock(user:ChatGPTUser){
- // Authorization is explicit; it must not depend on an incidental bootstrap
- // write (mature workspaces and maintenance reads perform no such write).
- await activeMember(user);
  await readNotebook(user);
- const db=getRawDb(),needs=await db.prepare(`SELECT
- EXISTS(SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') j WHERE n.id='kitchen' AND NOT EXISTS(SELECT 1 FROM stock_items s WHERE s.item_id=json_extract(j.value,'$.id'))) AS missing,
- EXISTS(SELECT 1 FROM stock_items s,json_each(?) seed,notebooks n,json_each(n.payload,'$.items') item
- WHERE n.id='kitchen' AND s.item_id=json_extract(seed.value,'$.itemId') AND s.group_source IS NULL
- AND json_extract(item.value,'$.id')=s.item_id AND json_extract(item.value,'$.name')=json_extract(seed.value,'$.expectedName')
- AND json_extract(item.value,'$.kind')=json_extract(seed.value,'$.expectedKind')) AS groups`).bind(seed).first<{missing:number;groups:number}>();
- // Mature reads stay read-only during a controlled write pause. Bootstrap is
- // attempted only when necessary and remains protected by the write guard.
- if(needs?.missing)await db.prepare(`INSERT INTO stock_items (item_id,included,track,revision,updated_at,updated_by)
+ await getRawDb().prepare(`INSERT INTO stock_items (item_id,included,track,revision,updated_at,updated_by)
  SELECT json_extract(j.value,'$.id'),1,0,0,?,? FROM notebooks n,json_each(n.payload,'$.items') j
- WHERE n.id='kitchen' AND NOT EXISTS(SELECT 1 FROM stock_items s WHERE s.item_id=json_extract(j.value,'$.id')) ON CONFLICT(item_id) DO NOTHING`).bind(new Date().toISOString(),user.userId).run();
+ WHERE n.id='kitchen' ON CONFLICT(item_id) DO NOTHING`).bind(new Date().toISOString(),user.userId).run();
  // An exact ID/name/type match is required; a manual null assignment remains authoritative.
- if(needs?.groups||needs?.missing)await db.prepare(`UPDATE stock_items SET group_id=json_extract(seed.value,'$.proposedGroupId'),group_revision=group_revision+1,group_source='seed',group_updated_at=?,group_updated_by='system:group-seed'
+ await getRawDb().prepare(`UPDATE stock_items SET group_id=json_extract(seed.value,'$.proposedGroupId'),group_revision=group_revision+1,group_source='seed',group_updated_at=?,group_updated_by='system:group-seed'
  FROM json_each(?) seed,notebooks n,json_each(n.payload,'$.items') item
  WHERE n.id='kitchen' AND stock_items.item_id=json_extract(seed.value,'$.itemId') AND stock_items.group_source IS NULL
  AND json_extract(item.value,'$.id')=stock_items.item_id AND json_extract(item.value,'$.name')=json_extract(seed.value,'$.expectedName')

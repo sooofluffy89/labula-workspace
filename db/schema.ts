@@ -60,7 +60,6 @@ export const stockCatalogEffects = sqliteTable('stock_catalog_effects', {
 
 // A date identifies one shared kitchen check. planDay is set only at confirmation.
 export const eveningChecks=sqliteTable('evening_checks',{
- planPolicyVersion:integer('plan_policy_version').notNull().default(1),
  id:text('id').primaryKey(),calendarRevision:integer('calendar_revision'),targetDay:text('target_day').notNull(),planDay:text('plan_day').unique(),stage:text('stage').notNull(),revision:integer('revision').notNull(),planRevision:integer('plan_revision').notNull(),version:integer('version').notNull(),startOperation:text('start_operation').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),updatedAt:text('updated_at').notNull(),confirmedAt:text('confirmed_at'),confirmedBy:text('confirmed_by'),grouped:integer('grouped').notNull().default(0),roundsVersion:integer('rounds_version').notNull().default(0),
 });
 export const eveningAnswers=sqliteTable('evening_answers',{
@@ -132,9 +131,7 @@ export const prepFeedback=sqliteTable('prep_feedback',{
 },t=>[index('prep_feedback_service').on(t.checkId,t.itemId,t.catalogId),index('prep_feedback_catalog').on(t.catalogId,t.createdAt,t.id)]);
 
 // Transaction-local authorization barriers are inserted and deleted atomically.
-export const accessWriteGuards=sqliteTable('access_write_guards',{id:text('id').primaryKey(),userId:text('user_id').notNull(),scope:text('scope').notNull(),clientVersion:integer('client_version').notNull().default(1)});
-export const workspaceRuntimePolicy=sqliteTable('workspace_runtime_policy',{id:text('id').primaryKey(),writePaused:integer('write_paused').notNull().default(0),minClientVersion:integer('min_client_version').notNull().default(1),revision:integer('revision').notNull().default(0),updatedAt:text('updated_at').notNull()});
-export const workspaceRuntimePolicyCommands=sqliteTable('workspace_runtime_policy_commands',{operationId:text('operation_id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),action:text('action').notNull(),expectedRevision:integer('expected_revision').notNull(),priorWritePaused:integer('prior_write_paused').notNull(),priorMinClientVersion:integer('prior_min_client_version').notNull(),writePaused:integer('write_paused').notNull(),minClientVersion:integer('min_client_version').notNull(),revision:integer('revision').notNull(),recordedAt:text('recorded_at').notNull()},table=>[uniqueIndex('workspace_runtime_policy_commands_revision').on(table.revision)]);
+export const accessWriteGuards=sqliteTable('access_write_guards',{id:text('id').primaryKey(),userId:text('user_id').notNull(),scope:text('scope').notNull()});
 export const teamAccessState=sqliteTable('team_access_state',{id:text('id').primaryKey(),initializedAt:text('initialized_at').notNull(),policyRevision:integer('policy_revision').notNull(),policyHash:text('policy_hash').notNull()});
 
 // Photo revision never touches kitchen_team or operational revisions.

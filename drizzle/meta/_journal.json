@@ -148,34 +148,6 @@
       "when": 1791976640816,
       "tag": "0020_menu_scope",
       "breakpoints": true
-    },
-    {
-      "idx": 21,
-      "version": "6",
-      "when": 1792061914398,
-      "tag": "0021_published_plan_policy",
-      "breakpoints": true
-    },
-    {
-      "idx": 22,
-      "version": "6",
-      "when": 1792061914399,
-      "tag": "0022_workspace_product_sources",
-      "breakpoints": true
-    },
-    {
-      "idx": 23,
-      "version": "6",
-      "when": 1792062123529,
-      "tag": "0023_workspace_runtime_policy",
-      "breakpoints": true
-    },
-    {
-      "idx": 24,
-      "version": "6",
-      "when": 1792089813908,
-      "tag": "0024_workspace_runtime_owner_control",
-      "breakpoints": true
     }
   ]
 }

@@ -9,8 +9,6 @@ import {menuSourcesSql} from './menu-scope-server';
 import {menuTimeline,menuIntervals} from './menu-scope-timeline';
 export async function initializeRounds(){
  const db=getRawDb(),now=new Date().toISOString();
- const initialized=await db.prepare("SELECT EXISTS(SELECT 1 FROM round_state WHERE id='kitchen') AS state,(SELECT count(*) FROM check_rounds WHERE id IN ('daily','twice-weekly','weekly')) AS rounds").first<{state:number;rounds:number}>();
- if(initialized?.state&&initialized.rounds===roundIds.length)return;
  await db.batch([
   ...roundIds.map(id=>db.prepare('INSERT INTO check_rounds(id,days,revision,updated_at,updated_by) VALUES(?,?,0,?,?) ON CONFLICT(id) DO NOTHING').bind(id,JSON.stringify(id==='daily'?[0,1,2,3,4,5,6]:id==='weekly'?[0]:[1,4]),now,'system:round-activation')),
   db.prepare("INSERT INTO round_state(id,revision,activated_at) VALUES('kitchen',1,?) ON CONFLICT(id) DO NOTHING").bind(now),
