@@ -10,14 +10,20 @@ try{
  const base=new URL('https://example.test/?source=bookmark#info=ingredient:garlic');
  const route={view:'recipes',dish:'m2',variant:'m2-v3'};
  const href=m.workspaceUrl(base,route);assert.equal(href.hash,base.hash);assert.equal(href.searchParams.get('source'),'bookmark');assert.deepEqual(m.readWorkspaceRoute(href),route);
- assert.equal(m.readWorkspaceRoute(new URL('https://example.test/?view=invalid')).view,'insights');
+ assert.equal(m.readWorkspaceRoute(new URL('https://example.test/?view=invalid')).view,'morning');
  assert.equal(m.readWorkspaceRoute(new URL('https://example.test/'),'evening').view,'evening');
- assert.equal(m.readWorkspaceRoute(new URL('https://example.test/?view=operations#ops=history&check=2026-10-14')).view,'operations');
+ assert.equal(m.readWorkspaceRoute(new URL('https://example.test/?view=operations#ops=history&check=2026-10-14')).view,'history');
  assert.equal(m.readWorkspaceRoute(new URL('https://example.test/?view=morning&day=2026-02-30')).day,undefined);
  const daily={view:'morning',day:'2026-10-15'};assert.deepEqual(m.readWorkspaceRoute(m.workspaceUrl(base,daily)),daily);
  const catalog={view:'catalog',query:'蒜 / chilli & coriander',kind:'review',scope:'all'};assert.deepEqual(m.readWorkspaceRoute(m.workspaceUrl(href,catalog)),catalog);
  assert.equal(m.workspaceUrl(new URL('https://example.test/#ops=history&check=old'),route).hash,'');
  assert(m.sameWorkspaceRoute({view:'catalog'},{view:'catalog',query:'',kind:'all'}));
+ // Legacy destinations resolve to the new two-area architecture without dropping context.
+ assert.deepEqual(m.canonicalWorkspaceRoute({view:'manage'}),{view:'catalog',checkedOnly:true,scope:'all'});
+ assert.deepEqual(m.canonicalWorkspaceRoute({view:'overview',dish:'m2'}),{view:'recipes',dish:'m2'});
+ assert.equal(m.canonicalWorkspaceRoute({view:'insights'}).view,'morning');
+ const nested={view:'recipes',dish:'m2',variant:'m2-v3',item:'garlic',itemPath:['sauce','paste'],scope:'all'};assert.deepEqual(m.readWorkspaceRoute(m.workspaceUrl(base,nested)),nested);
+ assert.deepEqual(m.readWorkspaceRoute(m.workspaceUrl(base,{view:'catalog',checkedOnly:true,scope:'all'})),{view:'catalog',scope:'all',checkedOnly:true});
  // Undo is an inverse patch; it must never restore an obsolete recipe snapshot.
  const n=m.initialNotebook(),a=m.newItem('Sauce'),b=m.newItem('Tofu'),c=m.newItem('Coriander');n.items=[a,b,c];n.recipes[0]={...n.recipes[0],recorded:true,ingredientsReviewed:true,reviewStatus:'verified',inputs:[{itemId:a.id,amount:10,note:'original'},{itemId:b.id,amount:null,note:''}]};
  const removed=m.removeRecipeInput(n,n.recipes[0].id,a.id);assert(removed.ticket);assert(!removed.notebook.recipes[0].recorded);assert.equal(removed.notebook.recipes[0].ingredientsReviewed,false);

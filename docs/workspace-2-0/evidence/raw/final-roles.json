@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-10-15T11:28:36.356Z",
+  "base": "http://localhost:5173",
+  "node": "v24.19.0",
+  "results": [
+    {
+      "name": "Owner, Manager, Cook and legacy UI/API boundaries",
+      "basis": "Real local SQLite role switching; synthetic identity; restored in finally",
+      "status": "passed"
+    },
+    {
+      "name": "Browser runtime has no page exceptions",
+      "basis": "real rendered application",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "role": "cook",
+      "width": 320,
+      "modeButtons": [
+        {
+          "width": 146,
+          "height": 48
+        },
+        {
+          "width": 146,
+          "height": 48
+        }
+      ]
+    },
+    {
+      "role": "cook",
+      "width": 390,
+      "modeButtons": [
+        {
+          "width": 181,
+          "height": 48
+        },
+        {
+          "width": 181,
+          "height": 48
+        }
+      ]
+    },
+    {
+      "fieldAppearance": {
+        "state": "disabled",
+        "border": "rgb(125, 135, 149)",
+        "background": "rgb(237, 240, 242)",
+        "outer": "rgb(255, 255, 255)",
+        "outline": "rgb(97, 103, 113)",
+        "outlineStyle": "none",
+        "outlineWidth": "3px",
+        "color": "rgb(97, 103, 113)",
+        "opacity": "1",
+        "invalid": "false",
+        "disabled": true,
+        "borderContrast": 3.178875725723719,
+        "textContrast": 4.976392731621562,
+        "outlineContrast": 5.695954146759535
+      }
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "Headless Chromium emulation, not physical phones/tablets or an actual kitchen pilot.",
+    "Production menu and production migration are not verified by local synthetic tests."
+  ]
+}

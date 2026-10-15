@@ -22,14 +22,18 @@ export const eveningCommandSchema=z.discriminatedUnion('kind',[
 ]);
 export type EveningCommand=z.infer<typeof eveningCommandSchema>;
 export type Availability='have'|'missing'|null;
-export type CheckSummary={calendarRevision?:number|null;coveredBy?:string|null;roundsVersion?:number;id:string;targetDay:string;stage:'draft'|'confirmed';revision:number;planRevision:number;version:number;confirmedAt:string|null;confirmedBy:string|null};
+export type CheckSummary={planPolicyVersion?:number;calendarRevision?:number|null;coveredBy?:string|null;roundsVersion?:number;id:string;targetDay:string;stage:'draft'|'confirmed';revision:number;planRevision:number;version:number;confirmedAt:string|null;confirmedBy:string|null};
 export type CheckAnswer={suspended?:boolean;menuScope?:import('./menu-scope').MenuScopeState;stationId?:import('./checking-stations').StationId|null;instruction?:import('./prep-notes').RecordedInstruction|null;feedbackCount?:number;round?:import('./check-rounds').RoundReason|null;itemId:string;catalogId:string;name:string;kind:'bought'|'prep';position:number;value:Availability;revision:number;updatedAt:string;updatedBy:string;firstActor:string|null;firstDevice:string|null;firstSequence:number|null;supersededBy:string|null;mappingValid:boolean;currentName:string|null;groupId:string|null};
 export type MorningTask={suspended?:boolean;menuScope?:import('./menu-scope').MenuScopeState;instruction?:import('./prep-notes').RecordedInstruction|null;feedbackCount?:number;itemId:string;catalogId:string;name:string;kind:'bought'|'prep';position:number;ready:boolean;cancelled:boolean;revision:number;updatedAt:string;updatedBy:string;mappingValid:boolean;groupId:string|null};
 export type EveningCheck=CheckSummary&{answers:CheckAnswer[];tasks:MorningTask[];grouped:boolean};
 export type EveningSnapshot={menuGaps?:string[];prepNotes?:1;sync?:{version:1;cursor:string};calendar?:import('./operating-calendar').CalendarSnapshot;planning?:{day:string;revision:number;dueCount:number;rounds:import('./check-rounds').Round[];items:import('./round-store').PlanningItem[]};scope:'kitchen';accountId:string;account:string;notebookRevision:number;trackedCount:number;catalog:{id:string;name:string;kind:'bought'|'prep'}[];checks:CheckSummary[];check:EveningCheck|null};
 export type EveningSelection={day:string}|{morningDay:string};
 export function selectionQuery(selection:EveningSelection){return new URLSearchParams(selection).toString();}
-export function correctionDiff(check:EveningCheck){const active=new Map(check.tasks.filter(t=>!t.cancelled&&!t.suspended).map(t=>[t.itemId,t]));return {added:check.answers.filter(a=>!a.suspended&&a.value==='missing'&&(!active.has(a.itemId)||active.get(a.itemId)?.catalogId!==a.catalogId)),removed:check.tasks.filter(t=>!t.cancelled&&!t.suspended&&check.answers.find(a=>a.itemId===t.itemId)?.value!=='missing')};}
+export function correctionDiff(check:EveningCheck){
+ const active=new Map(check.tasks.filter(t=>!t.cancelled&&!t.suspended).map(t=>[t.itemId,t]));
+ const included=(a:CheckAnswer)=>!a.suspended&&!a.supersededBy&&a.value==='missing';
+ return {added:check.answers.filter(a=>included(a)&&(!active.has(a.itemId)||active.get(a.itemId)?.catalogId!==a.catalogId)),removed:check.tasks.filter(t=>!t.cancelled&&!check.answers.some(a=>a.itemId===t.itemId&&included(a)))};
+}
 
 // Persisted with the atomic publication; this is a commit receipt, not a sync cursor.
 export type PublicationReceipt={protocol:1;actorId:string;checkId:string;targetDay:string;version:number;revision:number;planRevision:number;confirmedAt:string;confirmedBy:string};

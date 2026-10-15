@@ -20,7 +20,7 @@ async function GETHandler(){try{
  // bounded image at a time; incomplete/error streams are not valid backups.
  const encoder=new TextEncoder();
  async function* chunks(){
-  yield JSON.stringify({format:'Labula private database backup',version:1,stations:1,access:1,profiles:1,menuScope:1,capturedAt}).slice(0,-1)+',"tables":{';
+  yield JSON.stringify({format:'Labula private database backup',version:1,stations:1,access:1,profiles:1,menuScope:1,runtimePolicy:1,capturedAt}).slice(0,-1)+',"tables":{';
   for(let t=0;t<tables.length;t++){
    yield (t?',':'')+JSON.stringify(tables[t])+':[';
    // Keep the atomic D1 snapshot, but never allocate another whole-database

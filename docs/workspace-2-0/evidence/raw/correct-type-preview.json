@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-10-15T11:30:55.402Z",
+  "base": "http://127.0.0.1:5175",
+  "node": "v24.19.0",
+  "results": [
+    {
+      "name": "Ingredient Correct type opens the existing safe preview for that item",
+      "basis": "Rendered ingredient entry and nested review dialogs; no save",
+      "status": "passed"
+    },
+    {
+      "name": "Browser runtime has no page exceptions",
+      "basis": "real rendered application",
+      "status": "passed"
+    }
+  ],
+  "metrics": [],
+  "errors": [],
+  "limits": [
+    "Headless Chromium emulation, not physical phones/tablets or an actual kitchen pilot.",
+    "Production menu and production migration are not verified by local synthetic tests."
+  ]
+}

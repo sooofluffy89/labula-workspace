@@ -5,9 +5,9 @@ import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {RequestError} from './notebook-server';
 import {latestMenuSourceSql} from './menu-scope-server';
 import {scopeSource,type MenuScopeSource} from './menu-scope';
-import {eveningCommandSchema,selectionQuery,dateSchema,operationalDay,type EveningSelection} from './evening';
+import {eveningCommandSchema,selectionQuery,dateSchema,type EveningSelection} from './evening';
 import {eveningEvents} from './evening-activity';
-import {answerView,taskView,summary,type CheckRow,type AnswerRow,type TaskRow} from './evening-server';
+import {answerView,taskView,summary,publishedTaskScope,publicationPayloadSql,recordedAnswerScope,type CheckRow,type AnswerRow,type TaskRow} from './evening-server';
 import {EVENING_BATCH_LIMIT,type SyncCursor,type EveningDelta,type EveningBatchReply,type BatchResult} from './evening-sync';
 
 // No bootstrap or permission cache on the sync/write hot path.
@@ -33,7 +33,7 @@ export async function readEveningDelta(user:ChatGPTUser,selection:EveningSelecti
  const ids=`SELECT item_id FROM (${eventsSql}) WHERE check_id=a.check_id AND item_id=a.item_id`;
  // D1 batch is one consistent transaction. Rows and captured high water cannot race.
  const r=await db.batch([
-  db.prepare(syncMetadataSql),db.prepare(`SELECT * FROM evening_checks WHERE ${checkWhere}`).bind(selected),
+  db.prepare(syncMetadataSql),db.prepare(`SELECT *,${publicationPayloadSql} FROM evening_checks WHERE ${checkWhere}`).bind(selected),
   db.prepare(eventsSql).bind(cursor.after,bound),
   db.prepare(`SELECT ${noteColumns('a')},1 AS mapping_valid,NULL AS current_name FROM evening_answers a WHERE a.check_id=(SELECT id FROM evening_checks WHERE ${checkWhere}) AND a.item_id IN (${ids}) ORDER BY a.position`).bind(selected,cursor.after,bound),
   db.prepare(`SELECT ${noteColumns('a')},1 AS mapping_valid FROM morning_tasks a WHERE a.check_id=(SELECT id FROM evening_checks WHERE ${checkWhere}) AND a.item_id IN (${ids}) ORDER BY a.position`).bind(selected,cursor.after,bound),db.prepare(latestMenuSourceSql),
@@ -47,8 +47,9 @@ export async function readEveningDelta(user:ChatGPTUser,selection:EveningSelecti
  const more=pageMore||through<meta.through;
  const reset=cursor.after>meta.through||cursor.notebook!==meta.notebook||cursor.rounds!==meta.rounds||cursor.calendar!==meta.calendar||events.some(e=>!['answer','ready','prep-feedback','prep-instruction'].includes(e.action));
  const next={...cursor,after:pageMore?last:through,through:pageMore?through:null};
+ const recorded=recordedAnswerScope(row);
  // Catalog changes force a complete read; unchanged catalog means existing mapping/name data stay valid.
- return {accountId:user.userId,account:user.email,cursor:JSON.stringify(next),reset,more,...(!reset&&!more?{verifiedThrough:meta.through}:{}),check:row?summary(row):null,answers:(r[3].results as AnswerRow[]).map(a=>answerView(a,undefined,row?.stage==='draft'?scope:undefined)),tasks:(r[4].results as TaskRow[]).map(t=>taskView(t,undefined,row&&row.target_day>=operationalDay()?scope:undefined))};
+ return {accountId:user.userId,account:user.email,cursor:JSON.stringify(next),reset,more,...(!reset&&!more?{verifiedThrough:meta.through}:{}),check:row?summary(row):null,answers:(r[3].results as AnswerRow[]).map(a=>answerView(a,undefined,row?.stage==='draft'?scope:undefined,recorded.get(a.item_id))),tasks:(r[4].results as TaskRow[]).map(t=>taskView(t,undefined,publishedTaskScope(row,scope)))};
 }
 
 export async function eveningBatch(user:ChatGPTUser,raw:unknown):Promise<EveningBatchReply>{
@@ -78,7 +79,7 @@ export async function eveningBatch(user:ChatGPTUser,raw:unknown):Promise<Evening
   priorByItem.set(c.kind+':'+c.checkId+':'+c.itemId,[...prior,c]);
  }
  const changesIndex=statements.length,checkId=commands[0].checkId,itemIds=JSON.stringify(commands.map(c=>c.itemId));
- statements.push(db.prepare('SELECT * FROM evening_checks WHERE id=?').bind(checkId),db.prepare(`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))`).bind(checkId,itemIds),db.prepare(`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))`).bind(checkId,itemIds),db.prepare(latestMenuSourceSql));
+ statements.push(db.prepare(`SELECT *,${publicationPayloadSql} FROM evening_checks WHERE id=?`).bind(checkId),db.prepare(`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))`).bind(checkId,itemIds),db.prepare(`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))`).bind(checkId,itemIds),db.prepare(latestMenuSourceSql));
  // A technical failure rolls back the whole D1 transaction. Logical CAS failures are per command.
  const r=await db.batch(statements),blocked=new Set<string>();
  const results:BatchResult[]=commands.map((c,i)=>{
@@ -87,6 +88,6 @@ export async function eveningBatch(user:ChatGPTUser,raw:unknown):Promise<Evening
   const dependent=blocked.has(key);blocked.add(key);
   return {operationId:c.id,checkId:c.checkId,status:dependent?'blocked':'conflict',error:receipt?'This operation ID belongs to a different change.':'This item changed. Review the shared result before choosing what to keep.'};
  });
- const scope=r[changesIndex+3].results[0]?scopeSource(r[changesIndex+3].results[0] as MenuScopeSource):undefined,row=r[changesIndex].results[0] as CheckRow|undefined;
- return {accountId:user.userId,account:user.email,results,changes:{check:r[changesIndex].results[0]?summary(r[changesIndex].results[0] as CheckRow):null,answers:(r[changesIndex+1].results as AnswerRow[]).map(a=>answerView(a,undefined,row?.stage==='draft'?scope:undefined)),tasks:(r[changesIndex+2].results as TaskRow[]).map(t=>taskView(t,undefined,row&&row.target_day>=operationalDay()?scope:undefined))}};
+ const scope=r[changesIndex+3].results[0]?scopeSource(r[changesIndex+3].results[0] as MenuScopeSource):undefined,row=r[changesIndex].results[0] as CheckRow|undefined,recorded=recordedAnswerScope(row);
+ return {accountId:user.userId,account:user.email,results,changes:{check:r[changesIndex].results[0]?summary(r[changesIndex].results[0] as CheckRow):null,answers:(r[changesIndex+1].results as AnswerRow[]).map(a=>answerView(a,undefined,row?.stage==='draft'?scope:undefined,recorded.get(a.item_id))),tasks:(r[changesIndex+2].results as TaskRow[]).map(t=>taskView(t,undefined,publishedTaskScope(row,scope)))}};
 }

@@ -29,7 +29,7 @@ try{
  const transport=async(url,init={})=>{
   if(!init.method){const res=await m.team.GET(new Request('http://test.local'+url));return {res,body:await res.json()};}
   postCount++;if(fault==='before'){fault='';throw Error('Offline before sending');}
-  const res=await m.team.POST(new Request('http://test.local'+url,{...init,headers:{...init.headers,Origin:'http://test.local'}}));
+  const headers=new Headers(init.headers);headers.set('Origin','http://test.local');const res=await m.team.POST(new Request('http://test.local'+url,{...init,headers}));
   const body=await res.json();if(fault==='after'){fault='';throw Error('Reply lost after commit');}if(gate){const g=gate;gate=null;await g;}
   return {res,body};
  };

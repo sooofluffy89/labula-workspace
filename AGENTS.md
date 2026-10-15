@@ -1,7 +1,9 @@
-# LABULA Worskspace
+# Workspace 2.0
 
 This repository is the source of the existing LABULA kitchen application.
-The requested display name is exactly **LABULA Worskspace**. The repository and
+The requested display name is exactly **Workspace 2.0**, beside the original
+unchanged LABULA wordmark. Preserve the original favicon and red/white/gray
+palette. The repository and
 package slug are `labula-workspace`. Keep the application UI in English; respond
 to the owner in Czech, using informal address.
 

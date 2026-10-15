@@ -1,0 +1,970 @@
+{
+  "format": "Workspace 2.0 preservation manifest",
+  "version": 1,
+  "environment": "synthetic-local",
+  "cutoverDay": "2026-10-15",
+  "capturedAt": "2026-10-15T08:05:00Z",
+  "preservation": {
+    "tables": [
+      {
+        "table": "access_write_guards",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "catalog_operations",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "check_rounds",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "checking_station_commands",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "checking_station_items",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "data_review_commands",
+        "count": 1,
+        "digest": "8bd8dc063197cc8f736e0cda882ba556f6c3475cddb32772a4bca1782ec78341",
+        "rows": [
+          {
+            "key": [
+              [
+                "id",
+                "review-command"
+              ]
+            ],
+            "digest": "e5359d075ae4b680563f39359a73cd8d769e84a97ffbb00e93ccf341e9199c4d"
+          }
+        ]
+      },
+      {
+        "table": "data_reviews",
+        "count": 1,
+        "digest": "5cfba59349da67acfb2f75ff8efff0dc4121a4fd367fd6d50208f604664eb82f",
+        "rows": [
+          {
+            "key": [
+              [
+                "id",
+                "kitchen"
+              ],
+              [
+                "revision",
+                4
+              ]
+            ],
+            "digest": "46cdc36664630669bc66f267d1f4203282176a49e5cf82ddb82fbcb0bdf8e9ec"
+          }
+        ]
+      },
+      {
+        "table": "evening_answers",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "evening_checks",
+        "count": 2,
+        "digest": "d6b5dfe5a5d229b9a87d60c6efb626515582636023afd7821aa2d3e28f8ed928",
+        "rows": [
+          {
+            "key": [
+              [
+                "id",
+                "live-plan"
+              ],
+              [
+                "version",
+                2
+              ],
+              [
+                "revision",
+                3
+              ]
+            ],
+            "digest": "54649fecde2ba882e614ed471c107e07d7883775dc711e67764fbfa4c389852f"
+          },
+          {
+            "key": [
+              [
+                "id",
+                "old-plan"
+              ],
+              [
+                "version",
+                1
+              ],
+              [
+                "revision",
+                1
+              ]
+            ],
+            "digest": "848505d8a3e9c3dcbf9d99291f8db05e1a12967658dd4bfa6d4ebfc5e6b12eb0"
+          }
+        ]
+      },
+      {
+        "table": "evening_commands",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "evening_versions",
+        "count": 1,
+        "digest": "e45c9486c998320820d31907e5783967c6868a9f9164a75ebf4114aa3cf5d968",
+        "rows": [
+          {
+            "key": [
+              [
+                "check_id",
+                "live-plan"
+              ],
+              [
+                "version",
+                2
+              ]
+            ],
+            "digest": "b2b2d57056149d3e73aca4497447694108987b770ce0f84093d64729876298df"
+          }
+        ]
+      },
+      {
+        "table": "ingredient_group_commands",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "kitchen_activity",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "kitchen_owner",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "kitchen_team",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "menu_scope_sources",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "morning_tasks",
+        "count": 2,
+        "digest": "70a18ff3e2be97c42accd735a6eeaf5acb05eb3320eb7da3614ade7d5872b3d5",
+        "rows": [
+          {
+            "key": [
+              [
+                "check_id",
+                "live-plan"
+              ],
+              [
+                "item_id",
+                "base"
+              ],
+              [
+                "revision",
+                2
+              ]
+            ],
+            "digest": "2d44888ba1b49d2a3099150b2d627c0646d40af175e7f7f108f3d178dc5c7467"
+          },
+          {
+            "key": [
+              [
+                "check_id",
+                "live-plan"
+              ],
+              [
+                "item_id",
+                "single"
+              ],
+              [
+                "revision",
+                0
+              ]
+            ],
+            "digest": "aca746b4b1f5d4042d48e42e272d79da437759763db4fbff0f73e621b2ba9e76"
+          }
+        ]
+      },
+      {
+        "table": "notebook_commands",
+        "count": 1,
+        "digest": "2d092cfe3306d0b7b8164ed010139c4588513166b8f1a34b5c7611b33211004b",
+        "rows": [
+          {
+            "key": [
+              [
+                "id",
+                "old-client-retry"
+              ]
+            ],
+            "digest": "69ed7b8b683c92c5364bf1cedc2cdb7333ee1d64fd3371c3062d8e3176908b51"
+          }
+        ]
+      },
+      {
+        "table": "notebooks",
+        "count": 1,
+        "digest": "ef68d5bb6e6cf8be8ecf5fe4a35850d1776b0ea3144c81188eb613f2f50b70e9",
+        "rows": [
+          {
+            "key": [
+              [
+                "id",
+                "kitchen"
+              ],
+              [
+                "revision",
+                12
+              ]
+            ],
+            "digest": "f783270db09d92425ee4c6a256581fcb40908c9dcde0cd5a64d8e0f1a8814e29"
+          }
+        ]
+      },
+      {
+        "table": "operating_calendar_versions",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "operating_commands",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "operating_outcomes",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "prep_feedback",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "prep_instruction_versions",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "prep_instructions",
+        "count": 1,
+        "digest": "dea1cd6b91799e4be3112da71a81955821a12b3b2b951e6915a96829cd6a6bbc",
+        "rows": [
+          {
+            "key": [
+              [
+                "item_id",
+                "base"
+              ],
+              [
+                "revision",
+                2
+              ]
+            ],
+            "digest": "dd2c8955ed2c1e1a75d7b8e6d13774ca41a407655d6068c0950b9ed53b1f4d1f"
+          }
+        ]
+      },
+      {
+        "table": "prep_note_commands",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "review_actions",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "review_authority",
+        "count": 1,
+        "digest": "7951fbafbe11b62a228c3cf1fffdc24b1ebc17f995e90060afca62f4d4ba8f62",
+        "rows": [
+          {
+            "key": [
+              [
+                "id",
+                "approval-1"
+              ]
+            ],
+            "digest": "dbb98f313d52a3053ce1dcc7e468b362de606ee76fee7044bd3b8784dec7b9c7"
+          }
+        ]
+      },
+      {
+        "table": "review_import_chunks",
+        "count": 1,
+        "digest": "fc24f32513dfc4ac86b7682dc6103cc358a6915bcbed70936f708cae8fcde60b",
+        "rows": [
+          {
+            "key": [
+              [
+                "id",
+                "archived-import"
+              ],
+              [
+                "part",
+                0
+              ]
+            ],
+            "digest": "0562048af242b327fe50bb4bcefa13dbd79dac66e587bebaa99a1a6af40fb425"
+          }
+        ]
+      },
+      {
+        "table": "reviewed_entities",
+        "count": 2,
+        "digest": "9d315d60c3f9c756ca37ddecca0535a0eed7c37fc86e5ad6d44c25ca60a27d5b",
+        "rows": [
+          {
+            "key": [
+              [
+                "id",
+                "applied-1"
+              ],
+              [
+                "review_id",
+                "vinohrady-cleanup-2026-09"
+              ],
+              [
+                "entity_id",
+                "approved-process"
+              ]
+            ],
+            "digest": "7d1243ba2334be476da1bf9526182bd233e7c443c1d28c91754ba2c7d8c9d0ae"
+          },
+          {
+            "key": [
+              [
+                "id",
+                "historical-other-campaign"
+              ],
+              [
+                "review_id",
+                "historical-campaign"
+              ]
+            ],
+            "digest": "eacb8a9085499e6b795a5d4bb3eb8cb0e8112ab6144c72734c046c13a60492a6"
+          }
+        ]
+      },
+      {
+        "table": "round_commands",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "round_state",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "round_timeline",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "stock_catalog_effects",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "stock_commands",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "stock_items",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "team_access_state",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "team_commands",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "user_photo_commands",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "user_photo_uploads",
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rows": []
+      },
+      {
+        "table": "user_photos",
+        "count": 1,
+        "digest": "55c261f42778a7a8b29f28843d8082d27f39568a76aeb8d14c1fedced36241f1",
+        "rows": [
+          {
+            "key": [
+              [
+                "user_id",
+                "synthetic-owner"
+              ],
+              [
+                "revision",
+                1
+              ]
+            ],
+            "digest": "b39f35850e07415ffd8d08d4e1b1d884697a796c6db1fe8d327c339e75e9de15"
+          }
+        ]
+      }
+    ],
+    "notebooks": [
+      {
+        "id": "kitchen",
+        "revision": 12,
+        "schemaVersion": 4,
+        "rawPayloadDigest": "32a89d8d57159e82c182889a3b3373521630df7e1074809c3b11b07f7e4b4580",
+        "dishes": [
+          {
+            "kind": "dish",
+            "id": "dish-a",
+            "digest": "33ebfc9c405ab17c1168cebe99d422a9648686c0269281cf750688f6567bf34b",
+            "state": "ready"
+          },
+          {
+            "kind": "dish",
+            "id": "dish-b",
+            "digest": "43481f95b1957c4d64665ae5febb595eb9ca6e8ba997323a6f977f1407e487d4",
+            "state": "ready"
+          }
+        ],
+        "variants": [
+          {
+            "kind": "variant",
+            "id": "variant-a",
+            "digest": "a003d336d108ce3573985a774a41d852123b349a395edd7d3a1761459dccce71",
+            "dishId": "dish-a",
+            "active": true,
+            "portions": 2
+          },
+          {
+            "kind": "variant",
+            "id": "variant-b",
+            "digest": "407e5e48b9db550e5887e42edc7bcea7e8f1bdf7e0c054f355324ac78dfe71ad",
+            "dishId": "dish-b",
+            "active": false,
+            "portions": 2
+          }
+        ],
+        "items": [
+          {
+            "id": "salt",
+            "kind": "bought",
+            "aliases": [
+              "Synthetic fine salt"
+            ],
+            "unit": "g",
+            "yieldAmount": null,
+            "externalUse": false,
+            "digest": "c00de76eef476ef11dfdd4c297d0b34b46cc813b5a50b30a37c04645265e24d5",
+            "authority": {
+              "itemId": "salt",
+              "source": "supplier",
+              "status": "not-recorded",
+              "sourceLabel": "Supplier ingredients",
+              "token": "296e6ee-7d089c88",
+              "reference": "",
+              "inputs": [],
+              "gaps": [
+                "Supplier composition not recorded."
+              ]
+            }
+          },
+          {
+            "id": "water",
+            "kind": "bought",
+            "aliases": [],
+            "unit": "g",
+            "yieldAmount": null,
+            "externalUse": false,
+            "digest": "4d815c81c0399013ce574c3622773877c914b901a2708bc94a6f045c3df4c6ee",
+            "authority": {
+              "itemId": "water",
+              "source": "supplier",
+              "status": "not-recorded",
+              "sourceLabel": "Supplier ingredients",
+              "token": "83f2d5fb-1fa543b7",
+              "reference": "",
+              "inputs": [],
+              "gaps": [
+                "Supplier composition not recorded."
+              ]
+            }
+          },
+          {
+            "id": "base",
+            "kind": "prep",
+            "aliases": [],
+            "unit": "g",
+            "yieldAmount": 25,
+            "externalUse": false,
+            "digest": "9a972f418989b6201de0cae0965dd863d69faf49b1316245648efa2cc6ba2d0b",
+            "authority": {
+              "itemId": "base",
+              "source": "legacy",
+              "status": "recorded",
+              "sourceLabel": "Existing recipe",
+              "token": "e0169cba-ccbca6b2",
+              "reference": "",
+              "inputs": [
+                {
+                  "itemId": "salt",
+                  "amount": 0.125,
+                  "note": "Exact decimal",
+                  "unit": "g"
+                }
+              ],
+              "gaps": []
+            }
+          },
+          {
+            "id": "single",
+            "kind": "prep",
+            "aliases": [],
+            "unit": "g",
+            "yieldAmount": null,
+            "externalUse": false,
+            "digest": "fbb52fc40c6f813b578db5fd8fb1f36a2d484efcd8fe4dfd389ba3738f93734c",
+            "authority": {
+              "itemId": "single",
+              "source": "process",
+              "status": "recorded",
+              "sourceLabel": "Synthetic single-process",
+              "token": "7bfefba4-bebc7636",
+              "reference": "",
+              "inputs": [
+                {
+                  "itemId": "water",
+                  "amount": 5,
+                  "note": ""
+                }
+              ],
+              "gaps": []
+            }
+          },
+          {
+            "id": "multi-a",
+            "kind": "prep",
+            "aliases": [],
+            "unit": "g",
+            "yieldAmount": null,
+            "externalUse": false,
+            "digest": "9d0935a2a8530a0a747af80c233605635b8e17c509bc073d26488de1f127b3d4",
+            "authority": {
+              "itemId": "multi-a",
+              "source": "process",
+              "status": "incomplete",
+              "sourceLabel": "Synthetic shared-process",
+              "token": "ff827f63-44e05c9",
+              "reference": "",
+              "inputs": [],
+              "gaps": [
+                "Product composition not confirmed. Shared batch inputs are shown separately."
+              ]
+            }
+          },
+          {
+            "id": "multi-b",
+            "kind": "prep",
+            "aliases": [],
+            "unit": "g",
+            "yieldAmount": null,
+            "externalUse": false,
+            "digest": "af64549ef3873caf6009b81632643b1b6c35ace42f994fed749161eecd74fa26",
+            "authority": {
+              "itemId": "multi-b",
+              "source": "process",
+              "status": "incomplete",
+              "sourceLabel": "Synthetic shared-process",
+              "token": "a5b0c65a-f33c754a",
+              "reference": "",
+              "inputs": [],
+              "gaps": [
+                "Product composition not confirmed. Shared batch inputs are shown separately."
+              ]
+            }
+          },
+          {
+            "id": "approved",
+            "kind": "prep",
+            "aliases": [],
+            "unit": "g",
+            "yieldAmount": null,
+            "externalUse": false,
+            "digest": "d2f53b8cc57f7a59476a639c48379f74cb255930c3082c7b04bd55a210dc2440",
+            "authority": {
+              "itemId": "approved",
+              "source": "review",
+              "status": "incomplete",
+              "sourceLabel": "Synthetic quick process",
+              "token": "fdd80bd7-162b5d9d",
+              "reference": "Approved Review evidence retained",
+              "inputs": [],
+              "gaps": [
+                "Approved quick review records scope and work, but its complete input composition is not recorded",
+                "Product composition not confirmed. Add the ingredients in this product; shared batch inputs stay separate."
+              ]
+            }
+          },
+          {
+            "id": "own",
+            "kind": "prep",
+            "aliases": [],
+            "unit": "g",
+            "yieldAmount": null,
+            "externalUse": false,
+            "digest": "4fff1357a660c7447939176dfe3041eed89976b314804d3bf5a96f0b4b1cdf36",
+            "authority": {
+              "itemId": "own",
+              "source": "workspace",
+              "status": "recorded",
+              "sourceLabel": "Product recipe · Workspace 2.0",
+              "token": "4e5c1a04-a220b0c8",
+              "reference": "",
+              "inputs": [
+                {
+                  "itemId": "salt",
+                  "amount": 1,
+                  "note": ""
+                }
+              ],
+              "gaps": []
+            }
+          },
+          {
+            "id": "supplier",
+            "kind": "bought",
+            "aliases": [],
+            "unit": "g",
+            "yieldAmount": null,
+            "externalUse": false,
+            "digest": "b12a789e3897217959aa174829841852447f9ec123acb93696b84d5c583585b5",
+            "authority": {
+              "itemId": "supplier",
+              "source": "supplier",
+              "status": "recorded",
+              "sourceLabel": "Supplier ingredients · Workspace 2.0",
+              "token": "3b74f6a8-786a08ac",
+              "reference": "Synthetic supplier label",
+              "inputs": [
+                {
+                  "itemId": "water",
+                  "amount": null,
+                  "note": ""
+                }
+              ],
+              "gaps": []
+            }
+          }
+        ],
+        "processes": [
+          {
+            "kind": "process",
+            "id": "single-process",
+            "digest": "0a689fd7fd3d144d10679fd4d054ae86535b26575a894b9eda459bd2403c7219",
+            "sourceReviewId": null,
+            "outputs": [
+              {
+                "itemId": "single",
+                "amount": 5,
+                "note": ""
+              }
+            ]
+          },
+          {
+            "kind": "process",
+            "id": "shared-process",
+            "digest": "0f11a709712febec13b6aa92d1c668c240b8961e14598240c03cc932ffb9fcb9",
+            "sourceReviewId": null,
+            "outputs": [
+              {
+                "itemId": "multi-a",
+                "amount": 35,
+                "note": ""
+              },
+              {
+                "itemId": "multi-b",
+                "amount": 10,
+                "note": ""
+              }
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "kind": "dish-variant",
+            "ownerId": "variant-a",
+            "position": 0,
+            "itemId": "base",
+            "amount": 3.25,
+            "note": ""
+          },
+          {
+            "kind": "dish-variant",
+            "ownerId": "variant-a",
+            "position": 1,
+            "itemId": "approved",
+            "amount": null,
+            "note": ""
+          },
+          {
+            "kind": "dish-variant",
+            "ownerId": "variant-a",
+            "position": 2,
+            "itemId": "multi-a",
+            "amount": 1,
+            "note": ""
+          },
+          {
+            "kind": "dish-variant",
+            "ownerId": "variant-b",
+            "position": 0,
+            "itemId": "base",
+            "amount": null,
+            "note": ""
+          },
+          {
+            "kind": "dish-variant",
+            "ownerId": "variant-b",
+            "position": 1,
+            "itemId": "supplier",
+            "amount": 2,
+            "note": ""
+          },
+          {
+            "kind": "legacy-item",
+            "ownerId": "base",
+            "position": 0,
+            "itemId": "salt",
+            "amount": 0.125,
+            "note": "Exact decimal",
+            "unit": "g"
+          },
+          {
+            "kind": "legacy-item",
+            "ownerId": "approved",
+            "position": 0,
+            "itemId": "salt",
+            "amount": 99,
+            "note": ""
+          },
+          {
+            "kind": "legacy-item",
+            "ownerId": "own",
+            "position": 0,
+            "itemId": "water",
+            "amount": 10,
+            "note": ""
+          },
+          {
+            "kind": "shared-process",
+            "ownerId": "single-process",
+            "position": 0,
+            "itemId": "water",
+            "amount": 5,
+            "note": ""
+          },
+          {
+            "kind": "shared-process",
+            "ownerId": "shared-process",
+            "position": 0,
+            "itemId": "water",
+            "amount": 50,
+            "note": ""
+          },
+          {
+            "kind": "shared-process",
+            "ownerId": "shared-process",
+            "position": 1,
+            "itemId": "salt",
+            "amount": 1,
+            "note": ""
+          },
+          {
+            "kind": "process-output",
+            "ownerId": "single-process",
+            "position": 0,
+            "itemId": "single",
+            "amount": 5,
+            "note": ""
+          },
+          {
+            "kind": "process-output",
+            "ownerId": "shared-process",
+            "position": 0,
+            "itemId": "multi-a",
+            "amount": 35,
+            "note": ""
+          },
+          {
+            "kind": "process-output",
+            "ownerId": "shared-process",
+            "position": 1,
+            "itemId": "multi-b",
+            "amount": 10,
+            "note": ""
+          },
+          {
+            "kind": "workspace-composition",
+            "ownerId": "own",
+            "position": 0,
+            "itemId": "salt",
+            "amount": 1,
+            "note": ""
+          },
+          {
+            "kind": "workspace-composition",
+            "ownerId": "supplier",
+            "position": 0,
+            "itemId": "water",
+            "amount": null,
+            "note": ""
+          }
+        ],
+        "distinctPairs": [
+          [
+            "salt",
+            "water"
+          ]
+        ],
+        "equipmentDigest": "c6c86a8103cb348c409729efdd2fcbfd3fa5fd92a3a2e84fe37e3b93cded1800"
+      }
+    ],
+    "photos": [
+      {
+        "userId": "synthetic-owner",
+        "revision": 1,
+        "objectKey": "synthetic-photo",
+        "sha256": "c628e93d245a91c829061c3b27bbc43ec4007061c7ec1756b072ede47f0478d2",
+        "size": 68,
+        "mime": "image/png"
+      }
+    ]
+  },
+  "digest": "cedbb99e814a58f80503e12f544994fd6f04bc7de96a1db186b1f6c0554a667e",
+  "runtimePolicy": {
+    "captured": true,
+    "rows": [
+      {
+        "id": "kitchen",
+        "write_paused": 0,
+        "min_client_version": 1,
+        "revision": 0,
+        "updated_at": "initial-policy"
+      }
+    ],
+    "digest": "d6b51b982f7492bd06b1d36403424fe42976e253281343224420c9ae0b4cfd9d"
+  },
+  "warnings": [
+    {
+      "code": "composition-needs-reconciliation",
+      "notebookId": "kitchen",
+      "itemId": "multi-a",
+      "source": "process",
+      "gaps": [
+        "Product composition not confirmed. Shared batch inputs are shown separately."
+      ]
+    },
+    {
+      "code": "composition-needs-reconciliation",
+      "notebookId": "kitchen",
+      "itemId": "multi-b",
+      "source": "process",
+      "gaps": [
+        "Product composition not confirmed. Shared batch inputs are shown separately."
+      ]
+    },
+    {
+      "code": "composition-needs-reconciliation",
+      "notebookId": "kitchen",
+      "itemId": "approved",
+      "source": "review",
+      "gaps": [
+        "Approved quick review records scope and work, but its complete input composition is not recorded",
+        "Product composition not confirmed. Add the ingredients in this product; shared batch inputs stay separate."
+      ]
+    },
+    {
+      "code": "active-legacy-plan-policy",
+      "plans": [
+        {
+          "checkId": "live-plan",
+          "planDay": "2026-10-15",
+          "stage": "confirmed",
+          "version": 2,
+          "planPolicyVersion": 1,
+          "unfinishedTasks": 1
+        }
+      ]
+    }
+  ],
+  "boundaries": {
+    "readOnly": true,
+    "compositionReviewId": "vinohrady-cleanup-2026-09",
+    "knownTables": 42,
+    "unknownTables": [],
+    "browserDrafts": "Not captured by the server backup. Inventory each browser and export unsaved recovery files before cutover; preserve existing keys.",
+    "releaseApproval": "This report does not grant deployment or production migration approval.",
+    "productionVerified": false
+  }
+}

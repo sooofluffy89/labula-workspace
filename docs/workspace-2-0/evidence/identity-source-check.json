@@ -1,0 +1,8 @@
+{
+  "kind": "source inspection, not browser visual QA",
+  "faviconByteIdenticalToBaseline": true,
+  "faviconSha256": "a83126278d89cc9b30513370c4286a279cc4684c2a049331755d94cb09d4e165",
+  "pageTitle": "Workspace 2.0",
+  "logo": "Existing LABULA wordmark retained in shell/access/archive",
+  "activeRenderVerification": "Passed actual Chromium brand/title/role render scenarios; original wordmark retained."
+}

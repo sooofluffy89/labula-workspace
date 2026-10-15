@@ -1,167 +1,89 @@
 'use client';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import {MenuScopeProvider} from './menu-scope-context';
-import {menuUsage} from '@/lib/menu-scope';
-import {DishWorkspace} from './dish-workspace';
-import {withIngredientCatalog} from '@/lib/ingredient-review';
-import {CatalogWorkspace} from './catalog-workspace';
-import {MenuScenarioPlanner,StockSetupDialog} from './menu-scenarios';
-import {exportProductionCsv} from '@/lib/production';
-import {ProfileButton} from './profile';
-import DataReview from './review/review';
-import {useWorkspaceNavigation} from './use-workspace-navigation';
-import type {WorkspaceRoute} from '@/lib/workspace-navigation';
-import {removeRecipeInput,restoreRecipeInput} from '@/lib/recipe-undo';
-import {registerSignOutWork} from '@/lib/profile-signout';
-import { useEffect,useMemo,useRef,useState } from 'react';
-import { completeRecipe,validateNotebook,validationMessage,exportDishIngredientsCsv,type Notebook,type Item } from '@/lib/notebook';
-import {DesktopNavigation,type WorkspaceDestination} from './desktop-navigation';
 import {InformationProvider} from './information-detail';
-import {useInformation} from './information-context';
-import type {InformationTarget} from '@/lib/information';
 import {StockWorkflow,type StockView} from './stock-workflow';
 import {TeamWorkspace} from './team-workspace';
-import { useNotebook } from './use-notebook';
-import {type CreateItem } from './recipe-ui';
-import {PreparationPrompt} from './prep-completion';
-import {ReviewStatus} from "./review-status";
-import {KitchenInsights} from "./kitchen-insights";
+import {useNotebook} from './use-notebook';
 import {useReviewedData} from './reviewed-data';
-import type {BatchScope} from '@/lib/batch-progress';
-import {exportBatchCsv} from '@/lib/batch-export';
-import {preparationProgress} from '@/lib/prep-completion';
-import {PrepWorkflow} from './prep-workflow';
-import {hasPrepDraftChanges,type PrepDraft} from '@/lib/prep-draft';
-import {readLocalPreparation,hasVolatilePreparation,volatilePreparation,prepLocalEvent} from '@/lib/prep-local';
-import {accessDraftEvent,accessDraftAvailableEvent} from '@/lib/access-client';
-import {downloadJson} from '@/lib/download';
-import {exportPreparationCsv} from '@/lib/prep-export';
-import { CreateItemDialog,ItemEditor } from './catalog-editor';
-import {BulkIngredients} from './bulk-ingredients';
-import {CatalogManager} from './catalog-manager';
-import {NotebookRestore} from './notebook-restore';
-import {hasAliasChanges,type AliasDrafts,type AliasDraft} from '@/lib/catalog-draft';
-import {makeNotebookDraft} from '@/lib/notebook-draft';
-import {directUsage,type DirectUsage} from '@/lib/direct-usage';
-import {IngredientOverview} from './ingredient-overview';
-import {namesOf} from '@/lib/catalog';
-import {notebookProgress,recipeStatus,statusLabels,type RecipeStatus} from '@/lib/recipe-progress';
-import {RecipeStatusBadge} from './recipe-progress';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs,TabsList,TabsTrigger,TabsContent } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { Checkbox } from '@/components/ui/checkbox';
-import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter} from '@/components/ui/dialog';
-import { AlertDialog,AlertDialogContent,AlertDialogHeader,AlertDialogTitle,AlertDialogDescription,AlertDialogFooter,AlertDialogCancel,AlertDialogAction } from '@/components/ui/alert-dialog';
-import { Empty,EmptyHeader,EmptyTitle,EmptyDescription } from '@/components/ui/empty';
-import { SidebarProvider,Sidebar,SidebarContent } from '@/components/ui/sidebar';
-import { DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Toaster } from '@/components/ui/sonner';
-import { toast } from 'sonner';
-import { Circle,CheckCircle2,Plus,LockKeyhole,UtensilsCrossed,Layers,Network,Download,Save,LoaderCircle,ChevronDown,ArrowRight,RefreshCw } from 'lucide-react';
+import {useWorkspaceNavigation} from './use-workspace-navigation';
+import {WorkspaceShell,SettingsNavigation} from './workspace-shell';
+import {WorkspaceData} from './workspace-data';
+import {MenuWorkspace,type MenuSelection} from './menu-workspace';
+import DataReview from './review/review';
+import {Toaster} from '@/components/ui/sonner';
+import {Button} from '@/components/ui/button';
+import {toast} from 'sonner';
+import {canonicalWorkspaceRoute,workspaceArea,workspaceUrl,type WorkspaceRoute,type WorkspaceDestination} from '@/lib/workspace-navigation';
 
-function download(name:string,content:string,type:string){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
-function SnapshotStats({data,index}:{data:Notebook;index:DirectUsage}){const progress=notebookProgress(data);const recorded=progress.counts.completed;return <div className="stats"><div className="stat"><strong>{recorded}<span> / {progress.active}</span></strong><span>Dish ingredient lists confirmed</span></div><div className="stat"><strong>{index.bought}</strong><span>Bought ingredients used in dishes</span></div><div className="stat"><strong>{index.prep}</strong><span>Preparations used in dishes</span></div><div className="stat"><strong>{[...index.itemDishes.values()].filter(ids=>ids.size>1).length}</strong><span>Items shared across dishes</span></div></div>;}
-
-export default function KitchenApp({account=''}:{account?:string}={}){
- const [stockRequest,setStockRequest]=useState<{view:StockView;serial:number;day?:string;rounds?:boolean;operations?:'history'|'overview'|'calendar'}>({view:'evening',serial:0});const [stockDraft,setStockDraft]=useState<string|null>(null);
- const openStock=(view:StockView)=>navigateDesktop(view);
- const [stockLocation,setStockLocation]=useState<WorkspaceDestination>('evening');
- const activeDestination=useRef<WorkspaceDestination>('insights');
- const pendingDestination=useRef<WorkspaceDestination|null>(null),pendingDay=useRef<string|undefined>(undefined);
- const nb=useNotebook();const reviewedRead=useReviewedData(account,nb.updatedAt);const {data,update}=nb;
- const [dishOpenRequest,setDishOpenRequest]=useState(0),[productionItemId,setProductionItemId]=useState<string|null>(null),[stockSetupId,setStockSetupId]=useState<string|null>(null);
- const [tab,setTab]=useState('insights'),[selected,setSelected]=useState('s1'),[variantId,setVariantId]=useState('s1-v1');
- const [search,setSearch]=useState(''),[filter,setFilter]=useState('all'),[catalogScope,setCatalogScope]=useState<'all'|'current'>('current'),[reviewVisited,setReviewVisited]=useState(false);
- const [editing,setEditing]=useState<string|null>(null),[creating,setCreating]=useState<{name:string;done:(item:Item)=>void}|null>(null);
- const [catalogRequest,setCatalogRequest]=useState<{itemId:string;serial:number}|null>(null);
- const [confirmReload,setConfirmReload]=useState(false),[bulkId,setBulkId]=useState<string|null>(null),[restoreOpen,setRestoreOpen]=useState(false);
- const [aliasState,setAliasState]=useState<{account:string;drafts:AliasDrafts}>({account:'',drafts:{}});
- const navigate=useWorkspaceNavigation(nb.loaded&&!nb.loading,(route:WorkspaceRoute)=>{
-  const id=route.view;activeDestination.current=id;
-  if(['evening','morning','manage','rounds','history','operations','calendar'].includes(id)){
-   pendingDestination.current=id;pendingDay.current=route.day;
-   setStockRequest(v=>({view:['manage','rounds'].includes(id)?'manage':id==='morning'?'morning':'evening',serial:v.serial+1,day:route.day??(id==='evening'?stockDraft??undefined:undefined),rounds:id==='rounds',operations:id==='history'?'history':id==='operations'?'overview':id==='calendar'?'calendar':undefined}));setTab('stock');setStockLocation(id);
-  }else{setTab(id);if(id==='review')setReviewVisited(true);}
-  if(route.dish&&data.dishes.some(d=>d.id===route.dish)){setSelected(route.dish);setDishOpenRequest(v=>v+1);}
-  if(route.variant&&data.recipes.some(r=>r.id===route.variant&&(!route.dish||r.menuId===route.dish)))setVariantId(route.variant);
-  if(id==='catalog'){setSearch(route.query??'');setFilter(route.kind??'all');setCatalogScope(route.scope??'current');}
- });
- const navigateDesktop=(id:WorkspaceDestination)=>{const go=()=>navigate({view:id,...(id==='catalog'?{query:search,kind:filter as WorkspaceRoute['kind'],scope:catalogScope}:{})});if(id==='review'&&nb.dirty)void nb.flush().then(ok=>{if(ok)go();});else go();};
- const locationChanged=(id:WorkspaceDestination,day?:string,blocked=false)=>{if(!['evening','morning','manage','rounds','history','operations','calendar'].includes(activeDestination.current))return;const requested=!!pendingDestination.current;if(blocked){pendingDestination.current=null;pendingDay.current=undefined;}if(pendingDestination.current&&(id!==pendingDestination.current||(pendingDay.current&&day!==pendingDay.current)))return;pendingDestination.current=null;pendingDay.current=undefined;setStockLocation(id);const current=new URL(location.href).searchParams;if(current.get('view')!==id||(day&&current.get('day')!==day))navigate({view:id,...(day?{day}:{})},blocked||requested||current.get('view')===id&&!current.get('day'),false);};
- const [setupExpanded,setSetupExpanded]=useState(false);
- const setupPreference='labula-recipe-setup-expanded:'+account.toLowerCase();
- useEffect(()=>{try{setSetupExpanded(localStorage.getItem(setupPreference)==='true');}catch{/* optional view preference */}},[setupPreference]);
- const toggleSetup=(value:boolean)=>{setSetupExpanded(value);try{localStorage.setItem(setupPreference,String(value));}catch{/* optional view preference */}};
- const [,setPrepDraftRevision]=useState(0);const prepDraftChanged=()=>setPrepDraftRevision(v=>v+1);
- const [prepImports,setPrepImports]=useState<Record<string,PrepDraft>>({});
- type PrepOptions={itemId?:string;remaining?:boolean;startItemId?:string;batchScope?:BatchScope};
- const [prepOpen,setPrepOpen]=useState<(PrepOptions&{controller:AbortController})|null>(null);
- const [prepStarting,setPrepStarting]=useState(false);
- const prepTransition=useRef<AbortController|null>(null);
- const prepTrigger=useRef<HTMLElement|null>(null);
- const closePrepFlow=()=>{prepTransition.current?.abort();prepTransition.current=null;setPrepStarting(false);setPrepOpen(null);};
- useEffect(()=>()=>{prepTransition.current?.abort();prepTransition.current=null;},[]);
- const openPrepFlow=async(options:PrepOptions={})=>{
-  if(prepTransition.current)return false;
-  const controller=new AbortController();prepTransition.current=controller;
-  prepTrigger.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
-  setPrepStarting(true);
-  try{
-   await nb.beginPreparation(controller.signal);
-   if(controller.signal.aborted||prepTransition.current!==controller)return false;
-   setEditing(null);setPrepOpen({...options,controller});return true;
-  }catch(e){
-   if(!controller.signal.aborted)toast.error(validationMessage(e));
-   if(prepTransition.current===controller){controller.abort();prepTransition.current=null;}
-   return false;
-  }finally{if(prepTransition.current===controller||!prepTransition.current)setPrepStarting(false);}
+type StockRequest={view:StockView;serial:number;day?:string;rounds?:boolean;operations?:'history'|'overview'|'calendar'};
+const stockDestinations=['morning','evening','history','calendar','rounds'];
+export default function KitchenApp({account='',role='legacy'}:{account?:string;role?:'owner'|'manager'|'legacy'}={}){
+ const nb=useNotebook(),reviewed=useReviewedData(account,nb.updatedAt);
+ const canManage=role==='owner'||role==='manager';
+ const [route,setRoute]=useState<WorkspaceRoute>({view:'morning'});
+ const active=useRef<WorkspaceDestination>('morning');
+ const pending=useRef<WorkspaceDestination|null>(null),pendingDay=useRef<string|undefined>(undefined);
+ const [request,setRequest]=useState<StockRequest>({view:'morning',serial:0});
+ const [menu,setMenu]=useState<MenuSelection>({view:'dishes'}),[menuVisited,setMenuVisited]=useState(false);
+ const [teamVisited,setTeamVisited]=useState(false),[reviewVisited,setReviewVisited]=useState(false);
+ const lastToday=useRef<WorkspaceRoute>({view:'morning'}),lastMenu=useRef<WorkspaceRoute>({view:'recipes'});
+ const ignore=useCallback(()=>{},[]);
+ const navigate=useWorkspaceNavigation(true,input=>{
+  let next=canonicalWorkspaceRoute(input);
+  if(!canManage&&['team','calendar','rounds'].includes(next.view))next={view:'data'};
+  active.current=next.view;setRoute(next);
+  if(stockDestinations.includes(next.view)){
+   pending.current=next.view;pendingDay.current=next.day;
+   setRequest(previous=>({view:next.view==='morning'?'morning':next.view==='rounds'?'manage':'evening',serial:previous.serial+1,day:next.day,rounds:next.view==='rounds',operations:next.view==='history'?'history':next.view==='calendar'?'calendar':undefined}));
+   if(next.view==='morning'||next.view==='evening')lastToday.current=next;
+  }else if(next.view==='recipes'||next.view==='catalog'){
+   lastMenu.current=next;setMenuVisited(true);
+   setMenu({view:next.view==='recipes'?'dishes':'ingredients',dishId:next.dish,variantId:next.variant,itemId:next.item,itemPath:next.itemPath,query:next.query,kind:next.kind==='review'?'all':next.kind,scope:next.scope,checkedOnly:next.checkedOnly});
+  }else if(next.view==='team')setTeamVisited(true);
+  else if(next.view==='review')setReviewVisited(true);
+ },'morning');
+ const go=(next:WorkspaceRoute)=>navigate(canonicalWorkspaceRoute(next));
+ const locationChanged=(id:WorkspaceDestination,day?:string,blocked=false)=>{
+  if(!stockDestinations.includes(active.current))return;
+  const requested=!!pending.current;
+  if(blocked){pending.current=null;pendingDay.current=undefined;}
+  if(pending.current&&(id!==pending.current||(pendingDay.current&&day!==pendingDay.current)))return;
+  pending.current=null;pendingDay.current=undefined;
+  const next=canonicalWorkspaceRoute({view:id,...(day?{day}:{})});
+  const current=new URL(location.href).searchParams;
+  if(current.get('view')!==next.view||(day&&current.get('day')!==day)){
+   active.current=next.view;setRoute(next);
+   if(next.view==='morning'||next.view==='evening')lastToday.current=next;
+   navigate(next,blocked||requested||current.get('view')===next.view&&!current.get('day'),false);
+  }
  };
- const openPrep=(itemId?:string)=>openPrepFlow(itemId?{itemId}:{remaining:true});
- const getPrepDraft=():PrepDraft|null=>{if(typeof window==='undefined'||!nb.user)return null;return readLocalPreparation(nb.user);};
- let prepDirty=false,prepDraftError=false,prepDraft:PrepDraft|null=null;try{prepDraft=getPrepDraft();prepDirty=hasPrepDraftChanges(prepDraft);}catch{prepDirty=true;prepDraftError=true;}
- const savedNotebook=nb.loaded?nb.getSavedBase()?.notebook:null;
- const acceptPreparation=(body:Parameters<typeof nb.acceptProfileSnapshot>[0],signal:AbortSignal)=>{const before=nb.getSavedBase()?.notebook;nb.acceptProfileSnapshot(body,signal);const after=preparationProgress(validateNotebook(body.data),reviewedRead.records??[]);if(before&&preparationProgress(before,reviewedRead.records??[]).remaining.length&&after.total&&!after.remaining.length)toast.success('All preparation & storage forms are filled in.');};
- useEffect(()=>{const changed=()=>setPrepDraftRevision(v=>v+1);window.addEventListener('storage',changed);window.addEventListener(prepLocalEvent,changed);return()=>{window.removeEventListener('storage',changed);window.removeEventListener(prepLocalEvent,changed);};},[]);
- useEffect(()=>{const protect=(e:BeforeUnloadEvent)=>{if(hasVolatilePreparation()){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',protect);return()=>window.removeEventListener('beforeunload',protect);},[nb.user]);
- const restorePrep=async(draft:PrepDraft)=>{if(draft.account.toLowerCase()!==nb.user.toLowerCase())return false;setPrepImports(old=>({...old,[draft.account.toLowerCase()]:draft}));return openPrepFlow({});};
- const direct=useMemo(()=>directUsage(data),[data]);const currentUsage=useMemo(()=>menuUsage(data,reviewedRead.records??[]),[data,reviewedRead.records]);
- const aliasDrafts=aliasState.account===nb.user?aliasState.drafts:{};const aliasDirty=Object.values(aliasDrafts).some(hasAliasChanges);const setAliasDrafts=(drafts:AliasDrafts)=>setAliasState({account:nb.user,drafts});
- useEffect(()=>{if(!aliasDirty)return;const protect=(e:BeforeUnloadEvent)=>{e.preventDefault();e.returnValue='';};window.addEventListener('beforeunload',protect);return()=>window.removeEventListener('beforeunload',protect);},[aliasDirty]);
- const selectedItem=data.items.find(i=>i.id===editing);
- const chooseDish=(id:string)=>{const next=data.recipes.find(r=>r.menuId===id&&r.active)??data.recipes.find(r=>r.menuId===id);navigate({view:'recipes',dish:id,variant:next?.id});};
- const createItem:CreateItem=(name,done)=>setCreating({name,done});
- const commitItem=(item:Item)=>{const next=withIngredientCatalog(data,data.items.map(i=>i.id===item.id?item:i));try{validateNotebook(next);}catch(e){return validationMessage(e);}update(()=>next);toast.success('Item changes added to the notebook.');return null;};
- const exportData=(kind:'json'|'csv')=>{try{download(`labula-kitchen-${new Date().toISOString().slice(0,10)}.${kind}`,kind==='json'?JSON.stringify(makeNotebookDraft(data,nb.getSavedBase(),nb.user,Object.values(aliasDrafts).filter(hasAliasChanges),nb.getSaveRecovery(),nb.getCatalogRecovery(),nb.getBulkRecovery(),getPrepDraft()),null,2):exportDishIngredientsCsv(data,'current'),kind==='json'?'application/json':'text/csv;charset=utf-8');}catch(e){toast.error(validationMessage(e));}};
- useEffect(()=>{const exportLocal=()=>exportData('json');window.addEventListener(accessDraftEvent,exportLocal);window.dispatchEvent(new CustomEvent(accessDraftAvailableEvent,{detail:true}));return()=>{window.removeEventListener(accessDraftEvent,exportLocal);window.dispatchEvent(new CustomEvent(accessDraftAvailableEvent,{detail:false}));};});
- useEffect(()=>registerSignOutWork(()=>nb.loaded&&(nb.dirty||nb.saving||nb.operationPending||nb.savePending||aliasDirty||prepDirty)?{label:'Recipe notebook draft',safe:true,value:makeNotebookDraft(data,nb.getSavedBase(),nb.user,Object.values(aliasDrafts).filter(hasAliasChanges),nb.getSaveRecovery(),nb.getCatalogRecovery(),nb.getBulkRecovery(),getPrepDraft())}:null));
- const retryNotebook=async()=>{const receipt=nb.getCatalogRecovery();const ok=await nb.retry();if(ok&&receipt?.operation.kind==='aliases'){const op=receipt.operation,draft=aliasDrafts[op.itemId];if(draft&&JSON.stringify(draft.text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean))===JSON.stringify(op.aliases)){const next={...aliasDrafts};delete next[op.itemId];setAliasDrafts(next);}}return ok;};
- const progress=useMemo(()=>notebookProgress(data),[data]);const selectedProgress=progress.dishes.get(selected)!;
- const bridge=useRef({data,chooseDish});useEffect(()=>{bridge.current={data,chooseDish};});
- useEffect(()=>{type Context={registerTool:(tool:{name:string;description:string;inputSchema:object;annotations:object;execute:(i:unknown)=>unknown},opts:{signal:AbortSignal})=>void|Promise<void>};const context=(document as Document&{modelContext?:Context}).modelContext;if(!context?.registerTool)return;const controller=new AbortController();const tools=[{name:'get_kitchen_notebook',description:'Read the current recipe notebook, its shared catalog and directly listed dish ingredients. Includes unsaved edits visible on this page.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:true},execute:(input:unknown)=>{if(!input||typeof input!=='object'||Object.keys(input).length)throw new Error('Expected an empty object.');return {notebook:bridge.current.data,missingIngredientLists:bridge.current.data.recipes.filter(r=>r.active&&!completeRecipe(r)).length};}},{name:'open_dish_recipe',description:'Navigate to an existing menu dish in the recipe form. This does not change or save recipe data.',inputSchema:{type:'object',properties:{menuId:{type:'string'}},required:['menuId'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:async(input:unknown)=>{if(!input||typeof input!=='object'||Object.keys(input).some(k=>k!=='menuId'))throw new Error('Expected a menuId.');const id=(input as {menuId?:string}).menuId;if(!bridge.current.data.dishes.some(m=>m.id===id))throw new Error('Unknown menu dish.');bridge.current.chooseDish(id!);await new Promise(resolve=>requestAnimationFrame(()=>resolve(null)));return {openedMenuId:id};}}];for(const tool of tools){try{void Promise.resolve(context.registerTool(tool,{signal:controller.signal})).catch(()=>{});}catch{}}return()=>controller.abort();},[]);
- return <MenuScopeProvider records={reviewedRead.records??[]}><InformationProvider key={nb.user} account={nb.user} onEdit={id=>setEditing(id)} onCorrectType={(nb.canManage??nb.isOwner)?id=>{setCatalogRequest(r=>({itemId:id,serial:(r?.serial??0)+1}));navigateDesktop('catalog');}:undefined} onRounds={(nb.canManage??nb.isOwner)?()=>{navigateDesktop('rounds');}:undefined}><KitchenContentBridge>{openInfo=><div className={tab==='stock'?'kitchen-stock-work':'kitchen-workspace'}><DesktopNavigation current={tab==='stock'?stockLocation:tab as WorkspaceDestination} canManage={nb.canManage??nb.isOwner} disabled={!nb.loaded||nb.loading||nb.preparationBusy||nb.operating||nb.operationPending||nb.savePending} onNavigate={navigateDesktop}/><Toaster position="bottom-right"/><header className="app-header"><div className="brand"><span className="wordmark">LABULA</span><span className="brand-label"><strong>Worskspace</strong></span></div><div className="actions"><span hidden={tab==='stock'&&!nb.dirty&&!nb.saving&&!nb.error&&!nb.operationPending&&!nb.savePending} className={'status-line '+(nb.error?'error':'muted')} role="status">{nb.saving||nb.operating?<><LoaderCircle className="animate-spin"/>Saving…</>:nb.operationPending||nb.savePending?<><Circle/>Save confirmation needed</>:nb.dirty||aliasDirty||prepDirty?<><Circle/>{aliasDirty?'Unsaved alternative names':nb.dirty?'Draft on this device':'Draft on this device · preparation'}</>:nb.loaded?<><CheckCircle2/>Autosaved · recipe notebook</>:<><LockKeyhole/>{nb.error?'Private workspace':'Loading private workspace…'}</>}</span><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" disabled={!nb.loaded||nb.preparationBusy}><Download/>{tab==='stock'?'Workspace export':'Export'}<ChevronDown/></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={()=>exportData('csv')}>Current menu dish ingredients (.csv)</DropdownMenuItem><DropdownMenuItem onClick={()=>download('labula-all-dish-ingredients.csv',exportDishIngredientsCsv(data,'all'),'text/csv;charset=utf-8')}>All dish recipes (.csv)</DropdownMenuItem><DropdownMenuItem onClick={()=>download('labula-production-tasks.csv',exportProductionCsv(data,reviewedRead.records??[],'current'),'text/csv;charset=utf-8')}>Current menu production tasks (.csv)</DropdownMenuItem><DropdownMenuItem onClick={()=>download('labula-preparation-storage.csv',exportPreparationCsv(data),'text/csv;charset=utf-8')}>Preparation & storage (.csv)</DropdownMenuItem><DropdownMenuItem onClick={()=>download('labula-batch-estimates.csv',exportBatchCsv(data),'text/csv;charset=utf-8')}>Batch size & routine (.csv)</DropdownMenuItem><DropdownMenuItem onClick={()=>exportData('json')}>Recipe notebook / draft (.json)</DropdownMenuItem><DropdownMenuItem onClick={()=>setRestoreOpen(true)}>Restore notebook draft…</DropdownMenuItem>{(nb.canManage??nb.isOwner)&&<DropdownMenuItem asChild><a href="/review-backup">Complete workspace backup…</a></DropdownMenuItem>}</DropdownMenuContent></DropdownMenu><Button hidden={tab==='stock'&&!nb.dirty&&!nb.error&&!nb.operationPending&&!nb.savePending||!nb.dirty&&!nb.error&&!nb.operationPending&&!nb.savePending&&nb.loaded} variant="outline" onClick={()=>void retryNotebook()} disabled={!nb.loaded&&!nb.error||nb.preparationBusy||nb.saving||nb.operating||(!nb.dirty&&nb.loaded&&!nb.operationPending&&!nb.savePending)}><Save/>{nb.bulkPending?'Retry ingredient save':nb.savePending?'Retry saving':nb.operationPending?'Retry catalog change':nb.loaded?'Save now':nb.error?'Retry connection':'Loading…'}</Button><ProfileButton/></div></header>
- <main className="app-frame" id="workspace-content" tabIndex={-1}>
- {nb.error&&<div className="notice" role="alert" style={{marginBottom:20}}><strong>{nb.error}</strong><div className="actions" style={{marginTop:12}}>{nb.unauthorized?<a href="/signin-with-chatgpt?return_to=/" target={nb.savePending||nb.operationPending?'_blank':'_top'} rel="noreferrer" className="click-link">{nb.savePending||nb.operationPending?'Sign in in a new tab, then return here to retry':'Sign in with ChatGPT'}</a>:<Button variant="outline" onClick={()=>void retryNotebook()}><RefreshCw/>Try again</Button>}{nb.loaded&&<><Button variant="outline" onClick={()=>exportData('json')}>Download my current draft</Button><Button variant="outline" disabled={nb.savePending&&!nb.saveRecoveryConflict} onClick={()=>setConfirmReload(true)}>{nb.saveRecoveryConflict?'Continue with shared version':'Reload shared notebook'}</Button></>}</div></div>}
- {volatilePreparation(nb.user)&&!prepOpen&&<div className="notice" role="alert"><p>A preparation draft is kept only in this open app because the browser could not make a local backup. Keep this tab open until you save or download it. Other tabs are waiting for this recovery to finish.</p><div className="actions"><Button onClick={()=>void openPrepFlow({})}>Recover preparation draft</Button><Button variant="outline" onClick={()=>downloadJson("labula-preparation-draft.json",readLocalPreparation(nb.user))}>Download preparation draft</Button></div></div>}
- <fieldset disabled={nb.preparationBusy||!nb.loaded||nb.loading||nb.operating||nb.operationPending||nb.savePending} style={{border:0,padding:0,margin:0,minWidth:0,opacity:nb.loading?.65:1}}><Tabs value={tab} onValueChange={v=>v==='stock'?navigateDesktop('evening'):navigateDesktop(v as WorkspaceDestination)} className="main-tabs"><TabsList aria-label="Kitchen workspace"><TabsTrigger value="insights"><Network/>Preparation analysis</TabsTrigger><TabsTrigger value="recipes"><UtensilsCrossed/>Dish recipes</TabsTrigger><TabsTrigger value="catalog" id="prep-catalog-tab"><Layers/>Ingredients</TabsTrigger><TabsTrigger value="overview"><Network/>Menu analysis</TabsTrigger><TabsTrigger value="stock"><Layers/>Daily checks</TabsTrigger>{(nb.canManage??nb.isOwner)&&<TabsTrigger value="team"><Layers/>Team &amp; access</TabsTrigger>}</TabsList>
- <TabsContent value="stock" forceMount hidden={tab!=='stock'}>{nb.loaded&&<StockWorkflow key={nb.user} account={nb.user} active={tab==='stock'} request={stockRequest} onExit={()=>navigateDesktop('insights')} onDraft={setStockDraft} onLocation={locationChanged} onTeam={(nb.canManage??nb.isOwner)?()=>navigateDesktop('team'):undefined}/>}</TabsContent>
- <TabsContent value="team" forceMount hidden={tab!=='team'}>{nb.loaded&&(nb.canManage??nb.isOwner)&&<TeamWorkspace key={nb.user} account={nb.user} active={tab==='team'}/>}</TabsContent>
- <TabsContent value="insights" forceMount hidden={tab!=='insights'}><div className="stock-home-entry"><div><strong>Daily kitchen check</strong><p className="muted">Select what needs preparing or restocking for the morning.</p></div><div className="actions"><Button onClick={()=>openStock('evening')}>{stockDraft?'Continue evening check':'Evening check'}</Button><Button variant="outline" onClick={()=>openStock('morning')}>Morning prep</Button></div></div>{savedNotebook?<KitchenInsights notebook={savedNotebook} updatedAt={nb.updatedAt} reviewData={reviewedRead} onReview={()=>navigateDesktop('review')} onMorning={()=>openStock('morning')}/>:<p role="status">Loading preparation dashboards…</p>}</TabsContent>
- <TabsContent value="recipes" forceMount hidden={tab!=='recipes'}><DishWorkspace active={tab==='recipes'} reviewed={reviewedRead.records??[]} reviewReady={reviewedRead.records!==null&&!reviewedRead.error&&!reviewedRead.loading} onProduction={id=>{setProductionItemId(id);navigateDesktop('catalog');}} key={nb.user} notebook={data} onChange={update} selected={selected} onSelect={id=>{const next=data.recipes.find(r=>r.menuId===id&&r.active)??data.recipes.find(r=>r.menuId===id);navigate({view:'recipes',dish:id,variant:next?.id},true,false);setSelected(id);}} selectedVariant={variantId} onVariant={id=>{setVariantId(id);navigate({view:'recipes',dish:selected,variant:id},true,false);}} openRequest={dishOpenRequest} saveStatus={nb.error?'Saving needs attention — your draft is kept.':nb.saving?'Saving recipe changes…':nb.operationPending||nb.savePending?'Save confirmation needed.':nb.dirty?'Draft on this device · saving shortly.':'Autosaved · recipe notebook'} onCreate={createItem} onEdit={id=>setEditing(id)} onBulk={setBulkId} canManage={nb.canManage??nb.isOwner} disabled={nb.loading||nb.preparationBusy||nb.operating||nb.operationPending||nb.savePending}/></TabsContent>
- <TabsContent value="catalog" forceMount hidden={tab!=='catalog'}>{!nb.loaded?<div><h1>Ingredients</h1><div role={nb.error?'alert':'status'} className={nb.error?'notice error':'info'}>{nb.error||'Loading shared ingredients…'}{nb.error&&<Button onClick={()=>void retryNotebook()}>Retry loading</Button>}</div></div>:<CatalogWorkspace taskActions={<div className="catalog-work-actions"><div className="prep-launch catalog-task-actions"><div><h2>Preparation &amp; storage</h2><p className="muted">Review preparation, batch details and storage answers.</p></div><div className="actions"><Button onClick={()=>void openPrep()} disabled={!direct.itemDishes.size&&!prepDirty}>Preparation &amp; storage</Button><Button variant="outline" onClick={()=>void openPrepFlow({batchScope:'house-made'})}>Batch details</Button></div></div></div>} searchValue={search} filterValue={filter} scopeValue={catalogScope} onFilters={(query,kind,scope)=>{setSearch(query);setFilter(kind);setCatalogScope(scope);navigate({view:'catalog',query,kind:kind as WorkspaceRoute['kind'],scope},true,false);}} key={'catalog:'+nb.user} account={nb.user} reviewed={reviewedRead.records??[]} reviewReady={reviewedRead.records!==null&&!reviewedRead.error&&!reviewedRead.loading} productionExcludedIds={reviewedRead.productionExcludedIds} notebook={data} onChange={update} onCreate={createItem} onEdit={setEditing} onProfile={id=>void openPrep(id)} onStockSetup={setStockSetupId} productionItemId={productionItemId} onProductionHandled={()=>setProductionItemId(null)} onManageList={()=>navigateDesktop('manage')} canManage={nb.canManage??nb.isOwner} disabled={nb.loading||nb.preparationBusy||nb.operating||nb.operationPending||nb.savePending} revision={nb.revision} manager={<CatalogManager request={catalogRequest} reviewed={reviewedRead.records??[]} notebook={data} revision={nb.revision} busy={nb.operating} pending={nb.operationPending} error={nb.error} unauthorized={nb.unauthorized} drafts={aliasDrafts} onDraftsChange={setAliasDrafts} onDownload={()=>exportData('json')} onRetry={retryNotebook} onOperation={nb.runOperation}/>}/>}{savedNotebook&&<PreparationPrompt key={'preparation-prompt:'+nb.user} notebook={savedNotebook} draft={prepDraft} account={nb.user} draftError={prepDraftError} onOpen={options=>void openPrepFlow(options)}/>}</TabsContent>
- <TabsContent value="overview" forceMount hidden={tab!=='overview'}><div className="view-heading"><h1>Menu analysis</h1><p className="muted">Shows current menu items, including dependencies through preparations. Each dish is counted once across active variants.</p></div><>{nb.loaded&&!nb.loading?<><SnapshotStats data={data} index={currentUsage}/><MenuScenarioPlanner key={nb.user} notebook={data} onChange={update} onPrepare={retryNotebook} onApply={nb.runOperation} onDish={chooseDish} onEdit={setEditing} canManage={nb.canManage??nb.isOwner} disabled={nb.loading||nb.preparationBusy||nb.operating||nb.operationPending||nb.savePending} reviewed={reviewedRead.records??[]} reviewReady={reviewedRead.records!==null&&!reviewedRead.error&&!reviewedRead.loading} productionExcludedIds={reviewedRead.productionExcludedIds}/><IngredientOverview notebook={data} index={currentUsage} onEdit={id=>openInfo({kind:'ingredient',id})} onDish={(id,item,variant)=>{if(variant)openInfo({kind:'recipe',id:variant,...(item?{item}:{})});else if(item)openInfo({kind:'usage',id,item});else chooseDish(id);}}/></>:<p role="status">Loading kitchen overview…</p>}</>
-</TabsContent>
- <TabsContent value="review" forceMount hidden={tab!=='review'}>{reviewVisited&&<DataReview embedded onNotebookChanged={async()=>{const result=await nb.refreshBulk();if(!result.ok)toast.error(result.error??'Approved changes were saved. Refresh the notebook before editing.');}} onBack={()=>{if(history.state?.labulaWorkspace?.reviewReturn)history.back();else navigateDesktop('insights');}}/>}</TabsContent>
- </Tabs></fieldset><ReviewStatus onOpen={()=>navigateDesktop('review')}/><footer className="page-footer"><span>{nb.loaded&&nb.updatedAt?`Last saved ${new Date(nb.updatedAt).toLocaleString('en-GB')} · ${nb.updatedBy}`:nb.error?'Shared notebook · Connection needs attention':'Loading shared notebook…'}</span><a href="https://www.labula.cz/menu" target="_blank" rel="noreferrer">Source menu · 12 Sep 2026 ↗</a></footer></main>
- {bulkId&&<BulkIngredients notebook={data} recipeId={bulkId} onClose={()=>{setBulkId(null);nb.dismissBulk();}} onApply={nb.runBulk} onRefresh={nb.refreshBulk} getRecovery={nb.getBulkRecovery} onRestoreRecovery={nb.restoreBulkRecovery} unauthorized={nb.unauthorized} earlierSavePending={nb.savePending} earlierSaveConflict={nb.saveRecoveryConflict} getEarlierRecovery={nb.getSaveRecovery} onRestoreEarlierRecovery={nb.restoreSaveRecovery} onRetryEarlierSave={nb.retryEarlierSave} onUseShared={nb.useSharedAfterRecovery}/>}
- {selectedItem&&<ItemEditor key={selectedItem.id} item={selectedItem} onCorrectType={(nb.canManage??nb.isOwner)?()=>{const id=selectedItem.id;setEditing(null);setCatalogRequest(r=>({itemId:id,serial:(r?.serial??0)+1}));navigateDesktop('catalog');}:undefined} notebook={data} canManage={nb.canManage??nb.isOwner} onProduction={()=>{setProductionItemId(selectedItem.id);setEditing(null);navigateDesktop('catalog');}} activeDishNames={direct.dishes.filter(d=>direct.itemDishes.get(selectedItem.id)?.has(d.id)).map(d=>d.name)} onProfile={()=>void openPrep(selectedItem.id)} onClose={()=>setEditing(null)} onSave={commitItem} pending={nb.preparationBusy||nb.savePending||nb.operationPending||nb.operating} onRetryPending={retryNotebook}/>}
- {creating&&<CreateItemDialog key="create-item" name={creating.name} items={data.items} canConfigureStock={nb.canManage??nb.isOwner} pending={nb.preparationBusy||nb.savePending||nb.operationPending||nb.operating} onRetryPending={retryNotebook} onClose={()=>setCreating(null)} onCreate={(item,configureStock)=>{const callback=creating.done;const isNew=!data.items.some(i=>i.id===item.id);if(isNew)update(old=>({...old,items:[...old.items,item]}));callback(item);setCreating(null);if(configureStock&&(nb.canManage??nb.isOwner))setStockSetupId(item.id);if(isNew&&(nb.canManage??nb.isOwner))toast.success(item.name+' added.',{action:{label:'Set up stock checks',onClick:()=>setStockSetupId(item.id)},duration:12000});}}/>}
-
- {prepStarting&&<Dialog open onOpenChange={open=>{if(!open)closePrepFlow();}}><DialogContent onInteractOutside={e=>e.preventDefault()}><DialogHeader><DialogTitle>Opening preparation details</DialogTitle><DialogDescription>Saving your recipe changes…</DialogDescription></DialogHeader><p role="status">Your recipe changes are kept while we finish saving. You can cancel this step and return to your recipes.</p><DialogFooter><Button variant="outline" onClick={closePrepFlow}>Cancel opening</Button></DialogFooter></DialogContent></Dialog>}
- {prepOpen&&<PrepWorkflow key={nb.user} notebook={data} revision={nb.revision} account={nb.user} restoreDraft={prepImports[nb.user.toLowerCase()]} onRestoreHandled={()=>setPrepImports(old=>{const next={...old};delete next[nb.user.toLowerCase()];return next;})} itemId={prepOpen.itemId} batchScope={prepOpen.batchScope} remaining={prepOpen.remaining} startItemId={prepOpen.startItemId} returnFocus={()=>{const el=prepTrigger.current;requestAnimationFrame(()=>{if(el?.isConnected)el.focus();else document.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus();});}} onClose={closePrepFlow} onSaved={body=>acceptPreparation(body,prepOpen.controller.signal)} onDraftChange={prepDraftChanged}/>}
- {stockSetupId&&<StockSetupDialog key={nb.user+stockSetupId} notebook={data} itemId={stockSetupId} onClose={()=>setStockSetupId(null)} onPrepare={retryNotebook} onApply={nb.runOperation} disabled={nb.operating||nb.operationPending||nb.savePending}/>}
- <NotebookRestore canManage={nb.canManage??nb.isOwner} hasPrepDrafts={prepDirty} onRestorePrep={restorePrep} open={restoreOpen} onOpenChange={setRestoreOpen} nb={nb} hasAliasDrafts={aliasDirty} onDownloadCurrent={()=>exportData('json')} onRestoreAliases={(drafts:AliasDraft[])=>{setAliasDrafts({...aliasDrafts,...Object.fromEntries(drafts.map(d=>[d.itemId,d]))});if(drafts.length)navigateDesktop('catalog');}}/>
- <AlertDialog open={confirmReload} onOpenChange={setConfirmReload}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Reload the shared notebook?</AlertDialogTitle><AlertDialogDescription>This replaces the edits currently on this page with the latest saved version. Download your draft first if it contains changes you want to keep.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep my edits</AlertDialogCancel><AlertDialogAction onClick={()=>{if(nb.saveRecoveryConflict)nb.useSharedAfterRecovery();else void nb.load();}}>Reload saved version</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></div>}</KitchenContentBridge></InformationProvider></MenuScopeProvider>;
+ const openMenu=(selection:MenuSelection)=>{const next:WorkspaceRoute={view:selection.view==='dishes'?'recipes':'catalog',dish:selection.dishId,variant:selection.variantId,item:selection.itemId,itemPath:selection.itemPath,query:selection.query,kind:selection.kind,scope:selection.scope,checkedOnly:selection.checkedOnly};const sameDetail=route.view===next.view&&route.dish===next.dish&&route.variant===next.variant&&route.item===next.item&&JSON.stringify(route.itemPath??[])===JSON.stringify(next.itemPath??[]);const url=workspaceUrl(new URL(location.href),next);if(!sameDetail&&history.state?.labulaWorkspace?.previousUrl===url.href){history.back();return;}navigate(next,sameDetail);};
+ const openItem=(id:string)=>go({view:'catalog',item:id,scope:'all'});
+ const manageChecklist=()=>go({view:'catalog',checkedOnly:true,scope:'all'});
+ const stockActive=stockDestinations.includes(route.view),area=workspaceArea(route.view);
+ const settings=['team','calendar','rounds','data'].includes(route.view);
+ // Keep the legacy read-only WebMCP navigation contract; no operational command is exposed.
+ const bridge=useRef({data:nb.data,open:(id:string)=>go({view:'recipes',dish:id})});bridge.current={data:nb.data,open:id=>go({view:'recipes',dish:id})};
+ useEffect(()=>{
+  type Context={registerTool:(tool:{name:string;description:string;inputSchema:object;annotations:object;execute:(i:unknown)=>unknown},opts:{signal:AbortSignal})=>void|Promise<void>};
+  const context=(document as Document&{modelContext?:Context}).modelContext;if(!context?.registerTool)return;
+  const controller=new AbortController();
+  const tool={name:'open_dish_recipe',description:'Open an existing menu dish. Does not change recipes or daily work.',inputSchema:{type:'object',properties:{menuId:{type:'string'}},required:['menuId'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:(input:unknown)=>{if(!input||typeof input!=='object'||Object.keys(input).some(k=>k!=='menuId'))throw Error('Expected a menuId.');const id=(input as {menuId?:string}).menuId;if(!bridge.current.data.dishes.some(d=>d.id===id))throw Error('Unknown menu dish.');bridge.current.open(id!);return {openedMenuId:id};}};
+  try{void Promise.resolve(context.registerTool(tool,{signal:controller.signal})).catch(()=>{});}catch{/* Optional browser integration. */}
+  return()=>controller.abort();
+ },[]);
+ return <MenuScopeProvider records={reviewed.records??[]}><InformationProvider key={account} account={account} onEdit={openItem} onCorrectType={canManage?openItem:undefined} onRounds={canManage?()=>go({view:'rounds'}):undefined}>
+  <WorkspaceShell area={area} canManage onToday={()=>go(lastToday.current)} onMenu={()=>go(lastMenu.current)} onSettings={()=>go({view:'data'})}>
+   {settings&&canManage&&<div className="ws-settings-page"><SettingsNavigation current={route.view==='team'?'people':route.view==='data'?'data':'schedule'} onNavigate={section=>go({view:section==='people'?'team':section==='schedule'?'calendar':'data'})}/></div>}
+   <div hidden={!stockActive} className={route.view==='calendar'||route.view==='rounds'?'ws-settings-page':undefined}>
+    <StockWorkflow account={account} active={stockActive} request={request} onExit={()=>go(lastToday.current)} onDraft={ignore} onLocation={locationChanged} onManageChecklist={canManage?manageChecklist:undefined} onRecipe={openItem}/>
+    {route.view==='calendar'&&canManage&&<div className="ws-data-panel"><h2>Check frequency</h2><p>Move items between Daily, 2× weekly and Weekly in their Daily checks settings. Set the days for each round here.</p><div className="actions"><Button variant="outline" onClick={()=>go({view:'rounds'})}>Round days</Button><Button variant="outline" onClick={manageChecklist}>Manage checklist</Button></div></div>}
+   </div>
+   <div hidden={area!=='menu'}>{menuVisited&&<MenuWorkspace nb={nb} selection={menu} onNavigate={openMenu} onDailyChecks={itemId=>itemId?openItem(itemId):manageChecklist()}/>}</div>
+   <div hidden={route.view!=='team'} className="ws-settings-page">{teamVisited&&canManage&&<TeamWorkspace account={account} active={route.view==='team'}/>}</div>
+   <WorkspaceData nb={nb} account={account} active={route.view==='data'} canManage={canManage} onReview={()=>go({view:'review'})}/>
+   <div hidden={route.view!=='review'}>{reviewVisited&&<><div className="ws-recovery-notice"><p>Review archive contains earlier assessments and drafts. Current recipes are maintained in Menu.</p><Button variant="outline" onClick={()=>go({view:'data'})}>Back to Data & backup</Button></div><DataReview embedded onNotebookChanged={async()=>{const result=await nb.refreshBulk();if(!result.ok)toast.error(result.error??'Changes were saved. Refresh Menu before editing.');}} onBack={()=>go({view:'data'})}/></>}</div>
+  </WorkspaceShell><Toaster position="bottom-right"/>
+ </InformationProvider></MenuScopeProvider>;
 }
-
-function KitchenContentBridge({children}:{children:(open:(target:InformationTarget)=>void)=>React.ReactNode}){const open=useInformation()!;return children(open);}

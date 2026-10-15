@@ -1,0 +1,1600 @@
+{
+  "synthetic": true,
+  "summary": {
+    "scenarios": 24,
+    "passed": 24,
+    "failed": 0,
+    "viewportCases": 48,
+    "compiledCases": 9
+  },
+  "results": [
+    {
+      "name": "Two destinations, original logo and new product title",
+      "basis": "real rendered application",
+      "status": "passed",
+      "sourceRun": "final-targeted",
+      "source": "raw/final-targeted.json"
+    },
+    {
+      "name": "Responsive Today/Menu layout and one visible heading",
+      "basis": "Chromium viewport emulation",
+      "status": "passed",
+      "sourceRun": "final-confirmed",
+      "source": "raw/final-confirmed.json"
+    },
+    {
+      "name": "Menu search, 100-item catalog, no results and reset",
+      "basis": "real synthetic API dataset",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "Menu URL selection, Back, Forward, Refresh and focus",
+      "basis": "real rendered application",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "Back restores a focused row without removing its keyboard stop",
+      "basis": "Real browser history and keyboard navigation",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "New item draft survives Escape, close, reload and restores trigger focus",
+      "basis": "real browser local draft storage; no item created",
+      "status": "passed",
+      "sourceRun": "final-confirmed",
+      "source": "raw/final-confirmed.json"
+    },
+    {
+      "name": "Two tabs keep separate item drafts through reload, discard and recovery",
+      "basis": "Real shared browser localStorage and independent tabs; no server data saved",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "Reduced motion, real close target and field boundary contrast",
+      "basis": "Chromium reduced-motion emulation and computed styles",
+      "status": "passed",
+      "sourceRun": "final-targeted",
+      "source": "raw/final-targeted.json"
+    },
+    {
+      "name": "Recipe validation points to a field and protects draft",
+      "basis": "real rendered form, invalid input only",
+      "status": "passed",
+      "sourceRun": "editor-confirmed",
+      "source": "raw/editor-confirmed.json"
+    },
+    {
+      "name": "Bulk checks prefill current station and require intentional change",
+      "basis": "real settings read; no settings changed",
+      "status": "passed",
+      "sourceRun": "final-targeted",
+      "source": "raw/final-targeted.json"
+    },
+    {
+      "name": "Deep preparation tree, explicit batch basis and parent Back",
+      "basis": "Synthetic /api/menu read projection emulation; no writes",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "Touch targets, narrow height and 200-percent reflow",
+      "basis": "Coarse-pointer and double-scale half-viewport Chromium emulation",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "Loading, actual empty menu and failed read are distinct",
+      "basis": "Browser read-response emulation; no data writes",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "Settings, old links, Round days return and export access",
+      "basis": "Real rendered routes, synthetic CSV download and backup endpoint read",
+      "status": "passed",
+      "sourceRun": "final-confirmed",
+      "source": "raw/final-confirmed.json"
+    },
+    {
+      "name": "History preserved filters remain visible and reset from empty results",
+      "basis": "Real synthetic history API and session preference storage",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "Calendar preview includes weekdays, deadlines, removed exceptions and effective date",
+      "basis": "Synthetic calendar GET fixture; preview only, no settings saved",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "Ready then Undo survives row regrouping and reload",
+      "basis": "real local API writes on synthetic check",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "Evening unchecked blocks Finish, then publish Morning, Ready and Undo",
+      "basis": "Complete rendered flow with real local synthetic API writes",
+      "status": "passed",
+      "sourceRun": "final-targeted",
+      "source": "raw/final-targeted.json"
+    },
+    {
+      "name": "Today stays available during editor endpoint failure",
+      "basis": "Browser route fault emulation; real operations endpoint",
+      "status": "passed",
+      "sourceRun": "final",
+      "source": "raw/final.json"
+    },
+    {
+      "name": "Browser runtime has no page exceptions",
+      "basis": "real rendered application",
+      "status": "passed",
+      "sourceRun": "editor-confirmed",
+      "source": "raw/editor-confirmed.json"
+    },
+    {
+      "name": "New item intent and original receipt survive a failed save and reload",
+      "basis": "Browser PUT fault emulation with real recovery UI; all writes intercepted",
+      "status": "passed",
+      "sourceRun": "final-targeted",
+      "source": "raw/final-targeted.json"
+    },
+    {
+      "name": "Owner, Manager, Cook and legacy UI/API boundaries",
+      "basis": "Real local SQLite role switching; synthetic identity; restored in finally",
+      "status": "passed",
+      "sourceRun": "final-roles",
+      "source": "raw/final-roles.json"
+    },
+    {
+      "name": "Compiled CSS Today, Menu and editor smoke",
+      "basis": "Built Worker on loopback; explicit synthetic identity headers; no writes, not production auth",
+      "status": "passed",
+      "sourceRun": "compiled-confirmed",
+      "source": "raw/compiled-confirmed.json"
+    },
+    {
+      "name": "Ingredient Correct type opens the existing safe preview for that item",
+      "basis": "Rendered ingredient entry and nested review dialogs; no save",
+      "status": "passed",
+      "sourceRun": "correct-type-preview",
+      "source": "raw/correct-type-preview.json"
+    }
+  ],
+  "metrics": [
+    {
+      "view": "morning",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 88.203125
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 88.203125
+        }
+      ],
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 572.1875,
+      "firstRowBottom": 652.1875,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 737.1875,
+      "firstRowBottom": 817.1875,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "morning",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 88.203125
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 88.203125
+        }
+      ],
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 572.1875,
+      "firstRowBottom": 652.1875,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 737.1875,
+      "firstRowBottom": 817.1875,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "morning",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 86.796875
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 86.796875
+        }
+      ],
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 560.1875,
+      "firstRowBottom": 640.1875,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 638.1875,
+      "firstRowBottom": 718.1875,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "morning",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 86.796875
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 86.796875
+        }
+      ],
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 558.796875,
+      "firstRowBottom": 638.796875,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 636.796875,
+      "firstRowBottom": 716.796875,
+      "mobileNavTop": 783,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "closeTarget": {
+        "x": 1043,
+        "y": 247.6953125,
+        "width": 48,
+        "height": 48
+      },
+      "inputContrast": 3.6385252025856785,
+      "sourceRun": "final-targeted"
+    },
+    {
+      "recipeEditor": {
+        "width": 320,
+        "left": 12,
+        "right": 308,
+        "editorWidth": 296,
+        "layoutWidth": 296,
+        "clientWidth": 294,
+        "scrollWidth": 294,
+        "clipped": []
+      },
+      "sourceRun": "editor-confirmed"
+    },
+    {
+      "recipeEditor": {
+        "width": 390,
+        "left": 12,
+        "right": 378,
+        "editorWidth": 366,
+        "layoutWidth": 366,
+        "clientWidth": 364,
+        "scrollWidth": 364,
+        "clipped": []
+      },
+      "sourceRun": "editor-confirmed"
+    },
+    {
+      "recipeEditor": {
+        "width": 768,
+        "left": 12,
+        "right": 756,
+        "editorWidth": 744,
+        "layoutWidth": 744,
+        "clientWidth": 742,
+        "scrollWidth": 742,
+        "clipped": []
+      },
+      "sourceRun": "editor-confirmed"
+    },
+    {
+      "recipeEditor": {
+        "width": 1024,
+        "left": 132,
+        "right": 892,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      },
+      "sourceRun": "editor-confirmed"
+    },
+    {
+      "recipeEditor": {
+        "width": 1100,
+        "left": 170,
+        "right": 930,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      },
+      "sourceRun": "editor-confirmed"
+    },
+    {
+      "recipeEditor": {
+        "width": 1280,
+        "left": 260,
+        "right": 1020,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      },
+      "sourceRun": "editor-confirmed"
+    },
+    {
+      "recipeEditor": {
+        "width": 1440,
+        "left": 340,
+        "right": 1100,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      },
+      "sourceRun": "editor-confirmed"
+    },
+    {
+      "deepDetail": {
+        "width": 320,
+        "detailWidth": 296,
+        "scrollWidth": 294,
+        "clientWidth": 294,
+        "documentWidth": 320
+      },
+      "sourceRun": "final"
+    },
+    {
+      "deepDetail": {
+        "width": 390,
+        "detailWidth": 366,
+        "scrollWidth": 364,
+        "clientWidth": 364,
+        "documentWidth": 390
+      },
+      "sourceRun": "final"
+    },
+    {
+      "deepDetail": {
+        "width": 768,
+        "detailWidth": 720,
+        "scrollWidth": 718,
+        "clientWidth": 718,
+        "documentWidth": 768
+      },
+      "sourceRun": "final"
+    },
+    {
+      "deepDetail": {
+        "width": 1024,
+        "detailWidth": 976,
+        "scrollWidth": 974,
+        "clientWidth": 974,
+        "documentWidth": 1024
+      },
+      "sourceRun": "final"
+    },
+    {
+      "deepDetail": {
+        "width": 1100,
+        "detailWidth": 1052,
+        "scrollWidth": 1050,
+        "clientWidth": 1050,
+        "documentWidth": 1100
+      },
+      "sourceRun": "final"
+    },
+    {
+      "deepDetail": {
+        "width": 1280,
+        "detailWidth": 840.359375,
+        "scrollWidth": 838,
+        "clientWidth": 838,
+        "documentWidth": 1280
+      },
+      "sourceRun": "final"
+    },
+    {
+      "deepDetail": {
+        "width": 1440,
+        "detailWidth": 896,
+        "scrollWidth": 894,
+        "clientWidth": 894,
+        "documentWidth": 1440
+      },
+      "sourceRun": "final"
+    },
+    {
+      "coarsePointerTargets": [
+        {
+          "name": "Morning prep",
+          "width": 458,
+          "height": 44
+        },
+        {
+          "name": "Evening check",
+          "width": 458,
+          "height": 44
+        },
+        {
+          "name": "Mark ready: Chilli garlic sauce",
+          "width": 48,
+          "height": 44
+        },
+        {
+          "name": "Mark ready: Cucumber salad dressing",
+          "width": 48,
+          "height": 44
+        }
+      ],
+      "sourceRun": "final"
+    },
+    {
+      "completeFlow": {
+        "day": "2027-02-03",
+        "target": "2027-02-04",
+        "tasks": 2,
+        "version": 1
+      },
+      "sourceRun": "final-targeted"
+    },
+    {
+      "view": "morning",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 102.796875
+        }
+      ],
+      "firstRow": 367.09375,
+      "firstRowBottom": 474.09375,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 102.796875
+        }
+      ],
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "morning",
+      "width": 1023,
+      "scrollWidth": 1023,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 371.5,
+      "firstRowBottom": 478.5,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 1023,
+      "scrollWidth": 1023,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 1023,
+      "scrollWidth": 1023,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 1023,
+      "scrollWidth": 1023,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "morning",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 371.546875,
+      "firstRowBottom": 478.546875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "morning",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 373.078125,
+      "firstRowBottom": 480.078125,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "morning",
+      "width": 1119,
+      "scrollWidth": 1119,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 373.078125,
+      "firstRowBottom": 480.078125,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 1119,
+      "scrollWidth": 1119,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 1119,
+      "scrollWidth": 1119,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 1119,
+      "scrollWidth": 1119,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "morning",
+      "width": 1120,
+      "scrollWidth": 1120,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 373.078125,
+      "firstRowBottom": 480.078125,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 1120,
+      "scrollWidth": 1120,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 1120,
+      "scrollWidth": 1120,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 1120,
+      "scrollWidth": 1120,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "morning",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 373.078125,
+      "firstRowBottom": 480.078125,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "morning",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 373.078125,
+      "firstRowBottom": 480.078125,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "evening",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "recipes",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "view": "catalog",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "dialogFocusRestoreAfterHiddenMs": 44,
+      "sourceRun": "final-confirmed"
+    },
+    {
+      "creationRecovery": {
+        "writesIntercepted": 3,
+        "intentBeforeRequest": true,
+        "reusedOperationAfterReload": true,
+        "payloadUnchanged": true,
+        "sharedWrites": 0
+      },
+      "sourceRun": "final-targeted"
+    },
+    {
+      "fieldAppearance": {
+        "state": "normal",
+        "border": "rgb(125, 135, 149)",
+        "background": "rgb(255, 255, 255)",
+        "outer": "rgb(255, 255, 255)",
+        "outline": "rgb(25, 26, 28)",
+        "outlineStyle": "none",
+        "outlineWidth": "3px",
+        "color": "rgb(25, 26, 28)",
+        "opacity": "1",
+        "invalid": "false",
+        "disabled": false,
+        "borderContrast": 3.6385252025856785,
+        "textContrast": 17.414949931274535,
+        "outlineContrast": 17.414949931274535
+      },
+      "sourceRun": "final-targeted"
+    },
+    {
+      "fieldAppearance": {
+        "state": "focus",
+        "border": "rgb(125, 135, 149)",
+        "background": "rgb(255, 255, 255)",
+        "outer": "rgb(255, 255, 255)",
+        "outline": "rgb(183, 38, 44)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "color": "rgb(25, 26, 28)",
+        "opacity": "1",
+        "invalid": "false",
+        "disabled": false,
+        "borderContrast": 3.6385252025856785,
+        "textContrast": 17.414949931274535,
+        "outlineContrast": 6.311858015601675
+      },
+      "sourceRun": "final-targeted"
+    },
+    {
+      "fieldAppearance": {
+        "state": "invalid",
+        "border": "rgb(180, 35, 41)",
+        "background": "rgb(255, 248, 248)",
+        "outer": "rgb(255, 255, 255)",
+        "outline": "rgb(183, 38, 44)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "color": "rgb(25, 26, 28)",
+        "opacity": "1",
+        "invalid": "true",
+        "disabled": false,
+        "borderContrast": 6.235248228262691,
+        "textContrast": 16.614212898347265,
+        "outlineContrast": 6.311858015601675
+      },
+      "sourceRun": "editor-confirmed"
+    },
+    {
+      "successfulDialogFocus": {
+        "tag": "H1",
+        "text": "Evening check"
+      },
+      "sourceRun": "final-targeted"
+    },
+    {
+      "role": "cook",
+      "width": 320,
+      "modeButtons": [
+        {
+          "width": 146,
+          "height": 48
+        },
+        {
+          "width": 146,
+          "height": 48
+        }
+      ],
+      "sourceRun": "final-roles"
+    },
+    {
+      "role": "cook",
+      "width": 390,
+      "modeButtons": [
+        {
+          "width": 181,
+          "height": 48
+        },
+        {
+          "width": 181,
+          "height": 48
+        }
+      ],
+      "sourceRun": "final-roles"
+    },
+    {
+      "fieldAppearance": {
+        "state": "disabled",
+        "border": "rgb(125, 135, 149)",
+        "background": "rgb(237, 240, 242)",
+        "outer": "rgb(255, 255, 255)",
+        "outline": "rgb(97, 103, 113)",
+        "outlineStyle": "none",
+        "outlineWidth": "3px",
+        "color": "rgb(97, 103, 113)",
+        "opacity": "1",
+        "invalid": "false",
+        "disabled": true,
+        "borderContrast": 3.178875725723719,
+        "textContrast": 4.976392731621562,
+        "outlineContrast": 5.695954146759535
+      },
+      "sourceRun": "final-roles"
+    },
+    {
+      "compiledMorning": {
+        "width": 390,
+        "scrollWidth": 390,
+        "firstRow": 351.09375,
+        "bottom": 458.09375
+      },
+      "sourceRun": "compiled-confirmed"
+    },
+    {
+      "compiledMenu": {
+        "width": 390,
+        "scrollWidth": 390,
+        "detailWidth": 366,
+        "contentWidth": 364,
+        "contentScrollWidth": 364
+      },
+      "sourceRun": "compiled-confirmed"
+    },
+    {
+      "compiledEditor": {
+        "width": 390,
+        "editorWidth": 366,
+        "layoutWidth": 366,
+        "clientWidth": 364,
+        "scrollWidth": 364,
+        "clipped": []
+      },
+      "sourceRun": "compiled-confirmed"
+    },
+    {
+      "compiledMorning": {
+        "width": 1100,
+        "scrollWidth": 1100,
+        "firstRow": 373.078125,
+        "bottom": 480.078125
+      },
+      "sourceRun": "compiled-confirmed"
+    },
+    {
+      "compiledMenu": {
+        "width": 1100,
+        "scrollWidth": 1100,
+        "detailWidth": 1052,
+        "contentWidth": 1050,
+        "contentScrollWidth": 1050
+      },
+      "sourceRun": "compiled-confirmed"
+    },
+    {
+      "compiledEditor": {
+        "width": 1100,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      },
+      "sourceRun": "compiled-confirmed"
+    },
+    {
+      "compiledMorning": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "firstRow": 373.078125,
+        "bottom": 480.078125
+      },
+      "sourceRun": "compiled-confirmed"
+    },
+    {
+      "compiledMenu": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "detailWidth": 896,
+        "contentWidth": 894,
+        "contentScrollWidth": 894
+      },
+      "sourceRun": "compiled-confirmed"
+    },
+    {
+      "compiledEditor": {
+        "width": 1440,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      },
+      "sourceRun": "compiled-confirmed"
+    }
+  ],
+  "comparison": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "firstMorningRow": {
+      "before": 562.484375,
+      "after": 351.09375,
+      "improvementPx": 211.390625,
+      "improvementPercent": 37.58159948887469,
+      "afterBottom": 458.09375,
+      "navigationTop": 783
+    },
+    "firstDishRow": {
+      "before": 571.375,
+      "after": 560.1875,
+      "improvementPx": 11.1875
+    },
+    "basis": "Same complete synthetic notebook and same two visible Morning tasks; baseline screenshot geometry verified separately."
+  },
+  "fixture": {
+    "synthetic": true,
+    "productionDataImported": false,
+    "identity": {
+      "id": "local_seedy",
+      "email": "seedy@sites.test"
+    },
+    "baselineCommit": "93eab5d471c3af35de72a2b2278b96c66d788ad6",
+    "notebook": {
+      "beforeRevision": 4,
+      "afterRevision": 4,
+      "beforeSha256": "7930e503a232b5731edacaeb2554cf33447b37d66f34be1e0308a50fcec94343",
+      "afterSha256": "7930e503a232b5731edacaeb2554cf33447b37d66f34be1e0308a50fcec94343",
+      "sameContent": true,
+      "items": 100,
+      "dishes": 19,
+      "recipes": 24
+    },
+    "morning": {
+      "day": "2026-10-15",
+      "checkId": "2026-10-14",
+      "basis": "Read-only Wrangler D1 --local --persist-to .wrangler/state SELECT on both detached baseline and current workspace",
+      "comparedFields": [
+        "check_id",
+        "item_id",
+        "catalog_id",
+        "name",
+        "kind",
+        "position",
+        "ready",
+        "cancelled",
+        "instruction_snapshot"
+      ],
+      "equal": true,
+      "tasks": [
+        {
+          "itemId": "audit-item-1",
+          "name": "Chilli garlic sauce",
+          "kind": "prep",
+          "position": 1,
+          "ready": false,
+          "cancelled": false,
+          "instructionRevision": 0,
+          "instructionText": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "name": "Cucumber salad dressing",
+          "kind": "prep",
+          "position": 3,
+          "ready": false,
+          "cancelled": false,
+          "instructionRevision": 0,
+          "instructionText": ""
+        }
+      ],
+      "excludedFromEquality": "Revision/update timestamps and activity history reflect intentional synthetic Ready/Undo test operations."
+    }
+  },
+  "runs": [
+    {
+      "name": "final",
+      "source": "raw/final.json",
+      "timestamp": "2026-10-15T11:23:24.875Z",
+      "base": "http://localhost:5173",
+      "node": "v24.19.0",
+      "resultCount": 20,
+      "errors": []
+    },
+    {
+      "name": "final-confirmed",
+      "source": "raw/final-confirmed.json",
+      "timestamp": "2026-10-15T11:26:06.157Z",
+      "base": "http://localhost:5173",
+      "node": "v24.19.0",
+      "resultCount": 4,
+      "errors": []
+    },
+    {
+      "name": "final-targeted",
+      "source": "raw/final-targeted.json",
+      "timestamp": "2026-10-15T11:27:41.707Z",
+      "base": "http://localhost:5173",
+      "node": "v24.19.0",
+      "resultCount": 7,
+      "errors": []
+    },
+    {
+      "name": "final-roles",
+      "source": "raw/final-roles.json",
+      "timestamp": "2026-10-15T11:28:36.356Z",
+      "base": "http://localhost:5173",
+      "node": "v24.19.0",
+      "resultCount": 2,
+      "errors": []
+    },
+    {
+      "name": "compiled-preview",
+      "source": "raw/compiled-preview.json",
+      "timestamp": "2026-10-15T11:30:18.206Z",
+      "base": "http://127.0.0.1:5175",
+      "node": "v24.19.0",
+      "resultCount": 2,
+      "errors": []
+    },
+    {
+      "name": "compiled-confirmed",
+      "source": "raw/compiled-confirmed.json",
+      "timestamp": "2026-10-15T11:33:34.289Z",
+      "base": "http://127.0.0.1:5175",
+      "node": "v24.19.0",
+      "resultCount": 2,
+      "errors": []
+    },
+    {
+      "name": "correct-type-preview",
+      "source": "raw/correct-type-preview.json",
+      "timestamp": "2026-10-15T11:30:55.402Z",
+      "base": "http://127.0.0.1:5175",
+      "node": "v24.19.0",
+      "resultCount": 2,
+      "errors": []
+    },
+    {
+      "name": "editor-confirmed",
+      "source": "raw/editor-confirmed.json",
+      "timestamp": "2026-10-15T11:35:56.889Z",
+      "base": "http://127.0.0.1:5175",
+      "node": "v24.19.0",
+      "resultCount": 2,
+      "errors": []
+    }
+  ],
+  "diagnostics": [
+    {
+      "run": "final",
+      "name": "Responsive Today/Menu layout and one visible heading",
+      "basis": "Chromium viewport emulation",
+      "status": "failed",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('heading', { name: 'Morning prep', exact: true, level: 1 }) to be visible\u001b[22m\n\n    at go (/workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:26:620)\n    at async file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:50:5\n    at async test (/workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:25:131)\n    at async file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:46:2",
+      "resolution": "Development hydration exceeded 20 seconds during concurrent validation and an obsolete baseline server. Baseline server stopped; exact heading/content readiness is now awaited up to 60 seconds. Final 48 states passed."
+    },
+    {
+      "run": "final",
+      "name": "New item draft survives Escape, close, reload and restores trigger focus",
+      "basis": "real browser local draft storage; no item created",
+      "status": "failed",
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(await opener.evaluate(e=>e===document.activeElement))\n\n    at file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:90:3\n    at async test (file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:25:131)\n    at async file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:86:2",
+      "resolution": "The original immediate assertion preceded Radix FocusScope deferred unmount focus event. Verified source mechanism and browser focus timeline; test now awaits actual focus (bounded at 1 second), observed 44 ms."
+    },
+    {
+      "run": "final",
+      "name": "Settings, old links, Round days return and export access",
+      "basis": "Real rendered routes, synthetic CSV download and backup endpoint read",
+      "status": "failed",
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 3\n\n    at file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:171:102\n    at async test (file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:25:131)\n    at async file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:168:2",
+      "resolution": "Round-day heading renders before the asynchronously loaded cards. Test now waits for the third actual card before counting; full Settings flow passed."
+    },
+    {
+      "kind": "measurement-correction",
+      "run": "final-targeted",
+      "name": "Editor dimensions during viewport transition",
+      "resolution": "Initial dev measurements occurred during the 200 ms dialog width transition. Superseded by editor-confirmed: all seven settled compiled editor widths, dialog viewport bounds and control clipping explicitly verified."
+    }
+  ],
+  "limitations": [
+    "All browser checks used headless Chromium on Linux, not physical phones/tablets, Safari, Firefox, a native mobile keyboard or a real kitchen pilot.",
+    "Touch/coarse-pointer input was emulated at tablet width. Hybrid physical input was not verified.",
+    "200% reflow used a 720×422 CSS viewport with deviceScaleFactor=2 to represent a 1440×844 display at 200%; native browser zoom and OS text enlargement were not exercised.",
+    "Deep preparation chains, long names, empty/loading/error reads, calendar configuration and uncertain creation saves were explicitly emulated; all writes in the creation fault case were intercepted.",
+    "Role switching and daily check/Ready/Undo scenarios used the real local API and synthetic local D1 data only. Local Owner was restored after roles.",
+    "Compiled Worker smoke used explicit synthetic identity headers on loopback; it verifies compiled rendering, not production authentication.",
+    "No production menu/data equality, production migration/cutover or production deployment is claimed."
+  ],
+  "screenshots": [
+    {
+      "file": "before-morning-390.png",
+      "source": "before/morning-390.png"
+    },
+    {
+      "file": "before-morning-1440.png",
+      "source": "before/morning-1440.png"
+    },
+    {
+      "file": "before-evening-390.png",
+      "source": "before/evening-390.png"
+    },
+    {
+      "file": "before-menu-390.png",
+      "source": "before/recipes-390.png"
+    },
+    {
+      "file": "before-menu-1440.png",
+      "source": "before/recipes-1440.png"
+    },
+    {
+      "file": "before-catalog-390.png",
+      "source": "before/catalog-390.png"
+    },
+    {
+      "file": "after-morning-390.png",
+      "source": "final-confirmed/screenshots/morning-390.png"
+    },
+    {
+      "file": "after-morning-1440.png",
+      "source": "final-confirmed/screenshots/morning-1440.png"
+    },
+    {
+      "file": "after-evening-390.png",
+      "source": "final-confirmed/screenshots/evening-390.png"
+    },
+    {
+      "file": "after-menu-390.png",
+      "source": "final-confirmed/screenshots/recipes-390.png"
+    },
+    {
+      "file": "after-menu-1440.png",
+      "source": "final-confirmed/screenshots/recipes-1440.png"
+    },
+    {
+      "file": "after-catalog-390.png",
+      "source": "final-confirmed/screenshots/catalog-390.png"
+    },
+    {
+      "file": "after-deep-recipe-390.png",
+      "source": "final/screenshots/deep-recipe-mobile.png"
+    },
+    {
+      "file": "after-deep-recipe-1440.png",
+      "source": "final/screenshots/deep-recipe-desktop.png"
+    },
+    {
+      "file": "after-recipe-validation.png",
+      "source": "editor-confirmed/screenshots/recipe-field-validation.png"
+    },
+    {
+      "file": "after-menu-empty.png",
+      "source": "final/screenshots/menu-empty.png"
+    },
+    {
+      "file": "after-menu-error.png",
+      "source": "final/screenshots/menu-request-error.png"
+    },
+    {
+      "file": "after-bulk-station-preview.png",
+      "source": "final/screenshots/bulk-station-explicit-unassign.png"
+    },
+    {
+      "file": "after-calendar-preview.png",
+      "source": "final/screenshots/calendar-complete-preview.png"
+    },
+    {
+      "file": "after-history-filters.png",
+      "source": "final/screenshots/history-active-filters.png"
+    },
+    {
+      "file": "after-ready-undo.png",
+      "source": "final/screenshots/morning-ready-undo.png"
+    },
+    {
+      "file": "after-creation-recovery.png",
+      "source": "final-targeted/screenshots/new-item-original-receipt-recovery.png"
+    },
+    {
+      "file": "after-cook-390.png",
+      "source": "final-roles/screenshots/cook-390.png"
+    },
+    {
+      "file": "after-correct-type-preview.png",
+      "source": "correct-type-preview/screenshots/correct-type-safe-preview.png"
+    },
+    {
+      "file": "after-compiled-editor-1100.png",
+      "source": "compiled-confirmed/screenshots/compiled-editor-1100.png"
+    },
+    {
+      "file": "after-compiled-editor-1440.png",
+      "source": "compiled-confirmed/screenshots/compiled-editor-1440.png"
+    }
+  ]
+}

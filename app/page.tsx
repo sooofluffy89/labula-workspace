@@ -11,5 +11,5 @@ export default async function Home(){
  try {role=await accessRole(user);await recordSignIn(user);}
  catch(e) {error=e instanceof RequestError?undefined:'Could not verify access. Please reload to try again.';}
  if(!role)return <AccessPage user={user} error={error}/>;
- return role==='cook'?<CookApp key={user.userId} account={user.email}/>:<KitchenApp key={user.userId} account={user.email}/>;
+ return role==='cook'?<CookApp key={user.userId} account={user.email}/>:<KitchenApp key={user.userId} account={user.email} role={role}/>;
 }

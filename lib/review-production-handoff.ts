@@ -28,6 +28,7 @@ export function productionHandoff(n:Notebook,p:Proposal,dependencies:Entity[]=[]
   const limited=quick?quick.coverage!=='Whole named task'||quick.kind==='A later step using an existing preparation':values(process,'PROC-01').practice!=='Current practice'||values(process,'PROC-01').relationship!=='Main method'||values(process,'PROC-05').scope!=='All products and work here are in scope'||e.kind==='run'&&values(e,'RUN-01').scope!=='Whole process';
   for(const ref of refs)for(const id of resolve(ref)){scope.add(id);if(limited)partial.add(id);}
  }
+ for(const definition of n.workspaceRecipes??[])if(scope.has(definition.itemId))conflicts.push((n.items.find(item=>item.id===definition.itemId)?.name??definition.itemId)+': this product is now edited in Workspace 2.0. Its saved Review evidence is historical; update the product recipe in Menu. Your Review draft is retained.');
  const processes=n.processes.filter(process=>process.outputs.some(output=>scope.has(output.itemId))).map(process=>structuredClone(process));
  for(const process of processes){
   const outside=process.outputs.filter(output=>!scope.has(output.itemId)).map(output=>n.items.find(item=>item.id===output.itemId)?.name??output.itemId);

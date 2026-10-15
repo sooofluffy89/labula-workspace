@@ -1,0 +1,500 @@
+{
+  "timestamp": "2026-10-15T11:23:24.875Z",
+  "base": "http://localhost:5173",
+  "node": "v24.19.0",
+  "results": [
+    {
+      "name": "Two destinations, original logo and new product title",
+      "basis": "real rendered application",
+      "status": "passed"
+    },
+    {
+      "name": "Responsive Today/Menu layout and one visible heading",
+      "basis": "Chromium viewport emulation",
+      "status": "failed",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('heading', { name: 'Morning prep', exact: true, level: 1 }) to be visible\u001b[22m\n\n    at go (/workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:26:620)\n    at async file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:50:5\n    at async test (/workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:25:131)\n    at async file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:46:2"
+    },
+    {
+      "name": "Menu search, 100-item catalog, no results and reset",
+      "basis": "real synthetic API dataset",
+      "status": "passed"
+    },
+    {
+      "name": "Menu URL selection, Back, Forward, Refresh and focus",
+      "basis": "real rendered application",
+      "status": "passed"
+    },
+    {
+      "name": "Back restores a focused row without removing its keyboard stop",
+      "basis": "Real browser history and keyboard navigation",
+      "status": "passed"
+    },
+    {
+      "name": "New item draft survives Escape, close, reload and restores trigger focus",
+      "basis": "real browser local draft storage; no item created",
+      "status": "failed",
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(await opener.evaluate(e=>e===document.activeElement))\n\n    at file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:90:3\n    at async test (file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:25:131)\n    at async file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:86:2"
+    },
+    {
+      "name": "Two tabs keep separate item drafts through reload, discard and recovery",
+      "basis": "Real shared browser localStorage and independent tabs; no server data saved",
+      "status": "passed"
+    },
+    {
+      "name": "Reduced motion, real close target and field boundary contrast",
+      "basis": "Chromium reduced-motion emulation and computed styles",
+      "status": "passed"
+    },
+    {
+      "name": "Recipe validation points to a field and protects draft",
+      "basis": "real rendered form, invalid input only",
+      "status": "passed"
+    },
+    {
+      "name": "Bulk checks prefill current station and require intentional change",
+      "basis": "real settings read; no settings changed",
+      "status": "passed"
+    },
+    {
+      "name": "Deep preparation tree, explicit batch basis and parent Back",
+      "basis": "Synthetic /api/menu read projection emulation; no writes",
+      "status": "passed"
+    },
+    {
+      "name": "Touch targets, narrow height and 200-percent reflow",
+      "basis": "Coarse-pointer and double-scale half-viewport Chromium emulation",
+      "status": "passed"
+    },
+    {
+      "name": "Loading, actual empty menu and failed read are distinct",
+      "basis": "Browser read-response emulation; no data writes",
+      "status": "passed"
+    },
+    {
+      "name": "Settings, old links, Round days return and export access",
+      "basis": "Real rendered routes, synthetic CSV download and backup endpoint read",
+      "status": "failed",
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 3\n\n    at file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:171:102\n    at async test (file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:25:131)\n    at async file:///workspace/labula-workspace/scripts/verify-workspace2-browser.mjs:168:2"
+    },
+    {
+      "name": "History preserved filters remain visible and reset from empty results",
+      "basis": "Real synthetic history API and session preference storage",
+      "status": "passed"
+    },
+    {
+      "name": "Calendar preview includes weekdays, deadlines, removed exceptions and effective date",
+      "basis": "Synthetic calendar GET fixture; preview only, no settings saved",
+      "status": "passed"
+    },
+    {
+      "name": "Ready then Undo survives row regrouping and reload",
+      "basis": "real local API writes on synthetic check",
+      "status": "passed"
+    },
+    {
+      "name": "Evening unchecked blocks Finish, then publish Morning, Ready and Undo",
+      "basis": "Complete rendered flow with real local synthetic API writes",
+      "status": "passed"
+    },
+    {
+      "name": "Today stays available during editor endpoint failure",
+      "basis": "Browser route fault emulation; real operations endpoint",
+      "status": "passed"
+    },
+    {
+      "name": "Browser runtime has no page exceptions",
+      "basis": "real rendered application",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "view": "morning",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 88.203125
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "evening",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 88.203125
+        }
+      ],
+      "mobileNavTop": 783
+    },
+    {
+      "view": "recipes",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 572.1875,
+      "firstRowBottom": 652.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "catalog",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 737.1875,
+      "firstRowBottom": 817.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "morning",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 88.203125
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "evening",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 88.203125
+        }
+      ],
+      "mobileNavTop": 783
+    },
+    {
+      "view": "recipes",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 572.1875,
+      "firstRowBottom": 652.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "catalog",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 737.1875,
+      "firstRowBottom": 817.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "morning",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 86.796875
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "evening",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 86.796875
+        }
+      ],
+      "mobileNavTop": 783
+    },
+    {
+      "view": "recipes",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 560.1875,
+      "firstRowBottom": 640.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "catalog",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 638.1875,
+      "firstRowBottom": 718.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "morning",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 86.796875
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "evening",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 86.796875
+        }
+      ],
+      "mobileNavTop": 783
+    },
+    {
+      "view": "recipes",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 558.796875,
+      "firstRowBottom": 638.796875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "catalog",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 636.796875,
+      "firstRowBottom": 716.796875,
+      "mobileNavTop": 783
+    },
+    {
+      "closeTarget": {
+        "x": 963,
+        "y": 155.1953125,
+        "width": 48,
+        "height": 48
+      },
+      "inputContrast": 3.6385252025856785
+    },
+    {
+      "recipeEditor": {
+        "width": 320,
+        "editorWidth": 367.328125,
+        "clientWidth": 365,
+        "scrollWidth": 365,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 390,
+        "editorWidth": 337.78125,
+        "clientWidth": 336,
+        "scrollWidth": 336,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 768,
+        "editorWidth": 373.953125,
+        "clientWidth": 372,
+        "scrollWidth": 372,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1024,
+        "editorWidth": 607.796875,
+        "clientWidth": 606,
+        "scrollWidth": 606,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1100,
+        "editorWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1280,
+        "editorWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1440,
+        "editorWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "deepDetail": {
+        "width": 320,
+        "detailWidth": 296,
+        "scrollWidth": 294,
+        "clientWidth": 294,
+        "documentWidth": 320
+      }
+    },
+    {
+      "deepDetail": {
+        "width": 390,
+        "detailWidth": 366,
+        "scrollWidth": 364,
+        "clientWidth": 364,
+        "documentWidth": 390
+      }
+    },
+    {
+      "deepDetail": {
+        "width": 768,
+        "detailWidth": 720,
+        "scrollWidth": 718,
+        "clientWidth": 718,
+        "documentWidth": 768
+      }
+    },
+    {
+      "deepDetail": {
+        "width": 1024,
+        "detailWidth": 976,
+        "scrollWidth": 974,
+        "clientWidth": 974,
+        "documentWidth": 1024
+      }
+    },
+    {
+      "deepDetail": {
+        "width": 1100,
+        "detailWidth": 1052,
+        "scrollWidth": 1050,
+        "clientWidth": 1050,
+        "documentWidth": 1100
+      }
+    },
+    {
+      "deepDetail": {
+        "width": 1280,
+        "detailWidth": 840.359375,
+        "scrollWidth": 838,
+        "clientWidth": 838,
+        "documentWidth": 1280
+      }
+    },
+    {
+      "deepDetail": {
+        "width": 1440,
+        "detailWidth": 896,
+        "scrollWidth": 894,
+        "clientWidth": 894,
+        "documentWidth": 1440
+      }
+    },
+    {
+      "coarsePointerTargets": [
+        {
+          "name": "Morning prep",
+          "width": 458,
+          "height": 44
+        },
+        {
+          "name": "Evening check",
+          "width": 458,
+          "height": 44
+        },
+        {
+          "name": "Mark ready: Chilli garlic sauce",
+          "width": 48,
+          "height": 44
+        },
+        {
+          "name": "Mark ready: Cucumber salad dressing",
+          "width": 48,
+          "height": 44
+        }
+      ]
+    },
+    {
+      "completeFlow": {
+        "day": "2027-02-02",
+        "target": "2027-02-03",
+        "tasks": 2,
+        "version": 1
+      }
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "Headless Chromium emulation, not physical phones/tablets or an actual kitchen pilot.",
+    "Production menu and production migration are not verified by local synthetic tests."
+  ]
+}

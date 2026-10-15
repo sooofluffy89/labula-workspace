@@ -1,0 +1,198 @@
+{
+  "timestamp": "2026-10-15T11:27:41.707Z",
+  "base": "http://localhost:5173",
+  "node": "v24.19.0",
+  "results": [
+    {
+      "name": "Two destinations, original logo and new product title",
+      "basis": "real rendered application",
+      "status": "passed"
+    },
+    {
+      "name": "New item intent and original receipt survive a failed save and reload",
+      "basis": "Browser PUT fault emulation with real recovery UI; all writes intercepted",
+      "status": "passed"
+    },
+    {
+      "name": "Reduced motion, real close target and field boundary contrast",
+      "basis": "Chromium reduced-motion emulation and computed styles",
+      "status": "passed"
+    },
+    {
+      "name": "Recipe validation points to a field and protects draft",
+      "basis": "real rendered form, invalid input only",
+      "status": "passed"
+    },
+    {
+      "name": "Bulk checks prefill current station and require intentional change",
+      "basis": "real settings read; no settings changed",
+      "status": "passed"
+    },
+    {
+      "name": "Evening unchecked blocks Finish, then publish Morning, Ready and Undo",
+      "basis": "Complete rendered flow with real local synthetic API writes",
+      "status": "passed"
+    },
+    {
+      "name": "Browser runtime has no page exceptions",
+      "basis": "real rendered application",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "creationRecovery": {
+        "writesIntercepted": 3,
+        "intentBeforeRequest": true,
+        "reusedOperationAfterReload": true,
+        "payloadUnchanged": true,
+        "sharedWrites": 0
+      }
+    },
+    {
+      "fieldAppearance": {
+        "state": "normal",
+        "border": "rgb(125, 135, 149)",
+        "background": "rgb(255, 255, 255)",
+        "outer": "rgb(255, 255, 255)",
+        "outline": "rgb(25, 26, 28)",
+        "outlineStyle": "none",
+        "outlineWidth": "3px",
+        "color": "rgb(25, 26, 28)",
+        "opacity": "1",
+        "invalid": "false",
+        "disabled": false,
+        "borderContrast": 3.6385252025856785,
+        "textContrast": 17.414949931274535,
+        "outlineContrast": 17.414949931274535
+      }
+    },
+    {
+      "fieldAppearance": {
+        "state": "focus",
+        "border": "rgb(125, 135, 149)",
+        "background": "rgb(255, 255, 255)",
+        "outer": "rgb(255, 255, 255)",
+        "outline": "rgb(183, 38, 44)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "color": "rgb(25, 26, 28)",
+        "opacity": "1",
+        "invalid": "false",
+        "disabled": false,
+        "borderContrast": 3.6385252025856785,
+        "textContrast": 17.414949931274535,
+        "outlineContrast": 6.311858015601675
+      }
+    },
+    {
+      "closeTarget": {
+        "x": 1043,
+        "y": 247.6953125,
+        "width": 48,
+        "height": 48
+      },
+      "inputContrast": 3.6385252025856785
+    },
+    {
+      "recipeEditor": {
+        "width": 320,
+        "editorWidth": 533.1961059570312,
+        "clientWidth": 533,
+        "scrollWidth": 533,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 390,
+        "editorWidth": 440.84375,
+        "clientWidth": 439,
+        "scrollWidth": 439,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 768,
+        "editorWidth": 445.53125,
+        "clientWidth": 444,
+        "scrollWidth": 444,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1024,
+        "editorWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1100,
+        "editorWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1280,
+        "editorWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1440,
+        "editorWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "fieldAppearance": {
+        "state": "invalid",
+        "border": "rgb(180, 35, 41)",
+        "background": "rgb(255, 248, 248)",
+        "outer": "rgb(255, 255, 255)",
+        "outline": "rgb(183, 38, 44)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "color": "rgb(25, 26, 28)",
+        "opacity": "1",
+        "invalid": "true",
+        "disabled": false,
+        "borderContrast": 6.235248228262691,
+        "textContrast": 16.614212898347265,
+        "outlineContrast": 6.311858015601675
+      }
+    },
+    {
+      "successfulDialogFocus": {
+        "tag": "H1",
+        "text": "Evening check"
+      }
+    },
+    {
+      "completeFlow": {
+        "day": "2027-02-03",
+        "target": "2027-02-04",
+        "tasks": 2,
+        "version": 1
+      }
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "Headless Chromium emulation, not physical phones/tablets or an actual kitchen pilot.",
+    "Production menu and production migration are not verified by local synthetic tests."
+  ]
+}

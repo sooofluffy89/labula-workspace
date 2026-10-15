@@ -1,13 +1,16 @@
-# LABULA Worskspace
+# Workspace 2.0
 
-Interní kuchyňská aplikace LABULA: recepty a společný katalog surovin, příprava
-a skladování, Evening check, Morning prep, tým, kontrolní kola, stanoviště,
-historie a exporty. Název „Worskspace“ zachovává přesné zadání vlastníka.
+Interní kuchyňská aplikace LABULA. Dvě hlavní pracovní oblasti: **Today** pro
+Evening check, předání směny a Morning prep; **Menu** pro aktuální jídla, suroviny
+a vnořené složení příprav. Původní logo LABULA, favicon a barevná paleta zůstávají.
+Workspace 2.0 je nový název produktu; identita projektu a uložená data se nemění.
 
 - Aplikace: https://labula-kitchen-recipes.jan984079.chatgpt.site/
 - Zdrojový repozitář: https://github.com/sooofluffy89/labula-workspace
 - Pokyny pro Codex: [AGENTS.md](AGENTS.md)
 - Cloudové prostředí a nasazování: [docs/codex-cloud.md](docs/codex-cloud.md)
+- Přechod, ochrana menu a rollback: [docs/workspace-2-0/MIGRATION.md](docs/workspace-2-0/MIGRATION.md)
+- Implementace, testy a screenshoty: [docs/workspace-2-0/IMPLEMENTATION.md](docs/workspace-2-0/IMPLEMENTATION.md)
 
 ## Spuštění vývoje
 
