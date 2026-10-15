@@ -22,13 +22,13 @@ export function finishFingerprint(s:EveningSnapshot){
  return JSON.stringify({id:c.id,target:c.targetDay,stage:c.stage,version:c.version,
   planRevision:c.planRevision,calendarRevision:c.calendarRevision,coveredBy:c.coveredBy,
   notebookRevision:s.notebookRevision,grouped:c.grouped,
-  answers:c.answers.map(a=>[a.itemId,a.catalogId,a.name,a.kind,a.position,a.value,a.revision,a.mappingValid,a.supersededBy,a.instruction]).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))),
-  tasks:c.tasks.map(t=>[t.itemId,t.catalogId,t.ready,t.cancelled,t.revision,t.mappingValid]).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))) });
+  answers:c.answers.map(a=>[a.itemId,a.catalogId,a.name,a.kind,a.position,a.value,a.revision,a.mappingValid,a.supersededBy,a.instruction,...(a.suspended?[true]:[])]).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))),
+  tasks:c.tasks.map(t=>[t.itemId,t.catalogId,t.ready,t.cancelled,t.revision,t.mappingValid,...(t.suspended?[true]:[])]).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))) });
 }
 export function finishProblem(s:EveningSnapshot){
  const c=s.check;if(!c)return 'This check is not loaded. Open its saved date first.';
  if(c.stage!=='draft'||c.coveredBy)return 'This check is already finished or covered. Review its shared result.';
- const rows=c.answers.filter(a=>!a.supersededBy);
+ const rows=c.answers.filter(a=>!a.supersededBy&&!a.suspended);
  const invalid=rows.find(a=>!a.mappingValid);if(invalid)return `Review the catalog link for ${invalid.name}.`;
  const missing=rows.filter(a=>a.value===null);if(missing.length)return `${missing.length} items still unchecked. Start with ${missing[0].name}.`;
  return '';
@@ -51,8 +51,8 @@ export function finishChanges(f:FinishRecord,s:EveningSnapshot|null){
  for(const a of before.answers){
   const b=after.answers.find(row=>row.itemId===a.itemId);
   if(!b){changes.push({name:a.name,mine:value(a.value),shared:'Item removed'});continue;}
-  if(a.value!==b.value||a.revision!==b.revision||a.catalogId!==b.catalogId||a.mappingValid!==b.mappingValid||a.supersededBy!==b.supersededBy){
-   changes.push({name:b.name,mine:value(a.value),shared:b.supersededBy?'Replaced by another item':!b.mappingValid?'Catalog link needs review':a.catalogId!==b.catalogId?'Catalog link changed · '+value(b.value):value(b.value),by:b.updatedBy,at:b.updatedAt});
+  if(a.value!==b.value||a.revision!==b.revision||a.catalogId!==b.catalogId||a.mappingValid!==b.mappingValid||a.supersededBy!==b.supersededBy||!!a.suspended!==!!b.suspended){
+   changes.push({name:b.name,mine:value(a.value),shared:b.suspended?'Paused — outside current menu':b.supersededBy?'Replaced by another item':!b.mappingValid?'Catalog link needs review':a.catalogId!==b.catalogId?'Catalog link changed · '+value(b.value):value(b.value),by:b.updatedBy,at:b.updatedAt});
   }
  }
  for(const b of after.answers)if(!before.answers.some(a=>a.itemId===b.itemId))changes.push({name:b.name,mine:'Not in your approved list',shared:value(b.value),by:b.updatedBy,at:b.updatedAt});

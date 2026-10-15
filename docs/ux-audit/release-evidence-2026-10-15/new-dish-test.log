@@ -1,0 +1,1 @@
+PASS dish workspace: dynamic lifecycle, inactive copies/variants, archive/restore, review invalidation, filter/detail state, explicit external open, aliases, multi-add, preserved quantities/notes, replacement, ID-safe undo, guarded update errors.

@@ -1,0 +1,36 @@
+{
+  "results": [
+    {
+      "name": "Evening → Finish → Morning → Ready → Undo on actual local data",
+      "status": "passed"
+    },
+    {
+      "name": "Short viewport, 200% zoom equivalent, touch and long names",
+      "status": "passed"
+    },
+    {
+      "name": "Complete calendar confirmation uses a browser-only synthetic GET fixture",
+      "status": "passed"
+    },
+    {
+      "name": "Empty, loading and request-error states are distinct (browser GET fixtures)",
+      "status": "passed"
+    },
+    {
+      "name": "Runtime stays free of browser exceptions",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "morningFirstTask": 630.984375,
+      "comparisonDay": "2026-10-15",
+      "clientTime": "2026-10-14T20:32:00Z",
+      "plannedItems": [
+        "Chilli garlic sauce",
+        "Cucumber salad dressing"
+      ]
+    }
+  ],
+  "errors": []
+}

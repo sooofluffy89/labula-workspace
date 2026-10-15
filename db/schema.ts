@@ -101,6 +101,11 @@ export const roundCommands=sqliteTable('round_commands',{
  id:text('id').primaryKey(),actorId:text('actor_id').notNull(),request:text('request').notNull(),applied:integer('applied').notNull().default(0),createdAt:text('created_at').notNull(),
 });
 
+// Atomic source snapshots capture every menu/composition change, including rapid archive/restore.
+export const menuScopeSources=sqliteTable('menu_scope_sources',{
+ seq:integer('seq').primaryKey({autoIncrement:true}),notebookRevision:integer('notebook_revision').notNull(),notebookPayload:text('notebook_payload').notNull(),reviewPayload:text('review_payload').notNull(),recordedAt:text('recorded_at').notNull(),actor:text('actor').notNull(),
+},t=>[index('menu_scope_revision').on(t.notebookRevision,t.seq)]);
+
 export const operatingCalendarVersions=sqliteTable('operating_calendar_versions',{
  revision:integer('revision').primaryKey(),effectiveDay:text('effective_day').notNull(),payload:text('payload').notNull(),createdAt:text('created_at').notNull(),createdBy:text('created_by').notNull(),operationId:text('operation_id').notNull().unique(),
 },t=>[index('operating_calendar_effective').on(t.effectiveDay,t.revision)]);

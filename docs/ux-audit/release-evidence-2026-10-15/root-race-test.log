@@ -1,0 +1,11 @@
+PASS root home: actual autosave in flight, synchronous guard/loading, duplicate click, cancel and ignored late opening
+PASS root success: preserved latest recipe, snapshot accepted only in session, close releases guard and resumes autosave
+PASS catalog preparation entry acquires and releases the real notebook guard
+PASS item-detail preparation entry uses the same transition and guard
+PASS notebook-import handoff: synchronous guard, async failure returns false, staged draft retained and cleared only after handled
+PASS wrong-account notebook import cannot open preparation
+PASS dish creation route: root modal, guarded stale callback, draft retained, new identity saved exactly once
+PASS stock navigation preserves unsaved and in-flight recipe edits; stock receives no notebook snapshot setter
+PASS Team navigation preserves actual notebook state, saving, and mounted recipe/catalog editors
+PASS cross-tab menu refresh: clean saved state updates; accepted local edits and their base remain intact
+PASS actual KitchenApp + actual useNotebook integration with persistent effects and exercised 1,200 ms autosave

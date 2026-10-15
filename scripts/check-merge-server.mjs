@@ -62,7 +62,7 @@ try{
   assert.deepEqual(pairSet(merged.data.distinctPairs),pairSet([[b.id,third.id],[b.id,d.id],[d.id,e.id]]));
   assert.ok(!merged.data.distinctPairs.flat().includes(a.id));
   assert.equal(merged.data.recipes[0].inputs.length,1);assert.equal(merged.data.recipes[0].recorded,true);
-  assert.deepEqual(merged.data.recipes[1],{...n.recipes[1],inputs:[{...n.recipes[1].inputs[0],itemId:b.id}]});
+  assert.deepEqual(merged.data.recipes[1],{...n.recipes[1],ingredientsReviewed:false,inputs:[{...n.recipes[1].inputs[0],itemId:b.id}]});
   assert.deepEqual(merged.data.items.find(i=>i.id===prep.id).inputs,[{...prep.inputs[0],itemId:b.id},prep.inputs[1]]);
   const saved=await state();assert.deepEqual(saved.data,merged.data);
   const audit=db.prepare('SELECT * FROM catalog_operations WHERE id=?').get(id);assert.deepEqual(JSON.parse(audit.before_payload),n);assert.deepEqual(JSON.parse(audit.after_payload),merged.data);

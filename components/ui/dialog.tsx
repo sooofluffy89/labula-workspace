@@ -56,9 +56,11 @@ function DialogContent({
   children,
   showCloseButton = true,
   onCloseAutoFocus,
+  placement = "center",
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  placement?: "center" | "right"
 }) {
   const opener=React.useContext(DialogOpenerContext)
   return (
@@ -68,7 +70,10 @@ function DialogContent({
         data-slot="dialog-content"
         onCloseAutoFocus={event=>{onCloseAutoFocus?.(event);if(!event.defaultPrevented){const target=opener?.current?.isConnected&&opener.current.getClientRects().length?opener.current:document.querySelector<HTMLElement>('[role="dialog"][data-state="open"] button')??Array.from(document.querySelectorAll<HTMLElement>("#workspace-content h1")).find(e=>e.getClientRects().length)??document.getElementById("workspace-content");if(target){event.preventDefault();if(!target.matches("button,input,select,textarea,a,[tabindex]"))target.tabIndex=-1;target.focus({preventScroll:true})}}}}
         className={cn(
-          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
+          "fixed z-50 grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
+          placement === "right"
+            ? "inset-y-0 right-0"
+            : "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]",
           className
         )}
         {...props}

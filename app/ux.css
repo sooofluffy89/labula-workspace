@@ -150,3 +150,14 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
 
 #workspace-content select,.review-app.review-app select,.review-app.review-app textarea{border-color:var(--input)}
 @media(pointer:coarse),(any-pointer:coarse){button,[role=checkbox],[role=switch]{min-width:44px;min-height:44px!important}summary{min-height:44px}}
+
+[data-slot=dialog-content][hidden]{display:none!important}
+
+@media(max-width:600px){
+ .catalog-heading{flex-wrap:nowrap;align-items:center;margin-bottom:12px}
+ .catalog-heading>div{min-width:0}.catalog-heading>div>p{display:none}
+ .catalog-heading>button{width:auto;flex-shrink:0;min-height:44px}
+ .catalog-task-actions{margin:0 0 12px}.catalog-task-actions h2{font-size:1rem}
+ .catalog-task-actions p{display:none}
+ .catalog-task-actions .actions{margin-top:8px}
+}

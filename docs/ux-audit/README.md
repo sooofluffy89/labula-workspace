@@ -87,3 +87,7 @@ node scripts/verify-ux-all.mjs
 ```
 
 Souhrnný skript spouští průchody postupně. Samostatně lze spustit `verify-ux-browser.mjs`, `verify-ux-scenarios.mjs`, `verify-ux-details.mjs`, `verify-ux-quick-browser.mjs`, `verify-ux-roles.mjs`. Rolový průchod spouštěj samostatně, protože dočasně přepíná oprávnění syntetického `local_seedy`; `finally` je obnoví. Zbylé průchody do produkce nepřistupují. Test 100 položek přidává pouze názvy `QA catalog item …`; opakované spuštění je nerozmnožuje.
+
+## Release reconciliation — 15 October 2026
+
+The Site source had progressed to version 83 after the GitHub audit baseline. The [release reconciliation report](release-2026-10-15.md) and [current verification](release-evidence-2026-10-15/verification.json) cover the preserved menu workspaces and all 31 fixes together. The original PDF and commit hashes remain historical evidence.

@@ -15,15 +15,15 @@ try{
  assert.equal(m.readWorkspaceRoute(new URL('https://example.test/?view=operations#ops=history&check=2026-10-14')).view,'operations');
  assert.equal(m.readWorkspaceRoute(new URL('https://example.test/?view=morning&day=2026-02-30')).day,undefined);
  const daily={view:'morning',day:'2026-10-15'};assert.deepEqual(m.readWorkspaceRoute(m.workspaceUrl(base,daily)),daily);
- const catalog={view:'catalog',query:'蒜 / chilli & coriander',kind:'prep'};assert.deepEqual(m.readWorkspaceRoute(m.workspaceUrl(href,catalog)),catalog);
+ const catalog={view:'catalog',query:'蒜 / chilli & coriander',kind:'review',scope:'all'};assert.deepEqual(m.readWorkspaceRoute(m.workspaceUrl(href,catalog)),catalog);
  assert.equal(m.workspaceUrl(new URL('https://example.test/#ops=history&check=old'),route).hash,'');
  assert(m.sameWorkspaceRoute({view:'catalog'},{view:'catalog',query:'',kind:'all'}));
  // Undo is an inverse patch; it must never restore an obsolete recipe snapshot.
- const n=m.initialNotebook(),a=m.newItem('Sauce'),b=m.newItem('Tofu'),c=m.newItem('Coriander');n.items=[a,b,c];n.recipes[0]={...n.recipes[0],recorded:true,inputs:[{itemId:a.id,amount:10,note:'original'},{itemId:b.id,amount:null,note:''}]};
- const removed=m.removeRecipeInput(n,n.recipes[0].id,a.id);assert(removed.ticket);assert(!removed.notebook.recipes[0].recorded);
+ const n=m.initialNotebook(),a=m.newItem('Sauce'),b=m.newItem('Tofu'),c=m.newItem('Coriander');n.items=[a,b,c];n.recipes[0]={...n.recipes[0],recorded:true,ingredientsReviewed:true,reviewStatus:'verified',inputs:[{itemId:a.id,amount:10,note:'original'},{itemId:b.id,amount:null,note:''}]};
+ const removed=m.removeRecipeInput(n,n.recipes[0].id,a.id);assert(removed.ticket);assert(!removed.notebook.recipes[0].recorded);assert.equal(removed.notebook.recipes[0].ingredientsReviewed,false);
  assert.deepEqual(m.restoreRecipeInput(removed.notebook,removed.ticket).notebook,n);
  const newer=structuredClone(removed.notebook);newer.recipes[0].notes='Newer colleague note';newer.recipes[0].inputs.push({itemId:c.id,amount:null,note:'new'});
- const restored=m.restoreRecipeInput(newer,removed.ticket);assert(restored.restored);assert.equal(restored.notebook.recipes[0].notes,'Newer colleague note');assert.equal(restored.notebook.recipes[0].inputs.length,3);assert.equal(restored.notebook.recipes[0].recorded,false);
+ const restored=m.restoreRecipeInput(newer,removed.ticket);assert(restored.restored);assert.equal(restored.notebook.recipes[0].notes,'Newer colleague note');assert.equal(restored.notebook.recipes[0].inputs.length,3);assert.equal(restored.notebook.recipes[0].recorded,false);assert.equal(restored.notebook.recipes[0].ingredientsReviewed,false);
  assert.equal(m.restoreRecipeInput(restored.notebook,removed.ticket).restored,false);const deleted=structuredClone(newer);deleted.items=deleted.items.filter(i=>i.id!==a.id);assert.equal(m.restoreRecipeInput(deleted,removed.ticket).restored,false);
  // Mixed and unassigned are different states; opening a bulk editor is not a change.
  assert.equal(m.commonStation([{stationId:'station-1'},{stationId:'station-1'}]),'station-1');assert.equal(m.commonStation([{stationId:null},{stationId:null}]),null);assert.equal(m.commonStation([{stationId:'station-1'},{stationId:'station-2'}]),undefined);

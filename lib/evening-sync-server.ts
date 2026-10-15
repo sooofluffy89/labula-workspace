@@ -3,7 +3,9 @@ import {z} from 'zod';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {RequestError} from './notebook-server';
-import {eveningCommandSchema,selectionQuery,dateSchema,type EveningSelection} from './evening';
+import {latestMenuSourceSql} from './menu-scope-server';
+import {scopeSource,type MenuScopeSource} from './menu-scope';
+import {eveningCommandSchema,selectionQuery,dateSchema,operationalDay,type EveningSelection} from './evening';
 import {eveningEvents} from './evening-activity';
 import {answerView,taskView,summary,type CheckRow,type AnswerRow,type TaskRow} from './evening-server';
 import {EVENING_BATCH_LIMIT,type SyncCursor,type EveningDelta,type EveningBatchReply,type BatchResult} from './evening-sync';
@@ -34,8 +36,9 @@ export async function readEveningDelta(user:ChatGPTUser,selection:EveningSelecti
   db.prepare(syncMetadataSql),db.prepare(`SELECT * FROM evening_checks WHERE ${checkWhere}`).bind(selected),
   db.prepare(eventsSql).bind(cursor.after,bound),
   db.prepare(`SELECT ${noteColumns('a')},1 AS mapping_valid,NULL AS current_name FROM evening_answers a WHERE a.check_id=(SELECT id FROM evening_checks WHERE ${checkWhere}) AND a.item_id IN (${ids}) ORDER BY a.position`).bind(selected,cursor.after,bound),
-  db.prepare(`SELECT ${noteColumns('a')},1 AS mapping_valid FROM morning_tasks a WHERE a.check_id=(SELECT id FROM evening_checks WHERE ${checkWhere}) AND a.item_id IN (${ids}) ORDER BY a.position`).bind(selected,cursor.after,bound),
+  db.prepare(`SELECT ${noteColumns('a')},1 AS mapping_valid FROM morning_tasks a WHERE a.check_id=(SELECT id FROM evening_checks WHERE ${checkWhere}) AND a.item_id IN (${ids}) ORDER BY a.position`).bind(selected,cursor.after,bound),db.prepare(latestMenuSourceSql),
  ]);
+ const scope=r[5].results[0]?scopeSource(r[5].results[0] as MenuScopeSource):undefined;
  const meta=r[0].results[0] as Metadata,row=r[1].results[0] as CheckRow|undefined,events=r[2].results as {seq:number;check_id:string;item_id:string|null;action:string;category:string}[];
  const through=cursor.through??meta.through,last=events.at(-1)?.seq??through,pageMore=events.length===pageSize&&last<through;
  // A header is current within this transaction, while a page can still be
@@ -45,7 +48,7 @@ export async function readEveningDelta(user:ChatGPTUser,selection:EveningSelecti
  const reset=cursor.after>meta.through||cursor.notebook!==meta.notebook||cursor.rounds!==meta.rounds||cursor.calendar!==meta.calendar||events.some(e=>!['answer','ready','prep-feedback','prep-instruction'].includes(e.action));
  const next={...cursor,after:pageMore?last:through,through:pageMore?through:null};
  // Catalog changes force a complete read; unchanged catalog means existing mapping/name data stay valid.
- return {accountId:user.userId,account:user.email,cursor:JSON.stringify(next),reset,more,...(!reset&&!more?{verifiedThrough:meta.through}:{}),check:row?summary(row):null,answers:(r[3].results as AnswerRow[]).map(a=>answerView(a)),tasks:(r[4].results as TaskRow[]).map(t=>taskView(t))};
+ return {accountId:user.userId,account:user.email,cursor:JSON.stringify(next),reset,more,...(!reset&&!more?{verifiedThrough:meta.through}:{}),check:row?summary(row):null,answers:(r[3].results as AnswerRow[]).map(a=>answerView(a,undefined,row?.stage==='draft'?scope:undefined)),tasks:(r[4].results as TaskRow[]).map(t=>taskView(t,undefined,row&&row.target_day>=operationalDay()?scope:undefined))};
 }
 
 export async function eveningBatch(user:ChatGPTUser,raw:unknown):Promise<EveningBatchReply>{
@@ -75,7 +78,7 @@ export async function eveningBatch(user:ChatGPTUser,raw:unknown):Promise<Evening
   priorByItem.set(c.kind+':'+c.checkId+':'+c.itemId,[...prior,c]);
  }
  const changesIndex=statements.length,checkId=commands[0].checkId,itemIds=JSON.stringify(commands.map(c=>c.itemId));
- statements.push(db.prepare('SELECT * FROM evening_checks WHERE id=?').bind(checkId),db.prepare(`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))`).bind(checkId,itemIds),db.prepare(`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))`).bind(checkId,itemIds));
+ statements.push(db.prepare('SELECT * FROM evening_checks WHERE id=?').bind(checkId),db.prepare(`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))`).bind(checkId,itemIds),db.prepare(`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? AND item_id IN (SELECT value FROM json_each(?))`).bind(checkId,itemIds),db.prepare(latestMenuSourceSql));
  // A technical failure rolls back the whole D1 transaction. Logical CAS failures are per command.
  const r=await db.batch(statements),blocked=new Set<string>();
  const results:BatchResult[]=commands.map((c,i)=>{
@@ -84,5 +87,6 @@ export async function eveningBatch(user:ChatGPTUser,raw:unknown):Promise<Evening
   const dependent=blocked.has(key);blocked.add(key);
   return {operationId:c.id,checkId:c.checkId,status:dependent?'blocked':'conflict',error:receipt?'This operation ID belongs to a different change.':'This item changed. Review the shared result before choosing what to keep.'};
  });
- return {accountId:user.userId,account:user.email,results,changes:{check:r[changesIndex].results[0]?summary(r[changesIndex].results[0] as CheckRow):null,answers:(r[changesIndex+1].results as AnswerRow[]).map(a=>answerView(a)),tasks:(r[changesIndex+2].results as TaskRow[]).map(t=>taskView(t))}};
+ const scope=r[changesIndex+3].results[0]?scopeSource(r[changesIndex+3].results[0] as MenuScopeSource):undefined,row=r[changesIndex].results[0] as CheckRow|undefined;
+ return {accountId:user.userId,account:user.email,results,changes:{check:r[changesIndex].results[0]?summary(r[changesIndex].results[0] as CheckRow):null,answers:(r[changesIndex+1].results as AnswerRow[]).map(a=>answerView(a,undefined,row?.stage==='draft'?scope:undefined)),tasks:(r[changesIndex+2].results as TaskRow[]).map(t=>taskView(t,undefined,row&&row.target_day>=operationalDay()?scope:undefined))}};
 }

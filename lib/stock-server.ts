@@ -8,8 +8,10 @@ import {readNotebook,RequestError,canManage,managementUsersSql} from './notebook
 import {stockCommandSchema,type StockCommand,type StockSnapshot} from './stock';
 import {groupCommandSchema,type GroupCommand,validGroup} from './ingredient-groups';
 import groupSeed from './ingredient-group-seed.json';
-import {usageMap,type Notebook} from './notebook';
-import {menu,categories} from './menu';
+import {type Notebook} from './notebook';
+import {latestMenuSourceSql} from './menu-scope-server';
+import {menuScope,scopeSource,type MenuScopeSource} from './menu-scope';
+import {categories} from './menu';
 
 type StockRow={item_id:string;included:number;track:number;revision:number;updated_at:string;updated_by:string;group_id:string|null;group_revision:number;group_source:string|null;station_id:string|null;station_revision:number;station_updated_at:string|null;station_updated_by:string|null};
 type Receipt={id:string;actor_id:string;request:string;result:string};
@@ -40,16 +42,17 @@ export async function readStock(user:ChatGPTUser):Promise<StockSnapshot>{
    AND NOT EXISTS (SELECT 1 FROM catalog_operations u WHERE u.kind='undo' AND u.undo_of=c.id)
    AND NOT EXISTS (SELECT 1 FROM ingredient_group_commands g,json_each(g.request,'$.reviewedMerges') r WHERE json_extract(r.value,'$.operationId')=c.id)
    AND EXISTS (SELECT 1 FROM ${managementUsersSql} WHERE user_id=?)`).bind(user.userId),
+  getRawDb().prepare(latestMenuSourceSql),
  ]);
  const notebook=results[0].results[0] as {payload:string;revision:number};
  const rows=new Map((results[1].results as StockRow[]).map(row=>[row.item_id,row]));
- const saved=JSON.parse(notebook.payload) as Notebook,usage=usageMap(saved);
+ const saved=JSON.parse(notebook.payload) as Notebook,scope=results[3].results[0]?scopeSource(results[3].results[0] as MenuScopeSource):menuScope(saved),usage=scope.usage;
  const items=saved.items.map(item=>{
   const row=rows.get(item.id);
   const usedBy=usage.get(item.id)?.all;
-  const itemCategories=categories.filter(category=>menu.some(dish=>dish.category===category&&usedBy?.has(dish.id)));
+  const itemCategories=categories.filter(category=>saved.dishes.some(dish=>dish.category===category&&usedBy?.has(dish.id)));
   // A newly committed catalog item may arrive between initialization and this read.
-  return {itemId:item.id,name:item.name,aliases:item.aliases,kind:item.kind,categories:itemCategories,included:row?!!row.included:true,track:row?!!row.track:false,revision:row?.revision??0,updatedAt:row?.updated_at??'',updatedBy:row?.updated_by??'',groupId:validGroup(row?.group_id),groupRevision:row?.group_revision??0,groupSource:row?.group_source??null,stationId:validStation(row?.station_id),stationRevision:row?.station_revision??0,stationUpdatedAt:row?.station_updated_at??null,stationUpdatedBy:row?.station_updated_by??null};
+  return {menuScope:scope.state(item.id),itemId:item.id,name:item.name,aliases:item.aliases,kind:item.kind,categories:itemCategories,included:row?!!row.included:true,track:row?!!row.track:false,revision:row?.revision??0,updatedAt:row?.updated_at??'',updatedBy:row?.updated_by??'',groupId:validGroup(row?.group_id),groupRevision:row?.group_revision??0,groupSource:row?.group_source??null,stationId:validStation(row?.station_id),stationRevision:row?.station_revision??0,stationUpdatedAt:row?.station_updated_at??null,stationUpdatedBy:row?.station_updated_by??null};
  });
  const canManageGroups=await canManage(user);if(canManageGroups)requireWriteScope('management');
  const byItem=new Map(items.map(item=>[item.itemId,item]));

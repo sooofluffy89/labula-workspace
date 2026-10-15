@@ -1,3 +1,4 @@
+import {requireWriteScope} from './protected-api';
 import {profileCommandSchema,applyProfileCommand} from './prep-draft';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
@@ -6,6 +7,7 @@ import {validateNotebook,validationMessage,type Notebook} from './notebook';
 import {validateOrdinaryEdit} from './catalog';
 import {bulkCommandSchema,applyBulkCommand} from './bulk';
 import {NotebookCapacityError} from './notebook-size';
+import {validateProductionEdit} from './production-edit-server';
 
 type Receipt={id:string;kind:string;actor_id:string;fingerprint:string;before_revision:number;after_revision:number;created_at:string};
 async function command(user:ChatGPTUser,revision:number,id:string,kind:'bulk'|'save'|'profile',request:unknown,prepare:(before:Notebook)=>Promise<Notebook>){
@@ -32,13 +34,14 @@ async function command(user:ChatGPTUser,revision:number,id:string,kind:'bulk'|'s
 export async function bulkSave(user:ChatGPTUser,revision:number,raw:unknown){
  const body=raw as {commandId?:unknown;command?:unknown};if(typeof body.commandId!=='string')throw new RequestError('A request ID is required.');
  const request=bulkCommandSchema.parse(body.command);
- return command(user,revision,body.commandId,'bulk',request,async before=>{const next=applyBulkCommand(before,request);validateOrdinaryEdit(before,next);return next;});
+ return command(user,revision,body.commandId,'bulk',request,async before=>{const next=applyBulkCommand(before,request);validateOrdinaryEdit(before,next,await canManage(user));return next;});
 }
 export async function saveWithReceipt(user:ChatGPTUser,revision:number,id:string,body:unknown){
  return command(user,revision,id,'save',body,async before=>{
-  if((body as {schemaVersion?:number})?.schemaVersion!==3)throw new RequestError('Download your draft and reload this older page before saving.',409,'old_client');
+  if((body as {schemaVersion?:number})?.schemaVersion!==4)throw new RequestError('Download your draft and reload this older page before saving.',409,'old_client');
   const next=validateNotebook(body);
-  validateOrdinaryEdit(before,next);
+  const manage=await canManage(user);if(manage)requireWriteScope('management');validateOrdinaryEdit(before,next,manage);
+  await validateProductionEdit(before,next);
   const oldIds=new Set(before.items.map(i=>i.id)),newIds=new Set(next.items.filter(i=>!oldIds.has(i.id)).map(i=>i.id));
   if(newIds.size){const retired=await getRawDb().prepare('SELECT retired_id FROM catalog_operations WHERE retired_id IS NOT NULL').all<{retired_id:string}>();if(retired.results.some(r=>newIds.has(r.retired_id)))throw new RequestError('A merged item cannot be recreated. Reload and use its current catalog entry.');}
   return next;

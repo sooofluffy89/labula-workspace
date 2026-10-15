@@ -1,5 +1,7 @@
+import {menuUsage} from './menu-scope';
+import type {AppliedRecord} from './review-v2/applied';
 import {documentedSource,effortBasis,prepAhead,relevantProblems,type PrepProfile,type PrepTime} from './prep-profile';
-import {compareUsage,directUsage} from './direct-usage';
+import {compareUsage} from './direct-usage';
 import type {Notebook} from './notebook';
 
 export type PrepStep='preparation'|'storage';
@@ -40,8 +42,8 @@ export function profileCompletion(p:PrepProfile){
  });
  return {complete:missing.length===0,missing,firstStep:missing[0]?.step??'preparation' as PrepStep};
 }
-export function preparationProgress(notebook:Notebook){
- const usage=directUsage(notebook);
+export function preparationProgress(notebook:Notebook,records:AppliedRecord[]=[]){
+ const usage=menuUsage(notebook,records);
  const items=notebook.items.filter(i=>usage.itemDishes.has(i.id)).sort((a,b)=>compareUsage(usage,a.id,b.id)).map(item=>({item,count:usage.itemDishes.get(item.id)!.size,...profileCompletion(item.prepProfile)}));
  const remaining=items.filter(i=>!i.complete);
  return {items,remaining,total:items.length,filled:items.length-remaining.length};

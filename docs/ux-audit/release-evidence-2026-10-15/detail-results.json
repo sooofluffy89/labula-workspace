@@ -1,0 +1,35 @@
+{
+  "results": [
+    {
+      "name": "Morning first task is visible on the original audit day",
+      "status": "passed"
+    },
+    {
+      "name": "No-plan Morning offers the preceding Evening with the correct date",
+      "status": "passed"
+    },
+    {
+      "name": "Short preparation dialog keeps the focused field clear of its footer",
+      "status": "passed"
+    },
+    {
+      "name": "Information Back, Forward, Refresh and direct detail links remain intact",
+      "status": "passed"
+    },
+    {
+      "name": "Check rounds exposes the transfer model and Move to controls",
+      "status": "passed"
+    },
+    {
+      "name": "No runtime exceptions in detail and short-window flows",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "auditMorningFirstTask": 558.484375,
+      "date": "2026-10-15"
+    }
+  ],
+  "errors": []
+}

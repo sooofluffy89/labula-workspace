@@ -1,0 +1,19 @@
+{
+  "results": [
+    {
+      "name": "Same-data before/after screenshots use the original 12 synthetic identities",
+      "status": "passed"
+    },
+    {
+      "name": "Comparison fixtures produce no browser exceptions",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "fixture": "12 original synthetic items; browser GET only",
+      "prepY": 237.375
+    }
+  ],
+  "errors": []
+}

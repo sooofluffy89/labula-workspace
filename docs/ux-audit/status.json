@@ -5,17 +5,20 @@
       "id": "01",
       "priority": "P1",
       "finding": "Detailový panel ořezává editor receptu",
-      "change": "Detail pod 1536 px používá overlay; container query sbalí výběr jídel a vnitřní mřížky podle obsahu. Odstraněno vynucené zobrazení sidebaru.",
+      "change": "Detail pod 1536 px používá overlay; container query sbalí výběr jídel a vnitřní mřížky podle obsahu. Odstraněno vynucené zobrazení sidebaru. Aktuální Sites v83 používá navíc adaptivní Menu review; jeho detail je při 1100 px široký 858 px a všechny ovladače jsou uvnitř kontejneru. Zachován nový editor i všechny jeho funkce.",
       "files": [
         "app/ux.css",
         "app/use-desktop.ts",
-        "app/information-detail.tsx"
+        "app/information-detail.tsx",
+        "app/dish-workspace.tsx",
+        "app/menu-review.css"
       ],
       "acceptance": "1100/1280/1440 px, detail otevřený i zavřený: celé ovládání je viditelné, dosažitelné a nezakrývá se; dlouhé názvy se zalamují.",
       "status": "verified",
       "verification": [
         "Chromium: šířky 320–1440; detail 1100/1280/1440/1600; geometrie editoru a dlouhý název."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "02",
@@ -32,29 +35,32 @@
       "status": "verified",
       "verification": [
         "Chromium: první karta v 390×844; screenshoty dashboardu před/po."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "03",
       "priority": "P2",
       "finding": "Příprava a skladování jsou až za celým katalogem",
-      "change": "Preparation & storage a Batch details jsou nad kompaktními řádky katalogu.",
+      "change": "Preparation & storage a Batch details jsou nad kompaktními řádky katalogu. V novém katalogu jsou Preparation & storage a Batch details před filtry i seznamem, na y=237 px při 390×844 s 100 položkami.",
       "files": [
         "app/kitchen-app.tsx",
         "app/batch-collection.tsx",
-        "app/ux.css"
+        "app/ux.css",
+        "app/catalog-workspace.tsx"
       ],
       "acceptance": "Vstup do přípravy je na stejném místě při 12 i 100 položkách a nevyžaduje scroll za katalog.",
       "status": "verified",
       "verification": [
         "Chromium: 12 a 100 syntetických položek; pozice Preparation nezávisí na délce seznamu."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "04",
       "priority": "P2",
       "finding": "Přechody mezi sekcemi neuchovávají srozumitelný kontext",
-      "change": "URL obsahuje sekci, jídlo, variantu, datum denní práce a filtr katalogu. Historie ukládá scroll a přesouvá fokus na nadpis. Zachovává stav Vinext i informační detail.",
+      "change": "URL obsahuje sekci, jídlo, variantu, datum denní práce a filtr katalogu. Historie ukládá scroll a přesouvá fokus na nadpis. Zachovává stav Vinext i informační detail. URL zahrnuje i nový Needs review filtr a Current menu / All items. Opožděný onLocation z neaktivní denní práce nesmí přepsat otevřenou hlavní sekci.",
       "files": [
         "lib/workspace-navigation.ts",
         "app/use-workspace-navigation.ts",
@@ -67,7 +73,8 @@
       "verification": [
         "check-ux-behavior; Chromium: Back/Forward/Refresh, scroll, vybraný recept, přímé datum a #info.",
         "Chromium: odložený růst obsahu při Back obnoví uložený scroll; přímé datum, editace data bez otevření, Open date a Back přes datum i sekci. Odmítnutá navigace hlásí skutečný pohled."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "05",
@@ -82,7 +89,8 @@
       "status": "verified",
       "verification": [
         "Chromium: History/Calendar a Cook Check/Prep; check-calm-ui."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "06",
@@ -97,7 +105,8 @@
       "status": "verified",
       "verification": [
         "Chromium: právě jeden viditelný h1 ve 33 kombinacích sekce/šířka."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "07",
@@ -113,7 +122,8 @@
       "status": "verified",
       "verification": [
         "check-stock-motion, check-calm-ui; Chromium: autosave, validace, Evening/Finish/Morning."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "08",
@@ -128,7 +138,8 @@
       "status": "verified",
       "verification": [
         "check-manage-settings-ui; Chromium 390 px: oba popisky a dvě skupinové tab zastávky."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "09",
@@ -144,7 +155,8 @@
       "status": "verified",
       "verification": [
         "Chromium: skutečné hledání/reset; GET fixtures pro empty/loading/503; check-batch-collection."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "10",
@@ -158,7 +170,8 @@
       "status": "verified",
       "verification": [
         "Chromium: uložený filtr po odchodu a návratu, viditelné odstranění a reset."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "11",
@@ -177,7 +190,8 @@
       "status": "verified",
       "verification": [
         "Chromium: navigace a detail; příslušné existující UI regresní testy."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "12",
@@ -203,7 +217,8 @@
       "status": "verified",
       "verification": [
         "Chromium se skutečnou rolí Manager: detail → Correct type → bezpečný náhled; check-catalog-manager a role/API suite."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "13",
@@ -217,23 +232,26 @@
       "status": "verified",
       "verification": [
         "Chromium: Owner i Manager vidí zálohu, Cook API 403; check-private-backup a check-profile-photo."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "14",
       "priority": "P2",
       "finding": "Odebrání ingredience nemá rychlé Undo",
-      "change": "Odebrání nabízí Undo jako inverzní operaci konkrétní ingredience. Novější pole zachová; dokončení vrací pouze při nezměněném zbytku receptu.",
+      "change": "Odebrání nabízí Undo jako inverzní operaci konkrétní ingredience. Novější pole zachová; dokončení vrací pouze při nezměněném zbytku receptu. Nový menu editor používá tutéž bezpečnou inverzní změnu; příznaky ingredientsReviewed, reviewStatus a workshop se obnoví jen při shodě aktuálního receptu s výsledkem odebrání.",
       "files": [
         "lib/recipe-undo.ts",
         "app/kitchen-app.tsx",
-        "app/recipe-ui.tsx"
+        "app/recipe-ui.tsx",
+        "app/dish-workspace.tsx"
       ],
       "acceptance": "Omylem odstraněnou ingredienci lze vrátit jednou akcí, bez přepsání novějších změn jiného člověka.",
       "status": "verified",
       "verification": [
         "check-ux-behavior: novější úpravy, opakování, smazaný cíl; Chromium: remove → Undo."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "15",
@@ -247,7 +265,8 @@
       "status": "verified",
       "verification": [
         "check-prep-workflow: Batch Back, hodnoty a nezavřený formulář; Chromium: krok 3 → Back → krok 1."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "16",
@@ -264,7 +283,8 @@
       "status": "verified",
       "verification": [
         "check-ux-behavior, check-prep-workflow; Chromium: chybějící počátek trvání a platné Not sure bez sync CTA."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "17",
@@ -282,7 +302,8 @@
       "status": "verified",
       "verification": [
         "Chromium: 390×500, fokus pole bez překrytí patičkou; vizuální kontrola; check-prep-fields."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "18",
@@ -297,7 +318,8 @@
       "status": "verified",
       "verification": [
         "check-ux-behavior: shodné/null/mixed; Chromium: Station 1 a Save disabled; existující CAS/replay testy."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "19",
@@ -312,7 +334,8 @@
       "status": "verified",
       "verification": [
         "check-ux-behavior; Chromium GET fixture: změna dne, 09:30, odstranění obou druhů výjimek a účinnost, bez serverového zápisu."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "20",
@@ -328,7 +351,8 @@
       "status": "verified",
       "verification": [
         "check-quick-ui: osm případů, blokace neúplného kroku, resume/unknown; Chromium review fixture: chyba, odkaz a fokus."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "21",
@@ -343,7 +367,8 @@
       "status": "verified",
       "verification": [
         "Chromium: měřený bounding box X a vizuální kontrola dialogu."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "22",
@@ -360,22 +385,25 @@
       "status": "verified",
       "verification": [
         "Chromium: Escape, Keep editing, Discard, X a fokus spouštěče; navigační fokus; existující vnořené UI testy."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "23",
       "priority": "P2",
       "finding": "Nová položka zahodí rozepsaný název po běžném zavření",
-      "change": "Změněná nová položka a přejmenování vyžadují Keep editing / Discard changes při X, Escape i Cancel. Text se při pokračování zachová.",
+      "change": "Změněná nová položka a přejmenování vyžadují Keep editing / Discard changes při X, Escape i Cancel. Text se při pokračování zachová. Stejná ochrana navíc platí pro novou funkci Add dish / Duplicate dish v aktuálních Sites zdrojích.",
       "files": [
         "app/discard-changes.tsx",
-        "app/catalog-editor.tsx"
+        "app/catalog-editor.tsx",
+        "app/dish-workspace.tsx"
       ],
       "acceptance": "Náhodné zavření neztratí rozepsaný nový název bez upozornění; opětovné otevření nabízí pokračování.",
       "status": "verified",
       "verification": [
         "check-catalog-dialogs; Chromium: Escape → Keep editing → zachovaný název → Discard a návrat fokusu."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "24",
@@ -390,7 +418,8 @@
       "status": "verified",
       "verification": [
         "check-manage-settings-ui; Chromium: počet tab zastávek a přístupné názvy."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "25",
@@ -405,7 +434,8 @@
       "status": "verified",
       "verification": [
         "Chromium: vypočtený kontrast hranice vůči výplni ≥3:1, invalid aria a focus; screenshoty formulářů."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "26",
@@ -419,7 +449,8 @@
       "status": "verified",
       "verification": [
         "Chromium emulace prefers-reduced-motion: animationName none a zachované ovládání/fokus."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "27",
@@ -433,7 +464,8 @@
       "status": "verified",
       "verification": [
         "Chromium hasTouch při 1280 px: any-pointer coarse a měřená výška New item ≥44; Cook 48 px."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "28",
@@ -449,7 +481,8 @@
       "status": "verified",
       "verification": [
         "Chromium: skutečná Cook role, 320/390, právě dvě stejně široké volby a aktivní stav."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "29",
@@ -467,7 +500,8 @@
       "status": "verified",
       "verification": [
         "Chromium: jedna karta, návrat do katalogu, zachovaný koncept alternativních názvů; existující review save/recovery/API testy."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "30",
@@ -482,7 +516,8 @@
       "status": "verified",
       "verification": [
         "Chromium: chybějící Morning 19 Oct → Evening 18 Oct; model přesunu a ovladače; check-rounds a check-edit-items-ui."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     },
     {
       "id": "31",
@@ -499,7 +534,8 @@
       "verification": [
         "Chromium: Evening → Finish → Morning → Ready → Undo; stejné datum 15 Oct a dvě úlohy jako audit, první úloha nad hranicí 844 px; check-morning-layout.",
         "check-morning-layout: novější peer revize odstraní staré Undo."
-      ]
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
     }
   ],
   "environment": {
@@ -515,5 +551,12 @@
     "regressionScripts": 94,
     "result": "passed",
     "evidence": "evidence/verification.json"
+  },
+  "releaseReconciliation": {
+    "siteVersion": 83,
+    "siteSourceCommit": "85f8243f08dc5605e7c503d593fc9edc9ce67e04",
+    "report": "release-2026-10-15.md",
+    "verification": "release-evidence-2026-10-15/verification.json",
+    "note": "Current Sites UI and menu model were reconciled before publication. Original audit evidence remains historical; this release adds current-code verification."
   }
 }
