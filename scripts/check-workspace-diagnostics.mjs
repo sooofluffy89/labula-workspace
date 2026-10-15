@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {mkdtemp,readFile,readdir,rm,writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {build} from 'esbuild';
+const dir=await mkdtemp(join(tmpdir(),'labula-diagnostics-')),db=new DatabaseSync(':memory:');
+let hook,readFailure=false,denyLedger=false;const queries=[];
+const statement=(sql,args=[])=>({bind(...values){return statement(sql,values);},async first(){return this.read().results[0]??null;},async all(){return this.read();},read(){
+ assert(/^SELECT\b|^PRAGMA table_info\(/.test(sql),'diagnostics and auth execute only fixed read queries');queries.push(sql);if(hook)hook(sql);if(readFailure)throw Error('Synthetic database failure');if(denyLedger&&sql.startsWith('SELECT * FROM "__drizzle_migrations"'))throw Error('Synthetic protected table');return {results:db.prepare(sql).all(...args),meta:{changes:0}};
+}});
+const raw={prepare:statement,async batch(statements){db.exec('BEGIN');try{const result=statements.map(query=>query.read());db.exec('COMMIT');return result;}catch(error){db.exec('ROLLBACK');throw error;}}};
+try{
+ for(const file of(await readdir('drizzle')).filter(file=>file.endsWith('.sql')).sort())db.exec(await readFile('drizzle/'+file,'utf8'));
+ globalThis.diagnosticsDb=raw;globalThis.diagnosticsUser=null;
+ await writeFile(join(dir,'db.ts'),'export const getRawDb=()=>globalThis.diagnosticsDb;');
+ await writeFile(join(dir,'auth.ts'),'export const getChatGPTUser=async()=>globalThis.diagnosticsUser;');
+ await build({stdin:{contents:"export * as api from './app/api/workspace-diagnostics/route';export {quoteDiagnosticIdentifier} from './lib/workspace-diagnostics';",resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:join(dir,'test.mjs'),alias:{'@/db':join(dir,'db.ts'),'@/app/chatgpt-auth':join(dir,'auth.ts')},logLevel:'silent'});
+ const m=await import(join(dir,'test.mjs')),users=Object.fromEntries(['owner','manager','cook','legacy','disabled','unlinked','unlisted'].map(name=>[name,{userId:name,email:name+'@example.test'}]));
+ for(const name of ['owner','manager','cook','legacy','disabled','unlinked'])db.prepare("INSERT INTO kitchen_team(id,user_id,email,name,access_role,active,access_enabled,revision,created_at) VALUES(?,?,?,?,?,1,?,0,'synthetic')").run(name,name==='unlinked'?null:name,users[name].email,name,['owner','disabled','unlinked'].includes(name)?'legacy':name,name==='disabled'?0:1);
+ db.prepare("INSERT INTO kitchen_owner VALUES('owner','owner')").run();
+ db.prepare("INSERT INTO notebooks VALUES('kitchen','private synthetic menu',4,'synthetic','owner')").run();
+ db.exec("CREATE TABLE __drizzle_migrations(id INTEGER PRIMARY KEY,hash TEXT,created_at INTEGER); INSERT INTO __drizzle_migrations VALUES(1,'retained-synthetic-hash',100); CREATE TABLE d1_migrations(id INTEGER PRIMARY KEY,name TEXT,applied_at TEXT); INSERT INTO d1_migrations VALUES(1,'synthetic_0000.sql','synthetic'); CREATE TABLE restaurant_migration_notes(id TEXT,note TEXT); INSERT INTO restaurant_migration_notes VALUES('private','not a ledger'); CREATE VIEW migrations_view AS SELECT * FROM __drizzle_migrations;");
+ const unusual='migration_ledger"; DROP TABLE notebooks; --',quoted=m.quoteDiagnosticIdentifier(unusual);
+ db.exec('CREATE TABLE '+quoted+'(id INTEGER,checksum TEXT,applied_at TEXT)');db.prepare('INSERT INTO '+quoted+' VALUES(1,?,?)').run('quoted-ledger','synthetic');
+ const req=(method='GET',suffix='',headers={})=>new Request('http://test.local/api/workspace-diagnostics'+suffix,{method,headers:{'X-Labula-Account-Id':globalThis.diagnosticsUser?.userId??'',...headers}});
+ const verify=async(response,status,code)=>{const data=await response.json();assert.equal(response.status,status,JSON.stringify(data));if(code)assert.equal(data.code,code);assert.equal(response.headers.get('cache-control'),'private, no-store');assert.equal(response.headers.get('vary'),'Cookie');return data;};
+ const dump=()=>JSON.stringify(db.prepare("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").all().map(row=>[row.name,db.prepare('SELECT * FROM '+m.quoteDiagnosticIdentifier(row.name)).all()]));
+ const original=dump(),changes=db.prepare('SELECT total_changes() AS n').get().n;
+ await verify(await m.api.GET(req()),401,'sign_in_required');
+ for(const name of ['manager','cook','legacy','disabled','unlinked','unlisted']){globalThis.diagnosticsUser=users[name];await verify(await m.api.GET(req()),403);}
+ assert.equal(db.prepare("SELECT user_id FROM kitchen_team WHERE id='unlinked'").get().user_id,null,'diagnostics cannot bootstrap an allowed account');
+ globalThis.diagnosticsUser=users.owner;
+ await verify(await m.api.GET(req('GET','',{'X-Labula-Account-Id':'manager'})),403,'account_changed');
+ await verify(await m.api.GET(req('POST')),405);
+ await verify(await m.api.GET(req('GET','?sql=DELETE%20FROM%20notebooks')),400,'diagnostics_fixed_query');
+ const report=await verify(await m.api.GET(req()),200);assert(report.readOnly&&report.schemaComplete);assert(report.schema.some(row=>row.type==='trigger'&&row.sql));assert(report.schema.some(row=>row.type==='index'));assert(report.schema.some(row=>row.name==='notebooks'));
+ assert.equal(report.ledgers.find(row=>row.table==='__drizzle_migrations').rows[0].hash,'retained-synthetic-hash');assert.equal(report.ledgers.find(row=>row.table===unusual).rows[0].checksum,'quoted-ledger');assert.equal(report.ledgers.find(row=>row.table==='restaurant_migration_notes').selected,false);assert(!report.discovery.candidateTables.includes('migrations_view'));
+ assert.equal(dump(),original,'all allowed/denied diagnostics preserve every row and receipt');assert.equal(db.prepare('SELECT total_changes() AS n').get().n,changes,'diagnostics never attempts a sign-in stamp or other write');
+ denyLedger=true;const unreadable=await verify(await m.api.GET(req()),200);assert(unreadable.schemaComplete);assert.equal(unreadable.ledgers.find(row=>row.table==='__drizzle_migrations').readable,false);denyLedger=false;
+ readFailure=true;await verify(await m.api.GET(req()),503,'diagnostics_unavailable');readFailure=false;
+ hook=sql=>{if(sql.startsWith('SELECT * FROM "__drizzle_migrations"')){hook=null;db.prepare("UPDATE kitchen_team SET access_enabled=0 WHERE user_id='owner'").run();}};
+ const withheld=await verify(await m.api.GET(req()),403,'access_not_granted');assert(!withheld.schema&&!withheld.ledgers,'post-read revocation withholds every private definition and ledger row');db.prepare("UPDATE kitchen_team SET access_enabled=1 WHERE user_id='owner'").run();
+ for(let index=2;index<=202;index++)db.prepare('INSERT INTO __drizzle_migrations VALUES(?,?,?)').run(index,'synthetic-'+index,index);
+ const bounded=await verify(await m.api.GET(req()),200),ledger=bounded.ledgers.find(row=>row.table==='__drizzle_migrations');assert.equal(ledger.totalRows,202);assert.equal(ledger.rows.length,200);assert.equal(ledger.complete,false,'bounded rows never claim completeness');
+ let schemaReads=0;hook=sql=>{if(sql.startsWith('SELECT type,name,tbl_name,sql FROM sqlite_schema')&&++schemaReads===2){hook=null;db.exec('CREATE TABLE synthetic_schema_race(id INTEGER)');}};
+ await verify(await m.api.GET(req()),409,'diagnostics_changed');db.exec('DROP TABLE synthetic_schema_race');
+ for(let index=0;index<17;index++)db.exec('CREATE TABLE "migration_ledger_'+index+'"(id INTEGER,hash TEXT,created_at INTEGER)');
+ const tableBound=await verify(await m.api.GET(req()),200);assert.equal(tableBound.ledgers.length,16);assert.equal(tableBound.discovery.allCandidatesInspected,false);
+ assert.equal(db.prepare("SELECT payload FROM notebooks WHERE id='kitchen'").get().payload,'private synthetic menu');
+ const page=await readFile('app/workspace-diagnostics/page.tsx','utf8');assert.match(page,/accessRole\(user,'management',false\)/);assert(!/recordSignIn|INSERT|UPDATE|DELETE/.test(page));
+ console.log('PASS actual Owner diagnostics: verified identity/roles/account; no account bootstrap or writes; complete schema and discovered-only ledgers; identifier quoting; bounded/protected metadata; no arbitrary SQL; no-store; post-read revocation; changed-schema refusal.');
+}finally{db.close();delete globalThis.diagnosticsDb;delete globalThis.diagnosticsUser;await rm(dir,{recursive:true,force:true});}
