@@ -1,0 +1,59 @@
+{
+  "synthetic": true,
+  "productionDataImported": false,
+  "identity": {
+    "id": "local_seedy",
+    "email": "seedy@sites.test"
+  },
+  "baselineCommit": "93eab5d471c3af35de72a2b2278b96c66d788ad6",
+  "notebook": {
+    "beforeRevision": 4,
+    "afterRevision": 4,
+    "beforeSha256": "7930e503a232b5731edacaeb2554cf33447b37d66f34be1e0308a50fcec94343",
+    "afterSha256": "7930e503a232b5731edacaeb2554cf33447b37d66f34be1e0308a50fcec94343",
+    "sameContent": true,
+    "items": 100,
+    "dishes": 19,
+    "recipes": 24
+  },
+  "morning": {
+    "day": "2026-10-15",
+    "checkId": "2026-10-14",
+    "basis": "Read-only Wrangler D1 --local --persist-to .wrangler/state SELECT on both detached baseline and current workspace",
+    "comparedFields": [
+      "check_id",
+      "item_id",
+      "catalog_id",
+      "name",
+      "kind",
+      "position",
+      "ready",
+      "cancelled",
+      "instruction_snapshot"
+    ],
+    "equal": true,
+    "tasks": [
+      {
+        "itemId": "audit-item-1",
+        "name": "Chilli garlic sauce",
+        "kind": "prep",
+        "position": 1,
+        "ready": false,
+        "cancelled": false,
+        "instructionRevision": 0,
+        "instructionText": ""
+      },
+      {
+        "itemId": "audit-item-6",
+        "name": "Cucumber salad dressing",
+        "kind": "prep",
+        "position": 3,
+        "ready": false,
+        "cancelled": false,
+        "instructionRevision": 0,
+        "instructionText": ""
+      }
+    ],
+    "excludedFromEquality": "Revision/update timestamps and activity history reflect intentional synthetic Ready/Undo test operations."
+  }
+}

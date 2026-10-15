@@ -14,14 +14,14 @@ try{
  const freshPage=async()=>{globalThis.hooks={values:[],cursor:0};const next=render();assert.equal(await next.load(),true);return render();};
  const reset=async()=>{globalThis.hooks={values:[],cursor:0};server=initialNotebook();revision=0;receipts=new Map();calls=[];mode='ok';globalThis.fetch=async(url,options={})=>{
   if(!options.method)return Response.json({data:server,revision,updatedAt:'2026-09-12',updatedBy:'test',isOwner:false});
-  const data=JSON.parse(options.body),id=options.method==='PUT'?options.headers['X-Operation-Id']:data.commandId;
-  calls.push({url,id,body:options.body,revision:options.headers['If-Match']});
+  const data=JSON.parse(options.body),id=options.method==='PUT'?new Headers(options.headers).get('X-Operation-Id'):data.commandId;
+  calls.push({url,id,body:options.body,revision:new Headers(options.headers).get('If-Match')});
   if(mode==='gate'){arrived();await gate;}
   if(mode==='mismatch')return Response.json({error:'Different account',code:'command_mismatch'},{status:409});
   if(mode==='unauthorized')return Response.json({error:'Sign in required'},{status:401});
   if(mode==='reject'){mode='ok';return Response.json({error:'Rejected before saving'},{status:400});}
   if(!receipts.has(id)){
-   if(Number(options.headers['If-Match'])!==revision)return Response.json({error:'Newer version',code:'revision_conflict'},{status:409});
+   if(Number(new Headers(options.headers).get('If-Match'))!==revision)return Response.json({error:'Newer version',code:'revision_conflict'},{status:409});
    server=options.method==='PUT'?data:applyBulkCommand(server,data.command);revision++;receipts.set(id,{revision,body:options.body});
   }else assert.equal(receipts.get(id).body,options.body,'same ID must keep identical payload');
   if(mode==='lost'){mode='ok';throw new TypeError('Response lost after commit');}
@@ -95,13 +95,13 @@ try{
   }
   // Foreign edit between the replay GET and the extra-local PUT remains recoverable.
   let saveBackup=await exportedSave(true);h=await freshPage();assert.equal(h.restoreSaveRecovery(saveBackup).ok,true);h=render();baseFetch=globalThis.fetch;let injected=false;
-  globalThis.fetch=async(url,opts={})=>{if(opts.method==='PUT'&&opts.headers['X-Operation-Id']!==saveBackup.id&&!injected){injected=true;server.recipes[1].active=false;revision++;}return baseFetch(url,opts);};
+  globalThis.fetch=async(url,opts={})=>{if(opts.method==='PUT'&&new Headers(opts.headers).get('X-Operation-Id')!==saveBackup.id&&!injected){injected=true;server.recipes[1].active=false;revision++;}return baseFetch(url,opts);};
   result=await h.retryEarlierSave();h=render();assert.equal(injected,true);assert.equal(result.ok,false);assert.equal(h.saveRecoveryConflict,true);assert.equal(h.savePending,true);assert.equal(h.data.recipes[1].active,false);assert.equal(h.data.items.length,1);assert.equal(receipts.size,1);
   const extraRecovery=h.getSaveRecovery();assert.ok(extraRecovery);assert.notEqual(extraRecovery.id,saveBackup.id);assert.equal(extraRecovery.payload,saveBackup.localPayload);assert.equal(extraRecovery.localPayload,saveBackup.localPayload);assert.throws(()=>h.update(n=>n),/pending/);assert.equal(await h.load(),false);assert.equal(calls.every(call=>call.url==='/api/notebook'),true);globalThis.fetch=baseFetch;
   const extraWrites=calls.length;assert.equal(h.useSharedAfterRecovery().ok,true);assert.equal(calls.length,extraWrites);assert.equal(render().getSaveRecovery(),null);
   // The extra-local recovery PUT stays frozen even before it becomes uncertain.
   saveBackup=await exportedSave(true);h=await freshPage();assert.equal(h.restoreSaveRecovery(saveBackup).ok,true);h=render();baseFetch=globalThis.fetch;let releaseExtra,enteredExtra;const extraStarted=new Promise(resolve=>enteredExtra=resolve),extraGate=new Promise(resolve=>releaseExtra=resolve);
-  globalThis.fetch=async(url,opts={})=>{if(opts.method==='PUT'&&opts.headers['X-Operation-Id']!==saveBackup.id){enteredExtra();await extraGate;}return baseFetch(url,opts);};
+  globalThis.fetch=async(url,opts={})=>{if(opts.method==='PUT'&&new Headers(opts.headers).get('X-Operation-Id')!==saveBackup.id){enteredExtra();await extraGate;}return baseFetch(url,opts);};
   attempt=h.retryEarlierSave();await extraStarted;h=render();assert.equal(h.savePending,true);let blockedExtra=false;try{h.update(n=>n);}catch(e){blockedExtra=/pending/.test(e.message);}releaseExtra();assert.equal((await attempt).ok,true);globalThis.fetch=baseFetch;assert.equal(blockedExtra,true,'ref guard must reject edits until the restored extra PUT is fully confirmed');
   // An original PUT which never applied cannot be replayed over a foreign revision.
   h=await reset();h.update(n=>applyBulkCommand(n,{recipeId,rows:reconcileDraft('Never applied ingredient',[],[])}));h=render();let releaseUnsent;gate=new Promise(resolve=>releaseUnsent=resolve);const unsentBegan=new Promise(resolve=>arrived=resolve);mode='gate';attempt=h.save();await unsentBegan;saveBackup=h.getSaveRecovery();server.recipes[1].active=false;revision++;mode='ok';releaseUnsent();assert.equal(await attempt,false);assert.equal(receipts.size,0);

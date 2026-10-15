@@ -14,22 +14,41 @@ import {latestMenuSourceSql} from './menu-scope-server';
 import {scopeSource,type MenuScopeSource} from './menu-scope';
 import {validGroup} from './ingredient-groups';
 
-export type CheckRow={calendar_revision:number|null;id:string;target_day:string;plan_day:string|null;stage:'draft'|'confirmed';revision:number;plan_revision:number;version:number;confirmed_at:string|null;confirmed_by:string|null;grouped:number;rounds_version:number};
+export type CheckRow={publication_payload?:string|null;plan_policy_version?:number;calendar_revision:number|null;id:string;target_day:string;plan_day:string|null;stage:'draft'|'confirmed';revision:number;plan_revision:number;version:number;confirmed_at:string|null;confirmed_by:string|null;grouped:number;rounds_version:number};
 export type AnswerRow={station_snapshot?:string|null;instruction_snapshot?:string|null;feedback_count?:number;check_id:string;item_id:string;catalog_id:string;name:string;kind:'bought'|'prep';position:number;value:'have'|'missing'|null;revision:number;updated_at:string;updated_by:string;first_actor:string|null;first_device:string|null;first_sequence:number|null;superseded_by:string|null;group_id:string|null;round_snapshot:string|null};
 export type TaskRow=Omit<AnswerRow,'value'|'first_actor'|'first_device'|'first_sequence'|'superseded_by'>&{ready:number;cancelled:number};
 type Receipt={id:string;actor_id:string;request:string;result:string;applied:number};
-export const summary=(r:CheckRow):CheckSummary=>({calendarRevision:r.calendar_revision,roundsVersion:r.rounds_version,id:r.id,targetDay:r.target_day,stage:r.stage,revision:r.revision,planRevision:r.plan_revision,version:r.version,confirmedAt:r.confirmed_at,confirmedBy:r.confirmed_by});
+export const summary=(r:CheckRow):CheckSummary=>({planPolicyVersion:r.plan_policy_version??1,calendarRevision:r.calendar_revision,roundsVersion:r.rounds_version,id:r.id,targetDay:r.target_day,stage:r.stage,revision:r.revision,planRevision:r.plan_revision,version:r.version,confirmedAt:r.confirmed_at,confirmedBy:r.confirmed_by});
+// Policy 1 is retained for historical publications until reviewed correction.
+// Policy 2 freezes the published roster; current menu scope only affects a draft.
+export const publicationPayloadSql="(SELECT payload FROM evening_versions v WHERE v.check_id=evening_checks.id AND v.version=evening_checks.version) AS publication_payload";
+export function recordedAnswerScope(row:CheckRow|undefined):Map<string,Pick<CheckAnswer,'suspended'|'menuScope'>>{
+ if(!row||row.stage!=='confirmed'||(row.plan_policy_version??1)<2)return new Map();
+ if(!row.publication_payload)throw Error('The published plan snapshot is unavailable.');
+ const publication=JSON.parse(row.publication_payload) as {answers:CheckAnswer[]};
+ return new Map(publication.answers.map(answer=>[answer.itemId,{suspended:!!answer.suspended,...(answer.menuScope?{menuScope:answer.menuScope}:{})}]));
+}
+export const publishedTaskScope=(row:CheckRow|undefined,scope:ReturnType<typeof scopeSource>|undefined)=>row&&(row.plan_policy_version??1)<2&&row.target_day>=operationalDay()?scope:undefined;
 const conflict=(message='This check changed. Refresh, review the shared answers and try again.',code='evening_conflict')=>new RequestError(message,409,code);
 export async function readEvening(user:ChatGPTUser,selection:EveningSelection={day:operationalDay()}):Promise<EveningSnapshot>{
  return (await readEveningContext(user,selection)).snapshot;
 }
-async function readEveningContext(user:ChatGPTUser,selection:EveningSelection){
+// A previously committed request remains recoverable for a paused collaborator.
+// This path verifies that exact actor's receipt and never initializes or writes
+// records; ordinary reads and every new command still require active access.
+export async function readEveningReceipt(user:ChatGPTUser,operationId:string):Promise<EveningSnapshot>{
+ const receipt=await getRawDb().prepare('SELECT result FROM evening_commands WHERE id=? AND actor_id=? AND applied=1').bind(operationId,user.userId).first<{result:string}>();
+ if(!receipt)throw new RequestError('This saved operation is not available to this account.',403);
+ const result=JSON.parse(receipt.result) as {checkId:string};
+ return (await readEveningContext(user,{day:result.checkId},false)).snapshot;
+}
+async function readEveningContext(user:ChatGPTUser,selection:EveningSelection,initialize=true){
  const selected='day' in selection?dateSchema.parse(selection.day):dateSchema.parse(selection.morningDay);
- await initializeStock(user);const db=getRawDb();
+ if(initialize)await initializeStock(user);const db=getRawDb();
  // Planning, catalog, calendar, selected rows and the sync high water share one
  // transaction. Reuse those inputs only within this read/command; writes still CAS.
  const planning=await readPlanning(selected,[
-  db.prepare('SELECT * FROM evening_checks ORDER BY id DESC'),
+  db.prepare(`SELECT *,CASE WHEN ${'day' in selection?'id':'plan_day'}=? THEN (SELECT payload FROM evening_versions v WHERE v.check_id=evening_checks.id AND v.version=evening_checks.version) END AS publication_payload FROM evening_checks ORDER BY id DESC`).bind(selected),
   db.prepare('day' in selection?`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? ORDER BY position`:`SELECT ${noteColumns('a')} FROM evening_answers a JOIN evening_checks c ON c.id=a.check_id WHERE c.plan_day=? ORDER BY a.position`).bind(selected),
   db.prepare('day' in selection?`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? ORDER BY position`:`SELECT ${noteColumns('a')} FROM morning_tasks a JOIN evening_checks c ON c.id=a.check_id WHERE c.plan_day=? ORDER BY a.position`).bind(selected),
   db.prepare('SELECT check_id,catalog_id,superseded_by FROM evening_answers'),
@@ -37,8 +56,9 @@ async function readEveningContext(user:ChatGPTUser,selection:EveningSelection){
  ]);
  const results=planning.extraResults,catalog=planning.notebook.items.map(i=>({id:i.id,name:i.name,kind:i.kind})),byId=new Map(catalog.map(i=>[i.id,i]));
  const checks=results[0].results as CheckRow[],row=checks.find(c=>'day' in selection?c.id===selected:c.plan_day===selected);
- const answers=(results[1].results as AnswerRow[]).map(a=>answerView(a,byId,row?.stage==='draft'?planning.scope:undefined));
- const tasks=(results[2].results as TaskRow[]).map(t=>taskView(t,byId,row&&row.target_day>=operationalDay()?planning.scope:undefined));
+ const recorded=recordedAnswerScope(row);
+ const answers=(results[1].results as AnswerRow[]).map(a=>answerView(a,byId,row?.stage==='draft'?planning.scope:undefined,recorded.get(a.item_id)));
+ const tasks=(results[2].results as TaskRow[]).map(t=>taskView(t,byId,publishedTaskScope(row,planning.scope)));
  const calendar=planning.calendar;
  const summaries=checks.map(c=>{const base=summary(c);if(c.stage==='draft'&&c.version===0){const originals=(results[3].results as AnswerRow[]).filter(a=>a.check_id===c.id&&!a.superseded_by);if(originals.length&&originals.every(a=>(planning.coverage.get(a.catalog_id)??'')>c.id))base.coveredBy=originals.map(a=>planning.coverage.get(a.catalog_id)!).sort().at(-1)!;}return base;});
  const snapshot:EveningSnapshot={menuGaps:planning.scope.gaps,prepNotes:1,sync:{version:1,cursor:initialSyncCursor(user,selection,results[4].results[0] as {through:number;notebook:number;rounds:number;calendar:number})},calendar:{versions:calendar,revision:Math.max(0,...calendar.map(v=>v.revision)),accountId:user.userId,isOwner:false},planning:{day:selected,revision:planning.revision,dueCount:planning.due.length,rounds:planning.rounds,items:planning.items},scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:planning.notebookRevision,catalog,trackedCount:planning.items.length,checks:summaries,check:row?{...summaries.find(s=>s.id===row.id)!,answers,tasks,grouped:!!row.grouped}:null};
@@ -121,16 +141,16 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
    AND NOT EXISTS (SELECT 1 FROM evening_checks WHERE plan_day=? AND id!=?)
    AND NOT EXISTS (SELECT 1 FROM evening_answers a WHERE a.check_id=? AND a.catalog_id IN (SELECT value FROM json_each(?)) AND (a.value IS NULL OR (a.superseded_by IS NULL AND NOT EXISTS (SELECT 1 FROM notebooks n,json_each(n.payload,'$.items') j WHERE n.id='kitchen' AND json_extract(j.value,'$.id')=a.catalog_id AND json_extract(j.value,'$.kind')=a.kind))))`;
   conditionArgs=[checkId,c.revision,c.planRevision,c.notebookRevision,check!.targetDay,checkId,checkId,JSON.stringify(snapshot.catalog.filter(i=>!check!.answers.find(a=>a.catalogId===i.id)?.suspended).map(i=>i.id))];
-  const payload=JSON.stringify({calendarRevision:check!.calendarRevision??null,checkId,targetDay:check!.targetDay,answers:check!.answers,priorTasks:check!.tasks,actor:user.email,confirmedAt:now});
+  const payload=JSON.stringify({planPolicyVersion:2,calendarRevision:check!.calendarRevision??null,checkId,targetDay:check!.targetDay,answers:check!.answers,priorTasks:check!.tasks,actor:user.email,confirmedAt:now});
   writes.push(db.prepare(`INSERT INTO evening_versions (check_id,version,payload,created_at,created_by) SELECT ?,version+1,?,?,? FROM evening_checks WHERE id=? AND ${gate}`).bind(checkId,payload,now,user.email,checkId,...args));
   // Existing unchanged Missing rows retain Ready and its authorship. Cancelled/re-mapped rows reopen.
   writes.push(db.prepare(`INSERT INTO morning_tasks (check_id,item_id,catalog_id,name,kind,position,ready,cancelled,revision,updated_at,updated_by,group_id,instruction_snapshot)
    SELECT check_id,item_id,catalog_id,name,kind,position,0,0,0,?,?,group_id,instruction_snapshot FROM evening_answers WHERE check_id=? AND value='missing' AND catalog_id IN (SELECT value FROM json_each(?)) AND ${gate}
    ON CONFLICT(check_id,item_id) DO UPDATE SET catalog_id=excluded.catalog_id,instruction_snapshot=excluded.instruction_snapshot,group_id=excluded.group_id,ready=0,cancelled=0,revision=morning_tasks.revision+1,updated_at=excluded.updated_at,updated_by=excluded.updated_by
    WHERE morning_tasks.cancelled=1 OR morning_tasks.catalog_id!=excluded.catalog_id`).bind(now,user.email,checkId,JSON.stringify(check!.answers.filter(a=>!a.suspended).map(a=>a.catalogId)),...args));
-  writes.push(db.prepare(`UPDATE morning_tasks SET cancelled=1,revision=revision+1,updated_at=?,updated_by=? WHERE check_id=? AND cancelled=0 AND item_id IN (SELECT item_id FROM evening_answers WHERE check_id=? AND value='have' AND catalog_id IN (SELECT value FROM json_each(?))) AND ${gate}`).bind(now,user.email,checkId,checkId,JSON.stringify(check!.answers.filter(a=>!a.suspended).map(a=>a.catalogId)),...args));
+  writes.push(db.prepare(`UPDATE morning_tasks SET cancelled=1,revision=revision+1,updated_at=?,updated_by=? WHERE check_id=? AND cancelled=0 AND item_id NOT IN (SELECT item_id FROM evening_answers WHERE check_id=? AND value='missing' AND superseded_by IS NULL AND catalog_id IN (SELECT value FROM json_each(?))) AND ${gate}`).bind(now,user.email,checkId,checkId,JSON.stringify(check!.answers.filter(a=>!a.suspended).map(a=>a.catalogId)),...args));
   writes.push(db.prepare(`UPDATE round_state SET revision=revision+1 WHERE id='kitchen' AND ${gate}`).bind(...args));
-  updateCheck("stage='confirmed',version=version+1,revision=revision+1,plan_revision=plan_revision+1,plan_day=target_day,confirmed_at=?,confirmed_by=?",[now,user.email]);
+  updateCheck("plan_policy_version=2,stage='confirmed',version=version+1,revision=revision+1,plan_revision=plan_revision+1,plan_day=target_day,confirmed_at=?,confirmed_by=?",[now,user.email]);
  }
  if((c.kind==='start'&&!check)||c.kind==='dates'){if(snapshot.calendar?.versions.length&&checkId>=snapshot.calendar.versions[0].effectiveDay){condition+=' AND (SELECT max(revision) FROM operating_calendar_versions)=?';conditionArgs.push(c.calendarRevision);}}
  const receipt=db.prepare(`INSERT INTO evening_commands (id,actor_id,request,result,applied,created_at) SELECT ?,?,?,?,0,? WHERE (${condition}) AND EXISTS (SELECT 1 FROM kitchen_team WHERE user_id=? AND active=1) ON CONFLICT(id) DO NOTHING`).bind(c.id,user.userId,request,JSON.stringify({checkId,...(c.kind==='confirm'?{publication:{protocol:1,actorId:user.userId,checkId,targetDay:check!.targetDay,version:check!.version+1,revision:check!.revision+1,planRevision:check!.planRevision+1,confirmedAt:now,confirmedBy:user.email}}:{})}),now,...conditionArgs,user.userId);
@@ -140,7 +160,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  const saved=await replay();if(saved){
   if(c.kind==='confirm'&&saved.publication&&results[0].meta.changes){
    const row=results.at(-2)!.results[0] as CheckRow,byId=new Map(snapshot.catalog.map(i=>[i.id,i]));
-   return {...saved,plan:{check:{...summary(row),grouped:!!row.grouped},tasks:(results.at(-1)!.results as TaskRow[]).map(t=>({...taskView(t,byId),...(snapshot.check?.tasks.find(old=>old.catalogId===t.catalog_id)?.suspended?{suspended:true,menuScope:'inactive' as const}:{})}))}};
+   return {...saved,plan:{check:{...summary(row),grouped:!!row.grouped},tasks:(results.at(-1)!.results as TaskRow[]).map(t=>taskView(t,byId))}};
   }
   return saved;
  }
@@ -148,7 +168,7 @@ export async function eveningCommand(user:ChatGPTUser,raw:unknown){
  throw conflict(c.kind==='confirm'?'Answers, morning tasks or the catalog changed. Refresh the summary and confirm again.':undefined);
 }
 
-export function answerView(a:AnswerRow,byId?:Map<string,{name:string;kind:string}>,scope?:ReturnType<typeof scopeSource>):CheckAnswer{return {...(scope?{suspended:scope.usage.has(a.catalog_id)&&!scope.operational.has(a.catalog_id),menuScope:scope.state(a.catalog_id)}:{}),...(a.station_snapshot?{stationId:stationIdSchema.parse(JSON.parse(a.station_snapshot).stationId)}:{}),instruction:a.instruction_snapshot?JSON.parse(a.instruction_snapshot):null,feedbackCount:a.feedback_count??0,itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||!byId||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId?.get(a.catalog_id)?.name??null,groupId:validGroup(a.group_id),round:a.round_snapshot?JSON.parse(a.round_snapshot):null};}
+export function answerView(a:AnswerRow,byId?:Map<string,{name:string;kind:string}>,scope?:ReturnType<typeof scopeSource>,recorded?:Pick<CheckAnswer,'suspended'|'menuScope'>):CheckAnswer{return {...recorded,...(scope?{suspended:scope.usage.has(a.catalog_id)&&!scope.operational.has(a.catalog_id),menuScope:scope.state(a.catalog_id)}:{}),...(a.station_snapshot?{stationId:stationIdSchema.parse(JSON.parse(a.station_snapshot).stationId)}:{}),instruction:a.instruction_snapshot?JSON.parse(a.instruction_snapshot):null,feedbackCount:a.feedback_count??0,itemId:a.item_id,catalogId:a.catalog_id,name:a.name,kind:a.kind,position:a.position,value:a.value,revision:a.revision,updatedAt:a.updated_at,updatedBy:a.updated_by,firstActor:a.first_actor,firstDevice:a.first_device,firstSequence:a.first_sequence,supersededBy:a.superseded_by,mappingValid:!!a.superseded_by||!byId||byId.get(a.catalog_id)?.kind===a.kind,currentName:byId?.get(a.catalog_id)?.name??null,groupId:validGroup(a.group_id),round:a.round_snapshot?JSON.parse(a.round_snapshot):null};}
 export function taskView(t:TaskRow,byId?:Map<string,{name:string;kind:string}>,scope?:ReturnType<typeof scopeSource>):MorningTask{return {...(scope?{suspended:scope.usage.has(t.catalog_id)&&!scope.operational.has(t.catalog_id),menuScope:scope.state(t.catalog_id)}:{}),instruction:t.instruction_snapshot?JSON.parse(t.instruction_snapshot):null,feedbackCount:t.feedback_count??0,itemId:t.item_id,catalogId:t.catalog_id,name:t.name,kind:t.kind,position:t.position,ready:!!t.ready,cancelled:!!t.cancelled,revision:t.revision,updatedAt:t.updated_at,updatedBy:t.updated_by,mappingValid:!byId||byId.get(t.catalog_id)?.kind===t.kind,groupId:validGroup(t.group_id)};}
 
 // Confirmation needs the selected answers/tasks, catalog links and competing target,
@@ -156,11 +176,11 @@ export function taskView(t:TaskRow,byId?:Map<string,{name:string;kind:string}>,s
 export async function readConfirmation(user:ChatGPTUser,day:string):Promise<EveningSnapshot>{
  day=dateSchema.parse(day);const db=getRawDb(),r=await db.batch([
   db.prepare("SELECT revision,(SELECT json_group_array(json_object('id',json_extract(j.value,'$.id'),'name',json_extract(j.value,'$.name'),'kind',json_extract(j.value,'$.kind'))) FROM json_each(n.payload,'$.items') j) AS catalog FROM notebooks n WHERE id='kitchen'"),
-  db.prepare('SELECT * FROM evening_checks WHERE id=? OR plan_day=(SELECT target_day FROM evening_checks WHERE id=?)').bind(day,day),
+  db.prepare(`SELECT *,${publicationPayloadSql} FROM evening_checks WHERE id=? OR plan_day=(SELECT target_day FROM evening_checks WHERE id=?)`).bind(day,day),
   db.prepare(`SELECT ${noteColumns('a')} FROM evening_answers a WHERE check_id=? ORDER BY position`).bind(day),
   db.prepare(`SELECT ${noteColumns('a')} FROM morning_tasks a WHERE check_id=? ORDER BY position`).bind(day),db.prepare(latestMenuSourceSql),
  ]);
  const scope=r[4].results[0]?scopeSource(r[4].results[0] as MenuScopeSource):undefined;
- const n=r[0].results[0] as {revision:number;catalog:string},rows=r[1].results as CheckRow[],row=rows.find(c=>c.id===day),catalog=JSON.parse(n.catalog) as EveningSnapshot['catalog'],byId=new Map(catalog.map(i=>[i.id,i]));
- return {scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:n.revision,catalog,trackedCount:0,checks:rows.map(summary),check:row?{...summary(row),grouped:!!row.grouped,answers:(r[2].results as AnswerRow[]).map(a=>answerView(a,byId,row.stage==='draft'?scope:undefined)),tasks:(r[3].results as TaskRow[]).map(t=>taskView(t,byId,row.target_day>=operationalDay()?scope:undefined))}:null};
+ const n=r[0].results[0] as {revision:number;catalog:string},rows=r[1].results as CheckRow[],row=rows.find(c=>c.id===day),catalog=JSON.parse(n.catalog) as EveningSnapshot['catalog'],byId=new Map(catalog.map(i=>[i.id,i])),recorded=recordedAnswerScope(row);
+ return {scope:'kitchen',accountId:user.userId,account:user.email,notebookRevision:n.revision,catalog,trackedCount:0,checks:rows.map(summary),check:row?{...summary(row),grouped:!!row.grouped,answers:(r[2].results as AnswerRow[]).map(a=>answerView(a,byId,row.stage==='draft'?scope:undefined,recorded.get(a.item_id))),tasks:(r[3].results as TaskRow[]).map(t=>taskView(t,byId,publishedTaskScope(row,scope)))}:null};
 }

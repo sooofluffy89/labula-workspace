@@ -2,12 +2,13 @@ import {requireWriteScope} from './protected-api';
 import {profileCommandSchema,applyProfileCommand} from './prep-draft';
 import {getRawDb} from '@/db';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
-import {readNotebook,owner,canManage,snapshot,RequestError,notebookPayload} from './notebook-server';
+import {readNotebook,owner,canManage,snapshot,RequestError,notebookPayload,preserveWorkspaceRecipes} from './notebook-server';
 import {validateNotebook,validationMessage,type Notebook} from './notebook';
 import {validateOrdinaryEdit} from './catalog';
 import {bulkCommandSchema,applyBulkCommand} from './bulk';
 import {NotebookCapacityError} from './notebook-size';
 import {validateProductionEdit} from './production-edit-server';
+import {legacyPlanScopeGuard} from './published-plan-guard';
 
 type Receipt={id:string;kind:string;actor_id:string;fingerprint:string;before_revision:number;after_revision:number;created_at:string};
 async function command(user:ChatGPTUser,revision:number,id:string,kind:'bulk'|'save'|'profile',request:unknown,prepare:(before:Notebook)=>Promise<Notebook>){
@@ -23,12 +24,13 @@ async function command(user:ChatGPTUser,revision:number,id:string,kind:'bulk'|'s
  if(row.revision!==revision){const raced=await receipt();if(raced)return respond(raced,true);throw new RequestError('The shared notebook changed. Keep your list, load the latest notebook and review it again.',409,'revision_conflict');}
  let next:Notebook;try{next=await prepare(validateNotebook(JSON.parse(row.payload)));}catch(e){if(e instanceof RequestError)throw e;if(e instanceof NotebookCapacityError)throw new RequestError(e.message,413,'capacity_limit');throw new RequestError(validationMessage(e));}
  const payload=notebookPayload(next);
+ const planGuard=await legacyPlanScopeGuard(validateNotebook(JSON.parse(row.payload)),next);
  const now=new Date().toISOString();
  const result=await db.batch([
-  db.prepare('INSERT INTO notebook_commands (id,kind,actor_id,fingerprint,before_revision,after_revision,created_at) SELECT ?,?,?,?,revision,revision+1,? FROM notebooks WHERE id=? AND revision=?').bind(id,kind,user.userId,fingerprint,now,'kitchen',revision),
+  db.prepare('INSERT INTO notebook_commands (id,kind,actor_id,fingerprint,before_revision,after_revision,created_at) SELECT ?,?,?,?,revision,revision+1,? FROM notebooks WHERE id=? AND revision=? AND '+planGuard.sql).bind(id,kind,user.userId,fingerprint,now,'kitchen',revision,...planGuard.args),
   db.prepare('UPDATE notebooks SET payload=?,revision=revision+1,updated_at=?,updated_by=? WHERE id=? AND revision=? AND EXISTS (SELECT 1 FROM notebook_commands WHERE id=? AND before_revision=?)').bind(payload,now,user.email,'kitchen',revision,id,revision),
  ]);
- if(!result[0].meta.changes||!result[1].meta.changes){const raced=await receipt();if(raced)return respond(raced,true);throw new RequestError('The shared notebook changed. Keep your list, load the latest notebook and review it again.',409,'revision_conflict');}
+ if(!result[0].meta.changes||!result[1].meta.changes){const raced=await receipt();if(raced)return respond(raced,true);await legacyPlanScopeGuard(validateNotebook(JSON.parse(row.payload)),next);throw new RequestError('The shared notebook changed. Keep your list, load the latest notebook and review it again.',409,'revision_conflict');}
  return respond({id,kind,actor_id:user.userId,fingerprint,before_revision:revision,after_revision:revision+1,created_at:now},false);
 }
 export async function bulkSave(user:ChatGPTUser,revision:number,raw:unknown){
@@ -39,7 +41,7 @@ export async function bulkSave(user:ChatGPTUser,revision:number,raw:unknown){
 export async function saveWithReceipt(user:ChatGPTUser,revision:number,id:string,body:unknown){
  return command(user,revision,id,'save',body,async before=>{
   if((body as {schemaVersion?:number})?.schemaVersion!==4)throw new RequestError('Download your draft and reload this older page before saving.',409,'old_client');
-  const next=validateNotebook(body);
+  const next=validateNotebook(body);preserveWorkspaceRecipes(before,next);
   const manage=await canManage(user);if(manage)requireWriteScope('management');validateOrdinaryEdit(before,next,manage);
   await validateProductionEdit(before,next);
   const oldIds=new Set(before.items.map(i=>i.id)),newIds=new Set(next.items.filter(i=>!oldIds.has(i.id)).map(i=>i.id));

@@ -1,0 +1,242 @@
+{
+  "baseCommit": "93eab5d471c3af35de72a2b2278b96c66d788ad6",
+  "checkedAt": "2026-10-15T11:40:46.347410+00:00",
+  "scope": "Original brand/favicon, hosting configuration, lockfile and already applied migration files. Additive migrations 0021\u20130023 and journal entries are intentionally new.",
+  "files": [
+    {
+      "path": ".openai/hosting.json",
+      "unchanged": true,
+      "sha256": "6dd6a282f0ee306912c63137c940970ab39d4e3bdc6852145f155f40b6a6aca9"
+    },
+    {
+      "path": "drizzle/0000_same_lockjaw.sql",
+      "unchanged": true,
+      "sha256": "71836658908d88fe09495ac1c4ab346e8c69fa2e7871f1b115ad227225cc94e9"
+    },
+    {
+      "path": "drizzle/0001_milky_toad_men.sql",
+      "unchanged": true,
+      "sha256": "20753d4bd38063db9c7069138e5d694179a3ee17cb3f10cdc3672538521898f5"
+    },
+    {
+      "path": "drizzle/0002_round_tyger_tiger.sql",
+      "unchanged": true,
+      "sha256": "aed04ee39f9f8aa7f0bcdb704c319a8d70f709c8c3a22d81af87f23f88921b2a"
+    },
+    {
+      "path": "drizzle/0003_shiny_snowbird.sql",
+      "unchanged": true,
+      "sha256": "02a5165b83be6400daee9f79c2dd499fca9b90989f294ca007aca32d07efbc68"
+    },
+    {
+      "path": "drizzle/0004_gigantic_psylocke.sql",
+      "unchanged": true,
+      "sha256": "368ac783308d8c83191694b6fdf476197e2d03c2ca908a4be219be7043458e88"
+    },
+    {
+      "path": "drizzle/0005_futuristic_firestar.sql",
+      "unchanged": true,
+      "sha256": "68a63bd0cc1fcb5e51d205ca916dfb7ba9d16987a67b591b7403b312a73019ca"
+    },
+    {
+      "path": "drizzle/0006_heavy_multiple_man.sql",
+      "unchanged": true,
+      "sha256": "b80cfaa0ed4bb33069a50143ae1a714c7d7173cb924e391656d399c8877760d5"
+    },
+    {
+      "path": "drizzle/0007_handy_black_bird.sql",
+      "unchanged": true,
+      "sha256": "349e12256cfb8e3d6d18420d9f4d6c66f560af805f22ce412e75f96ae0a4ccdc"
+    },
+    {
+      "path": "drizzle/0008_faithful_menace.sql",
+      "unchanged": true,
+      "sha256": "5f962a6e71b4fcac214ad9e6d8376198821b93e18453e16d91436dc83ffa07ef"
+    },
+    {
+      "path": "drizzle/0009_outgoing_chamber.sql",
+      "unchanged": true,
+      "sha256": "9de2b5d13b4bc5c8f9c6f9de23dec73444a7e8838b84bd5979b26d0fdd66d437"
+    },
+    {
+      "path": "drizzle/0010_dashing_vengeance.sql",
+      "unchanged": true,
+      "sha256": "dc59eb0348ece9dec109cca3bf921d4a70ac7c4c7f1ca2a5ec88c6874a8249b4"
+    },
+    {
+      "path": "drizzle/0011_mushy_deadpool.sql",
+      "unchanged": true,
+      "sha256": "b899c8760691f1fa9980b3fda5f09fb05417910b47e412aac95fad5bc1571584"
+    },
+    {
+      "path": "drizzle/0012_wandering_sleepwalker.sql",
+      "unchanged": true,
+      "sha256": "67ac093875c2b43b838f8888414969497c9c34fb0a760e7ed52bb6653f6d3f6a"
+    },
+    {
+      "path": "drizzle/0013_past_preak.sql",
+      "unchanged": true,
+      "sha256": "eba5e13f8f3ebfa9b7c20b56dae8a799a763d720f02a63f3bceb71a45616ba44"
+    },
+    {
+      "path": "drizzle/0014_brown_brood.sql",
+      "unchanged": true,
+      "sha256": "dcc794c362f8c50c9f02230b708001d005d1fd8590c2929749f3c72a8040c4e7"
+    },
+    {
+      "path": "drizzle/0015_melodic_ted_forrester.sql",
+      "unchanged": true,
+      "sha256": "2c93a50201d261f4eaf427f9287210b838d25d5e4a87540b0b3ed8c7780a7af5"
+    },
+    {
+      "path": "drizzle/0016_loud_hairball.sql",
+      "unchanged": true,
+      "sha256": "2c2babe2ab0521ab94de42ab400ff42c1766db74a26ab897a2a72a560fe42d93"
+    },
+    {
+      "path": "drizzle/0017_optional_tracking_settings.sql",
+      "unchanged": true,
+      "sha256": "6a33646913c722f838a4944c3f87528e3f6f504ff34d462d0117d84b9ab118cf"
+    },
+    {
+      "path": "drizzle/0018_application_access.sql",
+      "unchanged": true,
+      "sha256": "835fda754cf0ab4174403b42932999b583579d9e3ad48efddd9577ef7b393b8f"
+    },
+    {
+      "path": "drizzle/0019_minor_nighthawk.sql",
+      "unchanged": true,
+      "sha256": "21a23986d8a2f8cef9b52f6a639a1f902f73f6f951f45a8f79e0d730aaf3a253"
+    },
+    {
+      "path": "drizzle/0020_menu_scope.sql",
+      "unchanged": true,
+      "sha256": "8c96c20b9e64a92388094ecc4676c69e056d75579c842305637a132e6ab320bd"
+    },
+    {
+      "path": "drizzle/meta/0000_snapshot.json",
+      "unchanged": true,
+      "sha256": "565d62bf43a45d0bab2c6a2758336cba2eae26d55b5687465f6f56109d8274db"
+    },
+    {
+      "path": "drizzle/meta/0001_snapshot.json",
+      "unchanged": true,
+      "sha256": "6484c351722edcc64afd3b9512817e5c9016a226d41c80db6417fd485e39b6f1"
+    },
+    {
+      "path": "drizzle/meta/0002_snapshot.json",
+      "unchanged": true,
+      "sha256": "d263748c1263b21920af3c26f04a842823cea9df069d732c070352932f4599fd"
+    },
+    {
+      "path": "drizzle/meta/0003_snapshot.json",
+      "unchanged": true,
+      "sha256": "cdf968a0d1ccaaacf079f85b1eaddf415d4c9390917442ee80343209e4d80371"
+    },
+    {
+      "path": "drizzle/meta/0004_snapshot.json",
+      "unchanged": true,
+      "sha256": "7f1848172ba0bb5dabdb9eef243f422fa020823173d85ea4516e260c48af7dbe"
+    },
+    {
+      "path": "drizzle/meta/0005_snapshot.json",
+      "unchanged": true,
+      "sha256": "6dce0a4e0e9912086b3914303b6f9c1cda9d095d2878e4a3d9395758478c6cc7"
+    },
+    {
+      "path": "drizzle/meta/0006_snapshot.json",
+      "unchanged": true,
+      "sha256": "3263ec37364708e22110da11f0070a852cc64fd95ba80c9cce26e1bb189a1cf1"
+    },
+    {
+      "path": "drizzle/meta/0007_snapshot.json",
+      "unchanged": true,
+      "sha256": "9e4d420da3a2cfa4cba1c2b18d3397752281c0f2cf279863eadc98b49cc568a1"
+    },
+    {
+      "path": "drizzle/meta/0008_snapshot.json",
+      "unchanged": true,
+      "sha256": "ca2168a1d8167bce1a4f4d867dd6942282dcaf4adf24f012c3c4ab8cc8c7abac"
+    },
+    {
+      "path": "drizzle/meta/0009_snapshot.json",
+      "unchanged": true,
+      "sha256": "f756fdc8f0b016a7381958fb2ddd0411f36d422409634a44c3b3ec75949fb343"
+    },
+    {
+      "path": "drizzle/meta/0010_snapshot.json",
+      "unchanged": true,
+      "sha256": "38e3192c1c8002b331357d77f775c937c0280c33b4e7632a0fa40ef760bf76ef"
+    },
+    {
+      "path": "drizzle/meta/0011_snapshot.json",
+      "unchanged": true,
+      "sha256": "31435b2fbecf13f2b965ccd3300fc0773c55e6b8b53e6b15949491469385245d"
+    },
+    {
+      "path": "drizzle/meta/0012_snapshot.json",
+      "unchanged": true,
+      "sha256": "330ba5ea61c7c7e9c09f47d1703ae4d8549943afa9f4012ff7739cc2334c5421"
+    },
+    {
+      "path": "drizzle/meta/0013_snapshot.json",
+      "unchanged": true,
+      "sha256": "9d41a887dbed5421da71b003cd7fa6160bc7bb85077a9fe7f563650f7c84d52b"
+    },
+    {
+      "path": "drizzle/meta/0014_snapshot.json",
+      "unchanged": true,
+      "sha256": "109adf3f61a2876892618dd194c86134f331b8d66a730a8622002a934d7d6606"
+    },
+    {
+      "path": "drizzle/meta/0015_snapshot.json",
+      "unchanged": true,
+      "sha256": "762be74b1c0b6dec5b50b7f11c6835743587e4413b96a6a8e691e410b3afd49e"
+    },
+    {
+      "path": "drizzle/meta/0016_snapshot.json",
+      "unchanged": true,
+      "sha256": "8feeef74211e683a5b15a2ca866d414b5ce1f92652a37206bfc7e22ec31e5fad"
+    },
+    {
+      "path": "drizzle/meta/0017_snapshot.json",
+      "unchanged": true,
+      "sha256": "129be9f0b04261e474ce94698c58e80398c7170793f1359cda0bc3b9723744af"
+    },
+    {
+      "path": "drizzle/meta/0018_snapshot.json",
+      "unchanged": true,
+      "sha256": "624aa5824826dededde1cb17c927ee48cdacb1cf7b9cc252309357f749cd3e0e"
+    },
+    {
+      "path": "drizzle/meta/0019_snapshot.json",
+      "unchanged": true,
+      "sha256": "88436cc3887b710ac0cc345d61fc51a644ffedf1180be0021873950557bca994"
+    },
+    {
+      "path": "drizzle/meta/0020_snapshot.json",
+      "unchanged": true,
+      "sha256": "54603e2a100026ae0f009e86e4160e5fa369d1cd6dc6e25333a494260b2affa4"
+    },
+    {
+      "path": "package-lock.json",
+      "unchanged": true,
+      "sha256": "60466257791f1736bdb95bfa73814e301d18b6942027163cf5b0803635113c18"
+    },
+    {
+      "path": "public/favicon.svg",
+      "unchanged": true,
+      "sha256": "a83126278d89cc9b30513370c4286a279cc4684c2a049331755d94cb09d4e165"
+    },
+    {
+      "path": "vite.config.ts",
+      "unchanged": true,
+      "sha256": "d1975642d60fe15972c0f25feaa958da5716a5a018f5578d7c8612827ea8f61d"
+    },
+    {
+      "path": "wrangler.local.json",
+      "unchanged": true,
+      "sha256": "0cd1c96a1de3b32fe9f5c82fc48954eba148ff855abac08b4a2ed8f03aa91567"
+    }
+  ]
+}

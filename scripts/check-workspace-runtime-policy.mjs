@@ -1,0 +1,91 @@
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {mkdir,mkdtemp,readFile,readdir,rm,writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {build} from 'esbuild';
+import {localRuntimeArguments,runtimePolicyCommand} from './workspace2-runtime-local.mjs';
+
+const directory=await mkdtemp(join(tmpdir(),'workspace-runtime-')),db=new DatabaseSync(':memory:');
+let beforeBatch;
+const statement=(sql,args=[])=>({sql,args,bind(...values){return statement(sql,values);},execute(){const query=db.prepare(sql);return query.columns().length?{results:query.all(...args),meta:{changes:0}}:{results:[],meta:{changes:Number(query.run(...args).changes)}};},async first(){return this.execute().results[0]??null;},async all(){return this.execute();},async run(){return this.execute();}});
+const raw={prepare:statement,async batch(statements){if(beforeBatch){const hook=beforeBatch;beforeBatch=null;hook();}db.exec('BEGIN');try{const result=statements.map(stmt=>stmt.execute());db.exec('COMMIT');return result;}catch(error){db.exec('ROLLBACK');throw error;}}};
+const originalFetch=globalThis.fetch,originalWindow=globalThis.window;
+try{
+ for(const file of(await readdir('drizzle')).filter(file=>file.endsWith('.sql')).sort())db.exec(await readFile('drizzle/'+file,'utf8'));
+ globalThis.runtimeTestDb=raw;globalThis.runtimeTestUser={userId:'synthetic-owner',email:'owner@example.test'};
+ db.prepare("INSERT INTO kitchen_team(id,user_id,email,name,access_role,active,access_enabled,revision,created_at) VALUES('owner','synthetic-owner','owner@example.test','Synthetic Owner','legacy',1,1,0,'synthetic')").run();
+ db.prepare("INSERT INTO kitchen_owner(id,user_id) VALUES('owner','synthetic-owner')").run();
+ await writeFile(join(directory,'db.ts'),`import {accessContext,guardDatabase} from '@/lib/access-context';export const getRawDb=()=>{const context=accessContext.getStore();return context?guardDatabase(globalThis.runtimeTestDb,context):globalThis.runtimeTestDb;};export const getAppAccessMode=()=> 'application';`);
+ await writeFile(join(directory,'auth.ts'),'export const getChatGPTUser=async()=>globalThis.runtimeTestUser;');
+ await writeFile(join(directory,'env.ts'),'export const env={};');
+ await build({stdin:{contents:`export {protectedApi} from './lib/protected-api';export {getRawDb} from '@/db';export * from './lib/access-client';export {TeamController} from './lib/team-client';export {initialNotebook,newItem} from './lib/notebook';export {recordSignIn} from './lib/team-access-server';export * as notebookApi from './app/api/notebook/route';export * as catalogApi from './app/api/catalog/route';export * as menuApi from './app/api/menu/route';export * as backupApi from './app/api/private-backup/route';export * as eveningApi from './app/api/evening/route';export * as stockApi from './app/api/stock/route';export * as roundsApi from './app/api/check-rounds/route';export * as calendarApi from './app/api/operating-calendar/route';export * as teamApi from './app/api/team/route';export * as notesApi from './app/api/prep-notes/route';export * as settingsApi from './app/api/stock-settings/route';`,resolveDir:process.cwd()},bundle:true,format:'esm',platform:'node',outfile:join(directory,'test.mjs'),alias:{'@/lib/access-context':join(process.cwd(),'lib/access-context.ts'),'@/db':join(directory,'db.ts'),'@/app/chatgpt-auth':join(directory,'auth.ts'),'cloudflare:workers':join(directory,'env.ts')},define:{'import.meta.env.DEV':'false'},logLevel:'silent'});
+ const m=await import(join(directory,'test.mjs'));
+ const n=m.initialNotebook();n.items=[{...m.newItem('Synthetic ingredient'),id:'ingredient'}];db.prepare('INSERT INTO notebooks VALUES(?,?,?,?,?)').run('kitchen',JSON.stringify(n),0,'synthetic','owner@example.test');
+ const policy=(paused,minimum=1)=>db.prepare("UPDATE workspace_runtime_policy SET write_paused=?,min_client_version=?,revision=revision+1,updated_at='synthetic' WHERE id='kitchen'").run(paused,minimum);
+ let handlerCalls=0;
+ const write=m.protectedApi('management',async request=>{handlerCalls++;const command=await request.json(),store=m.getRawDb();const found=await store.prepare('SELECT id FROM team_commands WHERE id=?').bind(command.id).first();if(!found)await store.batch([store.prepare('INSERT INTO team_commands(id,actor_id,request,created_at) VALUES(?,?,?,?)').bind(command.id,'synthetic-owner',JSON.stringify(command),'synthetic'),store.prepare("UPDATE notebooks SET revision=revision+1 WHERE id='kitchen'")]);return Response.json({operationId:command.id});});
+ const request=(command,version,origin='http://test.local')=>new Request('http://test.local/api/test',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(version===undefined?{}:{'X-Labula-Workspace-Version':String(version)})},body:JSON.stringify(command)});
+ const result=async(response,status,code)=>{assert.equal(response.status,status,await response.clone().text());if(code)assert.equal((await response.json()).code,code);};
+ const command={id:crypto.randomUUID(),kind:'add',email:'synthetic-new@example.test',name:''};
+ // The Owner's native HTML form sends neither a client header nor a JSON
+ // command/revision. Even when policy allows legacy requests, it cannot mutate.
+ const probeBody=new URLSearchParams({maintenance_guard_probe:'legacy-client'}).toString();
+ const legacyProbe=()=>new Request('http://test.local/api/catalog',{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/x-www-form-urlencoded'},body:probeBody});
+ const allRows=()=>JSON.stringify(db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(row=>[row.name,db.prepare('SELECT * FROM "'+row.name.replaceAll('"','""')+'"').all()]));
+ for(const [paused,minimum,status,code] of [[0,1,415,undefined],[1,1,503,'workspace_write_paused'],[0,2,428,'workspace_update_required']]){
+  policy(paused,minimum);const rows=allRows(),changes=db.prepare('SELECT total_changes() AS n').get().n;assert.equal(legacyProbe().headers.get('X-Labula-Workspace-Version'),null);await result(await m.catalogApi.POST(legacyProbe()),status,code);assert.equal(allRows(),rows,'native form probe leaves every row and receipt unchanged');assert.equal(db.prepare('SELECT total_changes() AS n').get().n,changes);
+ }
+ policy(0,1);
+ // Default policy accepts legacy clients until a deliberate cutover.
+ await result(await write(request(command)),200);assert.equal(db.prepare('SELECT revision FROM notebooks').get().revision,1);
+ // Mature the operational records while writes are enabled, then publish a
+ // real synthetic morning task. Frozen reads must neither bootstrap nor mutate.
+ const readRequest=path=>new Request('http://test.local/api/'+path,{headers:{'X-Labula-Workspace-Version':'2'}});
+ await result(await m.stockApi.GET(readRequest('stock')),200);
+ db.prepare("UPDATE stock_items SET track=1,round_id='daily',round_revision=round_revision+1,revision=revision+1 WHERE item_id='ingredient'").run();
+ const sendEvening=async body=>{const response=await m.eveningApi.POST(new Request('http://test.local/api/evening',{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':'0','X-Labula-Workspace-Version':'2'},body:JSON.stringify({id:crypto.randomUUID(),scope:'kitchen',actorId:'synthetic-owner',...body})}));await result(response,200);};
+ await sendEvening({kind:'start',day:'2026-10-14',targetDay:'2026-10-15'});
+ await sendEvening({kind:'answer',checkId:'2026-10-14',itemId:'ingredient',revision:0,generation:0,value:'missing',deviceId:crypto.randomUUID(),sequence:1});
+ const evening=await(await m.eveningApi.GET(readRequest('evening?day=2026-10-14'))).json();
+ await sendEvening({kind:'confirm',checkId:'2026-10-14',revision:evening.check.revision,planRevision:evening.check.planRevision,notebookRevision:evening.notebookRevision});
+ policy(1);const frozenRevision=db.prepare('SELECT revision FROM notebooks').get().revision,calls=handlerCalls;
+ await result(await write(request({...command,id:crypto.randomUUID()},2)),503,'workspace_write_paused');assert.equal(handlerCalls,calls,'reject before parsing or consuming command');
+ for(const [api,path] of [[m.notebookApi,'notebook'],[m.menuApi,'menu'],[m.backupApi,'private-backup']])await result(await api.GET(new Request('http://test.local/api/'+path,{headers:{'X-Labula-Workspace-Version':'2'}})),200);
+ const changesBeforeReads=db.prepare('SELECT total_changes() AS count').get().count;
+ for(const [api,path] of [[m.eveningApi,'evening?day=2026-10-14'],[m.eveningApi,'evening?morningDay=2026-10-15'],[m.stockApi,'stock'],[m.roundsApi,'check-rounds'],[m.calendarApi,'operating-calendar'],[m.teamApi,'team'],[m.notesApi,'prep-notes'],[m.settingsApi,'stock-settings']])await result(await api.GET(readRequest(path)),200);
+ const morning=await(await m.eveningApi.GET(readRequest('evening?morningDay=2026-10-15'))).json();
+ assert.equal(morning.check.planPolicyVersion,2);assert.equal(morning.check.tasks.length,1);assert.equal(morning.check.tasks[0].ready,false);
+ assert.equal(db.prepare('SELECT total_changes() AS count').get().count,changesBeforeReads,'mature daily/settings/identity reads issue no database mutations while frozen');
+ await m.recordSignIn(globalThis.runtimeTestUser);assert.equal(db.prepare('SELECT last_sign_in_at FROM kitchen_team WHERE id=\'owner\'').get().last_sign_in_at,null,'read-only session visit does not write a stamp');
+ assert.throws(()=>db.prepare("UPDATE notebooks SET revision=99 WHERE id='kitchen'").run(),/workspace_write_paused/,'unguarded legacy writes cannot bypass freeze');
+ // The explicit Owner-only audit stays insertable for resume while frozen.
+ // Its own triggers enforce owner/revision and prohibit UPDATE/DELETE.
+ const tableNames=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all().map(row=>row.name).filter(name=>!['workspace_runtime_policy','workspace_runtime_policy_commands','access_write_guards'].includes(name));
+ for(const table of tableNames)for(const action of ['insert','update','delete'])assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE type='trigger' AND name=?").get('workspace_freeze_'+table+'_'+action),'freeze covers '+table+' '+action);
+ assert.equal(db.prepare('SELECT revision FROM notebooks').get().revision,frozenRevision);
+ // A freeze raised AFTER admission still rolls back the transaction completely.
+ policy(0);const race={...command,id:crypto.randomUUID()};beforeBatch=()=>policy(1);
+ await result(await write(request(race,2)),503,'workspace_write_paused');assert.equal(db.prepare('SELECT count(*) n FROM team_commands WHERE id=?').get(race.id).n,0);assert.equal(db.prepare('SELECT revision FROM notebooks').get().revision,frozenRevision);assert.equal(db.prepare('SELECT count(*) n FROM access_write_guards').get().n,0);
+ // A new minimum raised after admission blocks an old queued client atomically.
+ policy(0,1);beforeBatch=()=>policy(0,2);
+ await result(await write(request(race)),428,'workspace_update_required');assert.equal(db.prepare('SELECT count(*) n FROM team_commands WHERE id=?').get(race.id).n,0);
+ // Old deployed code does not send the new SQL column; its default is version 1.
+ assert.throws(()=>db.prepare("INSERT INTO access_write_guards(id,user_id,scope) VALUES('old-server','synthetic-owner','management')").run(),/workspace_update_required/);
+ await result(await write(request(race)),428,'workspace_update_required');await result(await write(request(race,'garbage')),428,'workspace_update_required');
+ await result(await write(request(race,2,'https://evil.example')),403);
+ await result(await write(request(race,2)),200);await result(await write(request(race,2)),200);
+ assert.equal(db.prepare('SELECT count(*) n FROM team_commands WHERE id=?').get(race.id).n,1,'exact post-reload retry preserves receipt id');assert.equal(db.prepare('SELECT revision FROM notebooks').get().revision,frozenRevision+1);
+ // Recovery and identity are separate: maintenance/upgrade must not latch logout.
+ const values=new Map(),storage={get length(){return values.size;},key:index=>[...values.keys()][index]??null,getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};
+ globalThis.window=new EventTarget();window.localStorage=storage;let accessLost=0;window.addEventListener('labula:access-lost',()=>accessLost++);m.configureClientAccess('synthetic-owner');
+ let maintenance=true,failureStatus=428,seenVersion;
+ globalThis.fetch=async(url,init={})=>{seenVersion=new Headers(init.headers).get('X-Labula-Workspace-Version');if(init.method)return maintenance?Response.json({code:failureStatus===428?'workspace_update_required':'workspace_write_paused',error:'Your pending action is kept.'},{status:failureStatus}):Response.json({operationId:JSON.parse(init.body).id});return Response.json({accountId:'synthetic-owner',email:'owner@example.test',canManage:true,isOwner:true,members:[],accessMode:'application'});};
+ const controller=new m.TeamController('owner@example.test',storage,()=>{});await controller.refresh();assert.equal(await controller.save(command),false);const pending=controller.state.pending[0],saved=storage.getItem(pending.key);assert.equal(seenVersion,'2');assert(saved);assert.equal(accessLost,0);assert.equal(storage.getItem(m.accessBlockedKey('synthetic-owner')),null);failureStatus=503;assert.equal(await controller.save(pending.command,pending.key),false);assert.equal(storage.getItem(pending.key),saved);assert.equal(accessLost,0);maintenance=false;assert.equal(await controller.save(pending.command,pending.key),true);assert.equal(storage.getItem(pending.key),null);controller.dispose();
+ // The operational helper can only address local emulated D1.
+ for(const args of [['pause'],['status'],['resume','--min-client-version','2']]){const cli=localRuntimeArguments(args);assert(cli.includes('--local'));assert.equal(cli[cli.indexOf('--persist-to')+1],'.wrangler/state');assert(!cli.includes('--remote'));}
+ assert.throws(()=>localRuntimeArguments(['pause','--remote']));assert.throws(()=>localRuntimeArguments(['resume','--min-client-version','2; DELETE FROM notebooks']));
+ db.exec(runtimePolicyCommand(['pause']));assert.equal(db.prepare('SELECT write_paused FROM workspace_runtime_policy').get().write_paused,1);db.exec(runtimePolicyCommand(['resume','--min-client-version','2']));assert.equal(db.prepare('SELECT min_client_version FROM workspace_runtime_policy').get().min_client_version,2);
+ if(process.env.WORKSPACE2_RUNTIME_EVIDENCE_DIR){await mkdir(process.env.WORKSPACE2_RUNTIME_EVIDENCE_DIR,{recursive:true});await writeFile(join(process.env.WORKSPACE2_RUNTIME_EVIDENCE_DIR,'runtime-policy-test-result.json'),JSON.stringify({command:'node scripts/check-workspace-runtime-policy.mjs',node:process.version,status:'passed',data:'synthetic in-memory SQLite only',frozenBusinessTables:tableNames.length,freezeTriggers:tableNames.length*3,verified:['mature read-only APIs with no database changes','pause after request admission rolls back receipt and data','client minimum after admission rejects old transaction','old deployed SQL defaults to client version 1','same-origin write guard','428 and 503 preserve browser recovery without sign-out','exact command retry after resume','local-only maintenance helper'],productionVerified:false},null,2)+'\n');}
+ console.log('PASS Workspace runtime policy: real SQLite freeze across business tables; readable mature Menu/notebook/backup/Evening/Morning/stock/rounds/calendar/team/notes/settings; no sign-in write; pause/client-version admission and atomic race barriers; old deployed SQL default; same-origin preserved; exact retry and browser recovery retained; no sign-out; local-only control helper.');
+}finally{db.close();globalThis.fetch=originalFetch;if(originalWindow===undefined)delete globalThis.window;else globalThis.window=originalWindow;delete globalThis.runtimeTestDb;delete globalThis.runtimeTestUser;await rm(directory,{recursive:true,force:true});}

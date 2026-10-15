@@ -1,0 +1,19 @@
+{
+  "command": "node scripts/check-workspace-runtime-policy.mjs",
+  "node": "v24.19.0",
+  "status": "passed",
+  "data": "synthetic in-memory SQLite only",
+  "frozenBusinessTables": 40,
+  "freezeTriggers": 120,
+  "verified": [
+    "mature read-only APIs with no database changes",
+    "pause after request admission rolls back receipt and data",
+    "client minimum after admission rejects old transaction",
+    "old deployed SQL defaults to client version 1",
+    "same-origin write guard",
+    "428 and 503 preserve browser recovery without sign-out",
+    "exact command retry after resume",
+    "local-only maintenance helper"
+  ],
+  "productionVerified": false
+}

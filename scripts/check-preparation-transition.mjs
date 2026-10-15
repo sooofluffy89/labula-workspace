@@ -20,14 +20,14 @@ try{
   globalThis.hooks={values:[],cursor:0};server=initialNotebook();revision=0;receipts=new Map();calls=[];gates=[];outcomes=[];isOwner=false;
   globalThis.fetch=async(url,opts={})=>{
    if(!opts.method)return Response.json(snapshot());
-   const payload=JSON.parse(opts.body),id=opts.method==='PUT'?opts.headers['X-Operation-Id']:payload.commandId;
-   calls.push({url,id,body:opts.body,revision:opts.headers['If-Match']});
+   const payload=JSON.parse(opts.body),id=opts.method==='PUT'?new Headers(opts.headers).get('X-Operation-Id'):payload.commandId;
+   calls.push({url,id,body:opts.body,revision:new Headers(opts.headers).get('If-Match')});
    const gate=gates.shift();if(gate){gate.enter();await gate.wait;}
    const outcome=outcomes.shift();
    if(outcome==='400')return Response.json({error:'Rejected before saving'},{status:400});
    if(outcome==='401')return Response.json({error:'Sign in required'},{status:401});
    if(!receipts.has(id)){
-    if(Number(opts.headers['If-Match'])!==revision)return Response.json({error:'Newer revision',code:'revision_conflict'},{status:409});
+    if(Number(new Headers(opts.headers).get('If-Match'))!==revision)return Response.json({error:'Newer revision',code:'revision_conflict'},{status:409});
     server=opts.method==='PUT'?payload:applyBulkCommand(server,payload.command);revision++;receipts.set(id,{payload:opts.body,revision});
    }else assert.equal(receipts.get(id).payload,opts.body,'replayed receipt must retain exact payload');
    if(outcome==='lost')throw Error('Lost reply after commit');
@@ -182,7 +182,7 @@ try{
    const timeoutControl=new AbortController(),timeoutBeginning=h.beginPreparation(timeoutControl.signal).then(()=>({ok:true}),error=>({ok:false,error}));
    await began;assert.equal(render().preparationBusy,true);assertProtected(()=>render().update(n=>n));assert.equal(deadlines.size,1);[...deadlines.values()][0]();
    const timedOut=await timeoutBeginning;assert.equal(timedOut.ok,false);h=render();assert.equal(h.preparationBusy,false);assert.equal(h.savePending,true);assert.equal(h.dirty,true);assert.equal(capturedRequest.signal.aborted,true);assert.match(h.error,/too long|retry/i);
-   const timeoutReceipt=h.getSaveRecovery();assert.ok(timeoutReceipt);assert.equal(timeoutReceipt.id,capturedRequest.headers['X-Operation-Id']);assert.equal(timeoutReceipt.payload,capturedRequest.body);assert.equal(timeoutReceipt.localPayload,JSON.stringify(h.data));
+   const timeoutReceipt=h.getSaveRecovery();assert.ok(timeoutReceipt);assert.equal(timeoutReceipt.id,new Headers(capturedRequest.headers).get('X-Operation-Id'));assert.equal(timeoutReceipt.payload,capturedRequest.body);assert.equal(timeoutReceipt.localPayload,JSON.stringify(h.data));
    assert.equal(h.data.recipes[0].active,false);assert.equal(server.recipes[0].active,!committed);assertProtected(()=>h.update(n=>n));
    // Existing Retry saving confirms the same receipt, regardless of whether the timed-out request committed.
    globalThis.fetch=baseTransport;assert.equal(await h.retry(),true);assertSame();assert.equal(receipts.size,1);assert.ok(calls.every(c=>c.id===timeoutReceipt.id&&c.body===timeoutReceipt.payload));

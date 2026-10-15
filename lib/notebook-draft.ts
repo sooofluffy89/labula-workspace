@@ -43,9 +43,23 @@ export type RestoreDecision='shared'|'draft';
 export type RestoreChange={id:string;label:string;shared:string;draft:string;conflict:boolean;decision:RestoreDecision|undefined};
 export type RestoreMapping={item:Item;reason:string;canCreate:boolean;currentMatch?:Item};
 const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
+function workspaceRecipeRestoreNotices(file:NotebookDraft,shared:Notebook):string[]{
+ const notices:string[]=[];
+ for(const definition of file.notebook.workspaceRecipes??[]){
+  const current=shared.workspaceRecipes?.find(recipe=>recipe.itemId===definition.itemId);if(same(current,definition))continue;
+  const name=file.notebook.items.find(item=>item.id===definition.itemId)?.name??definition.itemId;
+  notices.push(`“${name}”: its saved Workspace 2.0 ${definition.kind==='supplier'?'supplier ingredients':'product recipe'}, method, yield and source reference are not restored by notebook import. They remain in the original file. An owner or Manager can compare and save them in Menu → Ingredients & prep → the current item → Edit item; current shared recipe authority is retained.`);
+ }
+ for(const definition of shared.workspaceRecipes??[]){
+  if(file.notebook.workspaceRecipes?.some(recipe=>recipe.itemId===definition.itemId))continue;
+  const name=shared.items.find(item=>item.id===definition.itemId)?.name??definition.itemId;
+  notices.push(`“${name}”: the current Workspace 2.0 recipe is absent from this file and is retained. Earlier product ingredients, method and yield cannot replace it through notebook import. An owner or Manager can compare the original file in Menu → Ingredients & prep → the current item → Edit item.`);
+ }
+ return notices;
+}
 export function planNotebookRestore(file:NotebookDraft,shared:Notebook,decisions:Record<string,RestoreDecision>={},mappings:Record<string,string>={},canManage=false){
  if(canManage)return planManagedNotebookRestore(file,shared,decisions,mappings);
- const next=structuredClone(shared),base=file.base?.notebook,changes:RestoreChange[]=[],unmapped:RestoreMapping[]=[],notices=new Set<string>();
+ const next=structuredClone(shared),base=file.base?.notebook,changes:RestoreChange[]=[],unmapped:RestoreMapping[]=[],notices=new Set<string>(workspaceRecipeRestoreNotices(file,shared));
  const sharedById=new Map(shared.items.map(i=>[i.id,i])),baseById=new Map(base?.items.map(i=>[i.id,i])??[]),mapped=new Map<string,string|null>();
  const choose=<T>(id:string,label:string,old:T|undefined,incoming:T,current:T,describe:(value:T)=>string,force=false):T=>{
   if(same(incoming,current)||old!==undefined&&same(incoming,old))return current;
@@ -57,7 +71,7 @@ export function planNotebookRestore(file:NotebookDraft,shared:Notebook,decisions
   const existing=sharedById.get(item.id),old=baseById.get(item.id),mapping=mappings[item.id];
   if(existing){mapped.set(item.id,item.id);const dest=next.items.find(i=>i.id===item.id)!;dest.name=choose('name:'+item.id,'Name: '+existing.name,old?.name,item.name,existing.name,v=>v);
    if(file.profileItemIds?.includes(item.id))dest.prepProfile=choose('profile:'+item.id,'Preparation & storage: '+existing.name,old?.prepProfile,item.prepProfile,existing.prepProfile,v=>JSON.stringify(v));
-   if(item.kind!==existing.kind)notices.add(`“${existing.name}” is currently ${existing.kind==='prep'?'Made in-house':'Bought'}. Its current type is retained; use the owner catalog tools to correct it.`);
+   if(item.kind!==existing.kind)notices.add(`“${existing.name}” is currently ${existing.kind==='prep'?'Made in-house':'Bought'}. Its current type is retained; a Manager or owner can correct it in catalog management.`);
    if(!same(item.aliases,existing.aliases))notices.add(`Saved alternative names for “${existing.name}” differ. Review them separately in catalog management; they are not overwritten by this restore.`);
    continue;
   }
@@ -97,7 +111,7 @@ export type RestoreEntityMapping={key:string;kind:'dish'|'recipe'|'process'|'sce
 
 /** Full v4 import is reviewed against the editing base, with explicit fresh identities. */
 function planManagedNotebookRestore(file:NotebookDraft,shared:Notebook,decisions:Record<string,RestoreDecision>,mappings:Record<string,string>){
- const next=structuredClone(shared),base=file.base?.notebook,changes:RestoreChange[]=[],unmapped:RestoreMapping[]=[],unmappedEntities:RestoreEntityMapping[]=[],notices=new Set<string>(),mappingErrors=new Set<string>();
+ const next=structuredClone(shared),base=file.base?.notebook,changes:RestoreChange[]=[],unmapped:RestoreMapping[]=[],unmappedEntities:RestoreEntityMapping[]=[],notices=new Set<string>(workspaceRecipeRestoreNotices(file,shared)),mappingErrors=new Set<string>();
  const mapped=new Map<string,string|null>();
  const choose=<T>(id:string,label:string,old:T|undefined,incoming:T,current:T,describe:(value:T)=>string=describeValue,force=false):T=>{
   if(same(incoming,current)||old!==undefined&&same(incoming,old))return current;
@@ -137,17 +151,19 @@ function planManagedNotebookRestore(file:NotebookDraft,shared:Notebook,decisions
  };
  // Restore only after every source ingredient has an explicit identity mapping.
  for(const item of file.notebook.items){const id=mapped.get(item.id);if(!id)continue;const dest=next.items.find(i=>i.id===id)!;const current=sharedItems.get(id),old=id===item.id?baseItems.get(item.id):undefined;
-  if(!current){const copy=structuredClone(item);Object.assign(dest,copy,{id,aliases:[],inputs:[],reviewStatus:'unverified'});if(!file.profileItemIds?.includes(item.id))dest.prepProfile=newItem(item.name).prepProfile;notices.add(`Created “${item.name}” with a fresh identity. Saved quantities and production details are included after mapping; verification must be repeated.`);}
+  const canonical=shared.workspaceRecipes?.some(recipe=>recipe.itemId===id)||file.notebook.workspaceRecipes?.some(recipe=>recipe.itemId===item.id);
+  if(!current){const copy=structuredClone(item);Object.assign(dest,copy,{id,aliases:[],inputs:[],reviewStatus:'unverified'},canonical?{method:'',yieldAmount:null}:{});if(!file.profileItemIds?.includes(item.id))dest.prepProfile=newItem(item.name).prepProfile;notices.add(`Created “${item.name}” with a fresh identity. ${canonical?'Its Workspace 2.0 product recipe must be restored separately in Menu; superseded item recipe fields are not used.':'Saved quantities and production details are included after mapping; verification must be repeated.'}`);}
   else{
    dest.name=choose('name:'+item.id,'Name: '+current.name,old?.name,item.name,current.name);
    if(file.profileItemIds?.includes(item.id))dest.prepProfile=choose('profile:'+item.id,'Preparation & storage: '+current.name,old?.prepProfile,item.prepProfile,current.prepProfile);
    const fields=['unit','specification','yieldAmount','activeMinutes','passiveMinutes','frequencyHours','batchMinimum','batchMaximum','method','storage','supplier','packLabel','packAmount','externalUse','reviewStatus','reviewNote'] as const;
-   for(const field of fields){(dest as unknown as Record<string,unknown>)[field]=choose('item:'+item.id+':'+field,current.name+' · '+restoreFieldLabel(field),old?.[field],item[field],current[field]);}
+   for(const field of fields){if(canonical&&['method','yieldAmount'].includes(field)){if(!same(item[field],current[field]))notices.add(`“${current.name}”: earlier ${restoreFieldLabel(field).toLowerCase()} stays in the original file. Its current product recipe is edited in Menu.`);continue;}(dest as unknown as Record<string,unknown>)[field]=choose('item:'+item.id+':'+field,current.name+' · '+restoreFieldLabel(field),old?.[field],item[field],current[field]);}
    if(item.kind!==current.kind)notices.add(`“${current.name}”: its current type is retained. Review the Bought / House-made change in catalog management.`);
   }
   if(item.aliases.length&&!same(item.aliases,current?.aliases??[]))notices.add(`Alternative names for “${item.name}” remain a separate catalog review; they are not overwritten.`);
  }
  for(const item of file.notebook.items){const id=mapped.get(item.id);if(!id)continue;const dest=next.items.find(i=>i.id===id)!,current=sharedItems.get(id),old=id===item.id?baseItems.get(item.id):undefined;
+  if(shared.workspaceRecipes?.some(recipe=>recipe.itemId===id)||file.notebook.workspaceRecipes?.some(recipe=>recipe.itemId===item.id)){if(!same(item.inputs,current?.inputs??[]))notices.add(`“${dest.name}”: earlier product ingredients stay in the original file. Its current product recipe is edited in Menu.`);continue;}
   const incoming=mapParts(item.inputs,item.name+' composition');
   if(dest.kind==='bought'&&incoming.length){notices.add(`“${dest.name}” remains Bought. Its saved preparation composition remains in the file until its type is reviewed.`);continue;}
   dest.inputs=current?mergeParts('item:'+item.id,dest.name+' composition',incoming,current.inputs,baseParts(old?.inputs)):incoming;

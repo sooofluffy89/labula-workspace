@@ -10,6 +10,9 @@ const text = z.string().max(6000);
 export const itemNameSchema = z.string().trim().min(1, 'Enter an item name before continuing.').max(160, 'Shorten the item name to 160 characters or fewer. Your text has been kept.');
 export const units = ['g', 'ml', 'pcs'] as const;
 export const inputSchema = z.object({ itemId:z.string().min(1).max(100), amount, note:text,unit:z.enum(units).optional(),pieceMeaning:z.string().max(300).optional(),conversion:z.object({from:z.enum(units),to:z.enum(units),factor:z.number().finite().positive().max(1e9)}).nullable().optional() });
+/** Explicit product facts in Workspace 2.0. Original production evidence stays intact. */
+export const workspaceRecipeSchema = z.object({itemId:z.string().min(1).max(100),kind:z.enum(['local','supplier']),inputs:z.array(inputSchema).max(150),method:text,yieldAmount:amount,reference:text,revision:z.number().int().nonnegative(),updatedAt:z.string().max(100),source:z.enum(['workspace','review','process','legacy','supplier','unavailable']),sourceLabel:z.string().max(600),sourceToken:z.string().max(100)});
+export type WorkspaceRecipeDefinition=z.infer<typeof workspaceRecipeSchema>;
 export const reviewStatusSchema=z.enum(['unverified','verified','needs-review']);
 export const timingSchema=z.object({basis:z.enum(['unknown','batch','portion','order']),portions:amount,evidence:z.enum(['unknown','estimate','measured'])});
 export const workshopSchema=z.object({steps:z.array(z.object({id:z.string().min(1).max(100),phase:z.enum(['before','order']),text:z.string().max(6000)})).max(100),beforeMinutes:nonnegative,orderMinutes:nonnegative,beforeTiming:timingSchema.optional(),orderTiming:timingSchema.optional(),processChecked:z.boolean(),decisions:z.array(z.object({id:z.string().min(1).max(100),text:z.string().trim().min(1).max(6000),kind:z.enum(['decision','test']),done:z.boolean()})).max(100)});
@@ -36,7 +39,7 @@ export const recipeSchema = z.object({ id:z.string().min(1).max(100), menuId:z.s
   reviewStatus:reviewStatusSchema.default('unverified'),reviewNote:text.default(''),
   workshop:workshopSchema.optional(),ingredientsReviewed:z.boolean().optional(),
 });
-export const notebookSchema = z.object({schemaVersion:z.literal(4),reviewSourceRevision:z.string().max(100).optional(),dishes:z.array(dishSchema).max(500),processes:z.array(processSchema).max(1000),scenarios:z.array(savedScenarioSchema).max(100), distinctPairs:z.array(z.tuple([z.string(),z.string()])).max(5000), items:z.array(itemSchema).max(1000), recipes:z.array(recipeSchema).max(500), equipment:z.object({blastChiller:z.enum(['unknown','yes','no']),notes:text})});
+export const notebookSchema = z.object({schemaVersion:z.literal(4),reviewSourceRevision:z.string().max(100).optional(),workspaceRecipes:z.array(workspaceRecipeSchema).max(1000).optional(),dishes:z.array(dishSchema).max(500),processes:z.array(processSchema).max(1000),scenarios:z.array(savedScenarioSchema).max(100), distinctPairs:z.array(z.tuple([z.string(),z.string()])).max(5000), items:z.array(itemSchema).max(1000), recipes:z.array(recipeSchema).max(500), equipment:z.object({blastChiller:z.enum(['unknown','yes','no']),notes:text})});
 export type RecipeInput = z.infer<typeof inputSchema>;
 export type Item = z.infer<typeof itemSchema>;
 export type Recipe = z.infer<typeof recipeSchema>;
@@ -60,6 +63,7 @@ export function validateNotebook(input:unknown):Notebook {
   if(i.storage.evidence==='documented' && (i.storage.safetyHours===null||!i.storage.reference.trim()))throw new Error(`Add a safety limit and its document reference for ${i.name}.`);
  }
  const checkInputs=(inputs:RecipeInput[])=>{const seen=new Set<string>();for(const i of inputs){if(!ids.has(i.itemId))throw new Error('An ingredient no longer exists.');if(seen.has(i.itemId))throw new Error('An ingredient is listed twice in one recipe. Keep one entry for each ingredient.');seen.add(i.itemId);const item=n.items.find(item=>item.id===i.itemId)!;if(i.conversion&&(i.conversion.from!==inputUnit(i,item)||i.conversion.to!==item.unit||i.conversion.from===i.conversion.to))throw Error('The saved conversion must match this recipe unit and the current catalog base unit.');}};
+ const workspaceIds=new Set<string>();for(const recipe of n.workspaceRecipes??[]){const item=n.items.find(i=>i.id===recipe.itemId);if(!item||workspaceIds.has(recipe.itemId))throw Error('A product recipe must have one existing catalog identity.');workspaceIds.add(recipe.itemId);if((item.kind==='bought')!==(recipe.kind==='supplier'))throw Error('Product composition must retain its bought or made-here origin.');checkInputs(recipe.inputs);}
  const rids=new Set<string>();const variantKeys=new Set<string>();
  for(const r of n.recipes){const d=dishes.get(r.menuId);if(!d)throw new Error('Unknown menu dish.');if(r.active&&d.state!=='ready')throw Error('Only ready dishes may be on the menu.');if(rids.has(r.id))throw new Error('Duplicate recipe ID.');rids.add(r.id);const key=r.menuId+':'+normalizeName(r.variant);if(variantKeys.has(key))throw new Error('That variant already exists for this dish.');variantKeys.add(key);checkInputs(r.inputs);if(r.recorded&&!completeRecipe(r))throw new Error('Add the ingredient list before marking a recipe recorded.');if(r.reviewStatus==='verified'&&(!r.recorded||!r.inputs.length))throw Error('Verify the complete ingredient list first.');}
  for(const r of n.recipes)if(r.ingredientsReviewed&&(!r.recorded||!r.inputs.length))throw Error('Check the complete ingredient list before marking ingredients reviewed.');
@@ -69,7 +73,10 @@ export function validateNotebook(input:unknown):Notebook {
  const visiting=new Set<string>(),done=new Set<string>();const byId=new Map(n.items.map(i=>[i.id,i]));
  const visit=(id:string)=>{if(visiting.has(id))throw new Error('A preparation cannot contain itself, directly or through another preparation.');if(done.has(id))return;visiting.add(id);const i=byId.get(id)!;checkInputs(i.inputs);for(const part of producer.get(id)?.inputs??i.inputs)visit(part.itemId);visiting.delete(id);done.add(id);};
  const scenarioIds=new Set<string>();for(const s of n.scenarios){if(scenarioIds.has(s.id))throw Error('Duplicate menu scenario ID.');scenarioIds.add(s.id);if(new Set(s.recipeIds).size!==s.recipeIds.length)throw Error('A variant may only be selected once.');}
- for(const i of n.items)visit(i.id);const pairs=new Set<string>();for(const pair of n.distinctPairs){if(pair[0]===pair[1]||pair.some(id=>!ids.has(id)))throw new Error('Invalid different-items decision.');const key=JSON.stringify([...pair].sort());if(pairs.has(key))throw new Error('Duplicate different-items decision.');pairs.add(key);}return n;
+ for(const i of n.items)visit(i.id);
+ // Product contains-links have their own cycle check, including supplier composition.
+ const productVisiting=new Set<string>(),productDone=new Set<string>();const visitProduct=(id:string)=>{if(productVisiting.has(id))throw Error('A product cannot contain itself, directly or through another product.');if(productDone.has(id))return;productVisiting.add(id);const item=byId.get(id)!;for(const part of n.workspaceRecipes?.find(r=>r.itemId===id)?.inputs??producer.get(id)?.inputs??item.inputs)visitProduct(part.itemId);productVisiting.delete(id);productDone.add(id);};for(const item of n.items)visitProduct(item.id);
+ const pairs=new Set<string>();for(const pair of n.distinctPairs){if(pair[0]===pair[1]||pair.some(id=>!ids.has(id)))throw new Error('Invalid different-items decision.');const key=JSON.stringify([...pair].sort());if(pairs.has(key))throw new Error('Duplicate different-items decision.');pairs.add(key);}return n;
 }
 export function usageMap(n:Notebook,inputsFor?:(id:string)=>ReadonlyArray<{itemId:string}>){
  const items=new Map(n.items.map(i=>[i.id,i]));

@@ -1,4 +1,4 @@
-# Vývoj LABULA Worskspace v Codex Cloud
+# Vývoj Workspace 2.0 v Codex Cloud
 
 ## Připravený repozitář
 

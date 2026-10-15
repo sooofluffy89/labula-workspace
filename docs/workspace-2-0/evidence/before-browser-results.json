@@ -1,0 +1,488 @@
+{
+  "source": "93eab5d471c3af35de72a2b2278b96c66d788ad6",
+  "basis": "Real Chromium; isolated synthetic local DB copied from current local development state; no production data",
+  "date": "2026-10-15T10:52:46.623Z",
+  "metrics": [
+    {
+      "width": 320,
+      "view": "morning",
+      "scrollWidth": 320,
+      "heading": [
+        {
+          "text": "Morning prep",
+          "top": 267.75
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Chilli garlic sauce ",
+          "top": 582.484375,
+          "width": 294
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "view": "evening",
+      "scrollWidth": 320,
+      "heading": [
+        {
+          "text": "Evening check",
+          "top": 241
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 320,
+      "view": "recipes",
+      "scrollWidth": 320,
+      "heading": [
+        {
+          "text": "Dish recipes",
+          "top": 142
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Silken tofu chili1 variant0/1 variant · ingredients reviewedOn menuOnBought2House-made2Only this dish0EditArchive",
+          "top": 592.375,
+          "width": 294
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "view": "catalog",
+      "scrollWidth": 320,
+      "heading": [
+        {
+          "text": "Ingredients",
+          "top": 142
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 360,
+      "view": "morning",
+      "scrollWidth": 360,
+      "heading": [
+        {
+          "text": "Morning prep",
+          "top": 267.75
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Chilli garlic sauce ",
+          "top": 582.484375,
+          "width": 334
+        }
+      ]
+    },
+    {
+      "width": 360,
+      "view": "evening",
+      "scrollWidth": 360,
+      "heading": [
+        {
+          "text": "Evening check",
+          "top": 241
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 360,
+      "view": "recipes",
+      "scrollWidth": 360,
+      "heading": [
+        {
+          "text": "Dish recipes",
+          "top": 142
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Silken tofu chili1 variant0/1 variant · ingredients reviewedOn menuOnBought2House-made2Only this dish0EditArchive",
+          "top": 592.375,
+          "width": 334
+        }
+      ]
+    },
+    {
+      "width": 360,
+      "view": "catalog",
+      "scrollWidth": 360,
+      "heading": [
+        {
+          "text": "Ingredients",
+          "top": 142
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 390,
+      "view": "morning",
+      "scrollWidth": 390,
+      "heading": [
+        {
+          "text": "Morning prep",
+          "top": 267.75
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Chilli garlic sauce ",
+          "top": 562.484375,
+          "width": 364
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "view": "evening",
+      "scrollWidth": 390,
+      "heading": [
+        {
+          "text": "Evening check",
+          "top": 241
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 390,
+      "view": "recipes",
+      "scrollWidth": 390,
+      "heading": [
+        {
+          "text": "Dish recipes",
+          "top": 142
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Silken tofu chili1 variant0/1 variant · ingredients reviewedOn menuOnBought2House-made2Only this dish0EditArchive",
+          "top": 571.375,
+          "width": 364
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "view": "catalog",
+      "scrollWidth": 390,
+      "heading": [
+        {
+          "text": "Ingredients",
+          "top": 142
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 768,
+      "view": "morning",
+      "scrollWidth": 768,
+      "heading": [
+        {
+          "text": "Morning prep",
+          "top": 267.75
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Chilli garlic sauce ",
+          "top": 542.890625,
+          "width": 742
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "view": "evening",
+      "scrollWidth": 768,
+      "heading": [
+        {
+          "text": "Evening check",
+          "top": 241
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 768,
+      "view": "recipes",
+      "scrollWidth": 768,
+      "heading": [
+        {
+          "text": "Dish recipes",
+          "top": 142
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Silken tofu chili1 variant0/1 variant · ingredients reviewedOn menuOnBought2House-made2Only this dish0EditArchive",
+          "top": 427.09375,
+          "width": 742
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "view": "catalog",
+      "scrollWidth": 768,
+      "heading": [
+        {
+          "text": "Ingredients",
+          "top": 142
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 1024,
+      "view": "morning",
+      "scrollWidth": 1024,
+      "heading": [
+        {
+          "text": "Morning prep",
+          "top": 267.75
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Chilli garlic sauce ",
+          "top": 542.890625,
+          "width": 758
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "view": "evening",
+      "scrollWidth": 1024,
+      "heading": [
+        {
+          "text": "Evening check",
+          "top": 241
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 1024,
+      "view": "recipes",
+      "scrollWidth": 1024,
+      "heading": [
+        {
+          "text": "Dish recipes",
+          "top": 142
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Silken tofu chili1 variant0/1 variant · ingredients reviewedOn menuOnBought2House-made2Only this dish0EditArchive",
+          "top": 354.09375,
+          "width": 998
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "view": "catalog",
+      "scrollWidth": 1024,
+      "heading": [
+        {
+          "text": "Ingredients",
+          "top": 142
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 1100,
+      "view": "morning",
+      "scrollWidth": 1100,
+      "heading": [
+        {
+          "text": "Morning prep",
+          "top": 201.75
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Chilli garlic sauce ",
+          "top": 476.890625,
+          "width": 758
+        }
+      ]
+    },
+    {
+      "width": 1100,
+      "view": "evening",
+      "scrollWidth": 1100,
+      "heading": [
+        {
+          "text": "Evening check",
+          "top": 175
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 1100,
+      "view": "recipes",
+      "scrollWidth": 1100,
+      "heading": [
+        {
+          "text": "Dish recipes",
+          "top": 76
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Silken tofu chili1 variant0/1 variant · ingredients reviewedOn menuOnBought2House-made2Only this dish0EditArchive",
+          "top": 309.09375,
+          "width": 850
+        }
+      ]
+    },
+    {
+      "width": 1100,
+      "view": "catalog",
+      "scrollWidth": 1100,
+      "heading": [
+        {
+          "text": "Ingredients",
+          "top": 76
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 1280,
+      "view": "morning",
+      "scrollWidth": 1280,
+      "heading": [
+        {
+          "text": "Morning prep",
+          "top": 201.75
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Chilli garlic sauce ",
+          "top": 476.890625,
+          "width": 758
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "view": "evening",
+      "scrollWidth": 1280,
+      "heading": [
+        {
+          "text": "Evening check",
+          "top": 175
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 1280,
+      "view": "recipes",
+      "scrollWidth": 1280,
+      "heading": [
+        {
+          "text": "Dish recipes",
+          "top": 76
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Silken tofu chili1 variant0/1 variant · ingredients reviewedOn menuOnBought2House-made2Only this dish0EditArchive",
+          "top": 288.09375,
+          "width": 1030
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "view": "catalog",
+      "scrollWidth": 1280,
+      "heading": [
+        {
+          "text": "Ingredients",
+          "top": 76
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 1440,
+      "view": "morning",
+      "scrollWidth": 1440,
+      "heading": [
+        {
+          "text": "Morning prep",
+          "top": 201.75
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Chilli garlic sauce ",
+          "top": 476.890625,
+          "width": 758
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "view": "evening",
+      "scrollWidth": 1440,
+      "heading": [
+        {
+          "text": "Evening check",
+          "top": 175
+        }
+      ],
+      "firstRow": []
+    },
+    {
+      "width": 1440,
+      "view": "recipes",
+      "scrollWidth": 1440,
+      "heading": [
+        {
+          "text": "Dish recipes",
+          "top": 76
+        }
+      ],
+      "firstRow": [
+        {
+          "text": "Silken tofu chili1 variant0/1 variant · ingredients reviewedOn menuOnBought2House-made2Only this dish0EditArchive",
+          "top": 326.09375,
+          "width": 1190
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "view": "catalog",
+      "scrollWidth": 1440,
+      "heading": [
+        {
+          "text": "Ingredients",
+          "top": 76
+        }
+      ],
+      "firstRow": []
+    }
+  ],
+  "errors": []
+}

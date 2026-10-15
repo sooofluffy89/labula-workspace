@@ -1,0 +1,85 @@
+{
+  "baselineCommit": "93eab5d471c3af35de72a2b2278b96c66d788ad6",
+  "synthetic": true,
+  "fixture": {
+    "beforeRevision": 4,
+    "afterRevision": 4,
+    "beforeSha256": "7930e503a232b5731edacaeb2554cf33447b37d66f34be1e0308a50fcec94343",
+    "afterSha256": "7930e503a232b5731edacaeb2554cf33447b37d66f34be1e0308a50fcec94343",
+    "sameContent": true,
+    "items": 100,
+    "dishes": 19,
+    "recipes": 24
+  },
+  "beforeWidths": [
+    320,
+    360,
+    390,
+    768,
+    1024,
+    1100,
+    1280,
+    1440
+  ],
+  "beforeViews": [
+    "morning",
+    "evening",
+    "recipes",
+    "catalog"
+  ],
+  "afterWidths": [
+    320,
+    360,
+    390,
+    767,
+    768,
+    1023,
+    1024,
+    1100,
+    1119,
+    1120,
+    1280,
+    1440
+  ],
+  "afterViews": [
+    "morning",
+    "evening",
+    "recipes",
+    "catalog"
+  ],
+  "compiledWidths": [
+    390,
+    1100,
+    1440
+  ],
+  "measurements": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "firstMorningRow": {
+      "before": 562.484375,
+      "after": 351.09375,
+      "improvementPx": 211.390625,
+      "improvementPercent": 37.58159948887469,
+      "afterBottom": 458.09375,
+      "navigationTop": 783
+    },
+    "firstDishRow": {
+      "before": 571.375,
+      "after": 560.1875,
+      "improvementPx": 11.1875
+    },
+    "basis": "Same complete synthetic notebook and same two visible Morning tasks; baseline screenshot geometry verified separately."
+  },
+  "results": "browser-results.json",
+  "limitations": [
+    "All browser checks used headless Chromium on Linux, not physical phones/tablets, Safari, Firefox, a native mobile keyboard or a real kitchen pilot.",
+    "Touch/coarse-pointer input was emulated at tablet width. Hybrid physical input was not verified.",
+    "200% reflow used a 720×422 CSS viewport with deviceScaleFactor=2 to represent a 1440×844 display at 200%; native browser zoom and OS text enlargement were not exercised.",
+    "Deep preparation chains, long names, empty/loading/error reads, calendar configuration and uncertain creation saves were explicitly emulated; all writes in the creation fault case were intercepted.",
+    "Role switching and daily check/Ready/Undo scenarios used the real local API and synthetic local D1 data only. Local Owner was restored after roles.",
+    "Compiled Worker smoke used explicit synthetic identity headers on loopback; it verifies compiled rendering, not production authentication.",
+    "No production menu/data equality, production migration/cutover or production deployment is claimed."
+  ]
+}

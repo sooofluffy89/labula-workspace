@@ -1,0 +1,8 @@
+{
+  "command": "node scripts/check-workspace2-preflight.mjs",
+  "node": "v24.19.0",
+  "status": "passed",
+  "data": "synthetic fixtures only",
+  "productionVerified": false,
+  "browserDraftsVerified": false
+}

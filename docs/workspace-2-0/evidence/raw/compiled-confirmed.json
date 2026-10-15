@@ -1,0 +1,105 @@
+{
+  "timestamp": "2026-10-15T11:33:34.289Z",
+  "base": "http://127.0.0.1:5175",
+  "node": "v24.19.0",
+  "results": [
+    {
+      "name": "Compiled CSS Today, Menu and editor smoke",
+      "basis": "Built Worker on loopback; explicit synthetic identity headers; no writes, not production auth",
+      "status": "passed"
+    },
+    {
+      "name": "Browser runtime has no page exceptions",
+      "basis": "real rendered application",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "compiledMorning": {
+        "width": 390,
+        "scrollWidth": 390,
+        "firstRow": 351.09375,
+        "bottom": 458.09375
+      }
+    },
+    {
+      "compiledMenu": {
+        "width": 390,
+        "scrollWidth": 390,
+        "detailWidth": 366,
+        "contentWidth": 364,
+        "contentScrollWidth": 364
+      }
+    },
+    {
+      "compiledEditor": {
+        "width": 390,
+        "editorWidth": 366,
+        "layoutWidth": 366,
+        "clientWidth": 364,
+        "scrollWidth": 364,
+        "clipped": []
+      }
+    },
+    {
+      "compiledMorning": {
+        "width": 1100,
+        "scrollWidth": 1100,
+        "firstRow": 373.078125,
+        "bottom": 480.078125
+      }
+    },
+    {
+      "compiledMenu": {
+        "width": 1100,
+        "scrollWidth": 1100,
+        "detailWidth": 1052,
+        "contentWidth": 1050,
+        "contentScrollWidth": 1050
+      }
+    },
+    {
+      "compiledEditor": {
+        "width": 1100,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "compiledMorning": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "firstRow": 373.078125,
+        "bottom": 480.078125
+      }
+    },
+    {
+      "compiledMenu": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "detailWidth": 896,
+        "contentWidth": 894,
+        "contentScrollWidth": 894
+      }
+    },
+    {
+      "compiledEditor": {
+        "width": 1440,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "Headless Chromium emulation, not physical phones/tablets or an actual kitchen pilot.",
+    "Production menu and production migration are not verified by local synthetic tests."
+  ]
+}

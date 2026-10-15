@@ -1,0 +1,126 @@
+{
+  "timestamp": "2026-10-15T11:35:56.889Z",
+  "base": "http://127.0.0.1:5175",
+  "node": "v24.19.0",
+  "results": [
+    {
+      "name": "Recipe validation points to a field and protects draft",
+      "basis": "real rendered form, invalid input only",
+      "status": "passed"
+    },
+    {
+      "name": "Browser runtime has no page exceptions",
+      "basis": "real rendered application",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "recipeEditor": {
+        "width": 320,
+        "left": 12,
+        "right": 308,
+        "editorWidth": 296,
+        "layoutWidth": 296,
+        "clientWidth": 294,
+        "scrollWidth": 294,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 390,
+        "left": 12,
+        "right": 378,
+        "editorWidth": 366,
+        "layoutWidth": 366,
+        "clientWidth": 364,
+        "scrollWidth": 364,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 768,
+        "left": 12,
+        "right": 756,
+        "editorWidth": 744,
+        "layoutWidth": 744,
+        "clientWidth": 742,
+        "scrollWidth": 742,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1024,
+        "left": 132,
+        "right": 892,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1100,
+        "left": 170,
+        "right": 930,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1280,
+        "left": 260,
+        "right": 1020,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "recipeEditor": {
+        "width": 1440,
+        "left": 340,
+        "right": 1100,
+        "editorWidth": 760,
+        "layoutWidth": 760,
+        "clientWidth": 758,
+        "scrollWidth": 758,
+        "clipped": []
+      }
+    },
+    {
+      "fieldAppearance": {
+        "state": "invalid",
+        "border": "rgb(180, 35, 41)",
+        "background": "rgb(255, 248, 248)",
+        "outer": "rgb(255, 255, 255)",
+        "outline": "rgb(183, 38, 44)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "color": "rgb(25, 26, 28)",
+        "opacity": "1",
+        "invalid": "true",
+        "disabled": false,
+        "borderContrast": 6.235248228262691,
+        "textContrast": 16.614212898347265,
+        "outlineContrast": 6.311858015601675
+      }
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "Headless Chromium emulation, not physical phones/tablets or an actual kitchen pilot.",
+    "Production menu and production migration are not verified by local synthetic tests."
+  ]
+}

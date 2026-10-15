@@ -1,0 +1,92 @@
+{
+  "format": "Workspace 2.0 preservation comparison",
+  "version": 1,
+  "environment": "synthetic-local",
+  "cutoverDay": "2026-10-15",
+  "preservationPassed": true,
+  "beforeDigest": "cedbb99e814a58f80503e12f544994fd6f04bc7de96a1db186b1f6c0554a667e",
+  "afterDigest": "cedbb99e814a58f80503e12f544994fd6f04bc7de96a1db186b1f6c0554a667e",
+  "changes": [],
+  "runtimePolicy": {
+    "before": {
+      "captured": true,
+      "rows": [
+        {
+          "id": "kitchen",
+          "write_paused": 0,
+          "min_client_version": 1,
+          "revision": 0,
+          "updated_at": "initial-policy"
+        }
+      ],
+      "digest": "d6b51b982f7492bd06b1d36403424fe42976e253281343224420c9ae0b4cfd9d"
+    },
+    "after": {
+      "captured": true,
+      "rows": [
+        {
+          "id": "kitchen",
+          "write_paused": 0,
+          "min_client_version": 1,
+          "revision": 0,
+          "updated_at": "initial-policy"
+        }
+      ],
+      "digest": "d6b51b982f7492bd06b1d36403424fe42976e253281343224420c9ae0b4cfd9d"
+    },
+    "changed": false,
+    "explanation": "Known release-control state is reported separately from restaurant data. Check the freeze and client-version gates; preservation equality never authorizes resuming writes."
+  },
+  "exceptions": [
+    {
+      "code": "composition-needs-reconciliation",
+      "notebookId": "kitchen",
+      "itemId": "multi-a",
+      "source": "process",
+      "gaps": [
+        "Product composition not confirmed. Shared batch inputs are shown separately."
+      ]
+    },
+    {
+      "code": "composition-needs-reconciliation",
+      "notebookId": "kitchen",
+      "itemId": "multi-b",
+      "source": "process",
+      "gaps": [
+        "Product composition not confirmed. Shared batch inputs are shown separately."
+      ]
+    },
+    {
+      "code": "composition-needs-reconciliation",
+      "notebookId": "kitchen",
+      "itemId": "approved",
+      "source": "review",
+      "gaps": [
+        "Approved quick review records scope and work, but its complete input composition is not recorded",
+        "Product composition not confirmed. Add the ingredients in this product; shared batch inputs stay separate."
+      ]
+    },
+    {
+      "code": "active-legacy-plan-policy",
+      "plans": [
+        {
+          "checkId": "live-plan",
+          "planDay": "2026-10-15",
+          "stage": "confirmed",
+          "version": 2,
+          "planPolicyVersion": 1,
+          "unfinishedTasks": 1
+        }
+      ]
+    }
+  ],
+  "remainingReleaseGates": [
+    "Verify the current protected production snapshot and retain a verified full backup.",
+    "Resolve or acknowledge each data exception without changing the preserved menu silently.",
+    "Inventory unsaved browser drafts and preserve account-scoped recovery.",
+    "Pause writes server-side and close old clients; verify delayed commands cannot write during cutover.",
+    "Decide each live legacy plan policy explicitly; do not bulk flip plan_policy_version.",
+    "Verify the new schema, authenticated roles and production smoke checks before reopening writes."
+  ],
+  "releaseApproved": false
+}

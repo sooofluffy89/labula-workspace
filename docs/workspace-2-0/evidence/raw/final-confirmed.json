@@ -1,0 +1,685 @@
+{
+  "timestamp": "2026-10-15T11:26:06.157Z",
+  "base": "http://localhost:5173",
+  "node": "v24.19.0",
+  "results": [
+    {
+      "name": "Responsive Today/Menu layout and one visible heading",
+      "basis": "Chromium viewport emulation",
+      "status": "passed"
+    },
+    {
+      "name": "New item draft survives Escape, close, reload and restores trigger focus",
+      "basis": "real browser local draft storage; no item created",
+      "status": "passed"
+    },
+    {
+      "name": "Settings, old links, Round days return and export access",
+      "basis": "Real rendered routes, synthetic CSV download and backup endpoint read",
+      "status": "passed"
+    },
+    {
+      "name": "Browser runtime has no page exceptions",
+      "basis": "real rendered application",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "view": "morning",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 88.203125
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "evening",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 88.203125
+        }
+      ],
+      "mobileNavTop": 783
+    },
+    {
+      "view": "recipes",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 572.1875,
+      "firstRowBottom": 652.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "catalog",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 737.1875,
+      "firstRowBottom": 817.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "morning",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 88.203125
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "evening",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 88.203125
+        }
+      ],
+      "mobileNavTop": 783
+    },
+    {
+      "view": "recipes",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 572.1875,
+      "firstRowBottom": 652.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "catalog",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 737.1875,
+      "firstRowBottom": 817.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "morning",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 86.796875
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "evening",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 86.796875
+        }
+      ],
+      "mobileNavTop": 783
+    },
+    {
+      "view": "recipes",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 560.1875,
+      "firstRowBottom": 640.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "catalog",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 638.1875,
+      "firstRowBottom": 718.1875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "morning",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 86.796875
+        }
+      ],
+      "firstRow": 351.09375,
+      "firstRowBottom": 458.09375,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "evening",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 86.796875
+        }
+      ],
+      "mobileNavTop": 783
+    },
+    {
+      "view": "recipes",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 558.796875,
+      "firstRowBottom": 638.796875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "catalog",
+      "width": 767,
+      "scrollWidth": 767,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 85
+        }
+      ],
+      "firstRow": 636.796875,
+      "firstRowBottom": 716.796875,
+      "mobileNavTop": 783
+    },
+    {
+      "view": "morning",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 102.796875
+        }
+      ],
+      "firstRow": 367.09375,
+      "firstRowBottom": 474.09375,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "evening",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 102.796875
+        }
+      ],
+      "mobileNavTop": 0
+    },
+    {
+      "view": "recipes",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "catalog",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "morning",
+      "width": 1023,
+      "scrollWidth": 1023,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 371.5,
+      "firstRowBottom": 478.5,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "evening",
+      "width": 1023,
+      "scrollWidth": 1023,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0
+    },
+    {
+      "view": "recipes",
+      "width": 1023,
+      "scrollWidth": 1023,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "catalog",
+      "width": 1023,
+      "scrollWidth": 1023,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "morning",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 371.546875,
+      "firstRowBottom": 478.546875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "evening",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0
+    },
+    {
+      "view": "recipes",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "catalog",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "morning",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 373.078125,
+      "firstRowBottom": 480.078125,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "evening",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0
+    },
+    {
+      "view": "recipes",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "catalog",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "morning",
+      "width": 1119,
+      "scrollWidth": 1119,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 373.078125,
+      "firstRowBottom": 480.078125,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "evening",
+      "width": 1119,
+      "scrollWidth": 1119,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0
+    },
+    {
+      "view": "recipes",
+      "width": 1119,
+      "scrollWidth": 1119,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "catalog",
+      "width": 1119,
+      "scrollWidth": 1119,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "morning",
+      "width": 1120,
+      "scrollWidth": 1120,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 373.078125,
+      "firstRowBottom": 480.078125,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "evening",
+      "width": 1120,
+      "scrollWidth": 1120,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0
+    },
+    {
+      "view": "recipes",
+      "width": 1120,
+      "scrollWidth": 1120,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "catalog",
+      "width": 1120,
+      "scrollWidth": 1120,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "morning",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 373.078125,
+      "firstRowBottom": 480.078125,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "evening",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0
+    },
+    {
+      "view": "recipes",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "catalog",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "morning",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Morning prep",
+          "top": 101
+        }
+      ],
+      "firstRow": 373.078125,
+      "firstRowBottom": 480.078125,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "evening",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Evening check",
+          "top": 101
+        }
+      ],
+      "mobileNavTop": 0
+    },
+    {
+      "view": "recipes",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 574.796875,
+      "firstRowBottom": 654.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "view": "catalog",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Menu",
+          "top": 101
+        }
+      ],
+      "firstRow": 652.796875,
+      "firstRowBottom": 732.796875,
+      "mobileNavTop": 0
+    },
+    {
+      "dialogFocusRestoreAfterHiddenMs": 44
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "Headless Chromium emulation, not physical phones/tablets or an actual kitchen pilot.",
+    "Production menu and production migration are not verified by local synthetic tests."
+  ]
+}

@@ -14,7 +14,9 @@ export function menuScope(n:Notebook,records:AppliedRecord[]=[]){
   if(path.has(id)){gaps.add('Circular preparation dependency');return;}
   const item=byId.get(id);if(!item){gaps.add('An input has an unresolved catalog identity');return;}if(target.has(id))return;target.add(id);
   const sources=graph.byItem.get(id)??[],process=n.processes.find(p=>p.outputs.some(o=>o.itemId===id)),inputs=inputsFor(id);
-  if(sources.length){for(const source of sources)for(const gap of source.gaps)gaps.add(source.name+': '+gap);}
+  const product=n.workspaceRecipes?.find(recipe=>recipe.itemId===id&&recipe.kind==='local');
+  if(product&&!product.inputs.length)gaps.add(item.name+': product composition is not recorded');
+  if(sources.length){for(const source of sources)if(!product||source.outputs.length>1||!source.compositionComplete||source.external)for(const gap of source.gaps)gaps.add(source.name+': '+gap);}
   else if(graph.sourceUnavailable&&(item.kind==='prep'||process)||process?.sourceReviewId||graph.held.has(id))gaps.add(item.name+': current approved composition is unavailable');
   else if(item.kind==='prep'&&!inputs.length)gaps.add(item.name+': preparation composition is not recorded');
   for(const input of inputs)walk(input.itemId,target,new Set(path).add(id));

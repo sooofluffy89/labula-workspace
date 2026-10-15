@@ -91,6 +91,13 @@ export function approvedProductionFor(n:Notebook,records:AppliedRecord[],id:stri
 /** Current dependency links only. A Review sample never lends quantities to a different batch. */
 export function currentProductionInputs(n:Notebook,graph:ReturnType<typeof approvedProduction>,id:string):RecipeInput[]{
  const key=graph.resolveItem(id)??id,sources=graph.byItem.get(key)??[];
+ const product=n.workspaceRecipes?.find(recipe=>recipe.itemId===key&&recipe.kind==='local');
+ if(product){
+  // Product allocation never removes inputs required by a shared batch.
+  const process=n.processes.find(process=>process.outputs.some(output=>output.itemId===key));
+  const shared=sources.some(source=>source.outputs.length>1||!source.compositionComplete||source.external)?sources.flatMap(source=>source.inputs).map(itemId=>({itemId,amount:null,note:'Retained production dependency'} as RecipeInput)):!sources.length&&process&&process.outputs.length>1?process.inputs:[];
+  return [...product.inputs,...shared.filter(input=>!product.inputs.some(part=>part.itemId===input.itemId))];
+ }
  if(sources.length)return [...new Set(sources.flatMap(source=>source.inputs))].map(itemId=>({itemId,amount:null,note:'Approved Review source'}));
  const process=n.processes.find(process=>process.outputs.some(output=>output.itemId===key)),item=n.items.find(item=>item.id===key);
  if(graph.sourceUnavailable&&(item?.kind==='prep'||process))return [];
