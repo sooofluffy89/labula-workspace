@@ -7,10 +7,14 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
-function Dialog({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+const DialogOpenerContext=React.createContext<React.RefObject<HTMLElement|null>|null>(null)
+function Dialog({open,defaultOpen=false,onOpenChange,...props}:React.ComponentProps<typeof DialogPrimitive.Root>){
+  const [uncontrolled,setUncontrolled]=React.useState(defaultOpen)
+  const actual=open??uncontrolled
+  const opener=React.useRef<HTMLElement|null>(null),wasOpen=React.useRef(false)
+  if(actual&&!wasOpen.current&&typeof document!=='undefined')opener.current=document.activeElement instanceof HTMLElement?document.activeElement:null
+  wasOpen.current=actual
+  return <DialogOpenerContext.Provider value={opener}><DialogPrimitive.Root data-slot="dialog" {...props} open={actual} onOpenChange={value=>{setUncontrolled(value);onOpenChange?.(value)}}/></DialogOpenerContext.Provider>
 }
 
 function DialogTrigger({
@@ -51,15 +55,18 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
+  const opener=React.useContext(DialogOpenerContext)
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        onCloseAutoFocus={event=>{onCloseAutoFocus?.(event);if(!event.defaultPrevented){const target=opener?.current?.isConnected&&opener.current.getClientRects().length?opener.current:document.querySelector<HTMLElement>('[role="dialog"][data-state="open"] button')??Array.from(document.querySelectorAll<HTMLElement>("#workspace-content h1")).find(e=>e.getClientRects().length)??document.getElementById("workspace-content");if(target){event.preventDefault();if(!target.matches("button,input,select,textarea,a,[tabindex]"))target.tabIndex=-1;target.focus({preventScroll:true})}}}}
         className={cn(
           "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
           className

@@ -27,8 +27,10 @@ export function savedStatus(state:EveningState,account:string,now=Date.now(),vie
  if(!state.snapshot)return 'Loading…';
  if(state.freshnessError||!state.lastVerifiedAt||now-state.lastVerifiedAt>=75000)return 'Shared state needs a refresh.';
  if(state.needsVerification)return 'Changes shared · complete plan needs verification.';
- if(view==='evening'&&state.snapshot.check?.stage==='draft'&&state.snapshot.check.version>0)return 'Answers shared · correction not published yet.';
+ if(view==='evening'&&state.snapshot.check?.stage==='draft'&&state.snapshot.check.version>0)return 'Answers saved · correction not published yet.';
  if(state.refreshing)return 'Updating shared check…';
+ if(view==='evening'&&state.snapshot.check?.stage==='draft')return 'Answers saved · plan not published yet.';
+ if(view==='evening'&&state.snapshot.check?.stage==='confirmed')return 'Plan published · shared.';
  if(view==='morning'&&morningProgress(state,now).complete)return '✓ All morning items ready · shared';
  return 'All changes shared.';
 }

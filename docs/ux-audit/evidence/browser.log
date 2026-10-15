@@ -1,0 +1,38 @@
+PASS Responsive layout, one visible h1 and no document overflow
+PASS Recipe detail remains usable at 1100,1280,1440 and docked 1600
+PASS Back, Forward, Refresh and selected recipe preserve context
+PASS Back restores scroll when delayed content grows
+PASS No-results state and reset
+PASS Dirty dialog protects input and restores keyboard focus
+PASS Reduced motion and input boundary contrast
+PASS Recipe removal Undo restores ingredient and completion
+PASS Batch Back returns to Preparation without closing the form
+PASS Preparation validation identifies the field and accepts explicit unknown
+PASS Checklist has labelled native controls and coherent focus order
+PASS Bulk station opening makes no implicit changes
+PASS Hidden history filters remain visible and resettable
+PASS Review stays in the workspace and preserves alternative-name drafts
+PASS 100-item synthetic catalog keeps preparation entry above results
+PASS Report browser runtime has no page exceptions
+PASS scripts/verify-ux-browser.mjs
+PASS Evening → Finish → Morning → Ready → Undo on actual local data
+PASS Short viewport, 200% zoom equivalent, touch and long names
+PASS Complete calendar confirmation uses a browser-only synthetic GET fixture
+PASS Empty, loading and request-error states are distinct (browser GET fixtures)
+PASS Runtime stays free of browser exceptions
+PASS scripts/verify-ux-scenarios.mjs
+PASS Morning first task is visible on the original audit day
+PASS No-plan Morning offers the preceding Evening with the correct date
+PASS Short preparation dialog keeps the focused field clear of its footer
+PASS Information Back, Forward, Refresh and direct detail links remain intact
+PASS Check rounds exposes the transfer model and Move to controls
+PASS No runtime exceptions in detail and short-window flows
+PASS scripts/verify-ux-details.mjs
+PASS Quick review blocks an incomplete step and links to the missing field (browser fixture)
+PASS Quick review step exposes Output, Work and Frequency groups
+PASS Quick review has no runtime exceptions
+PASS scripts/verify-ux-quick-browser.mjs
+PASS Actual Owner access and complete backup entry
+PASS Actual Manager retains settings, safe type correction and backup
+PASS Actual Cook sees exactly two equal daily choices at 320 and390px
+PASS scripts/verify-ux-roles.mjs

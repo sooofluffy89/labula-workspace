@@ -1,0 +1,600 @@
+
+> labula-workspace@0.1.0 validate
+> npm run typecheck && npm run check && npm run build
+
+
+> labula-workspace@0.1.0 typecheck
+> tsc --noEmit
+
+
+> labula-workspace@0.1.0 check
+> node scripts/check-all.mjs
+
+PASS audit data: exact-match type restore; field validation; owner-only reclassify/replay; merge decisions; byte limits for legacy/receipt/catalog/bulk with ASCII, Czech, Chinese and emoji, and no partial writes.
+PASS check-audit-data.mjs
+PASS durable Finish recovery: incomplete/quota, accepted feedback vs drafts, close/reload/two-tab exact replay, empty plan, correction, auth retry, foreign account, changed target, corrupt journal retained.
+PASS check-background-finish-recovery.mjs
+PASS actual controller → API → SQLite: immediate local summary, durable last approval, double click, handler guard, unmount, two cooks, offline, post-commit lost ACK/replay, reload, content conflict and explicitly superseding approval.
+PASS check-background-finish.mjs
+PASS batch model and UI: scope, estimates/unknowns, partial validation, old receipt shape, storage preservation, inactive drafts, export/restore, actual field callbacks and review navigation.
+PASS check-batch-collection.mjs
+Passed client transitions: staged/frozen bulk; deadline and late replies; exact ordinary recovery exports; fresh-page PUT/GET replay; retained extra edits; foreign-write conflicts; explicit shared-version choice; authentication and GET timeout recovery.
+PASS check-bulk-client.mjs
+Passed actual dialog handlers: prep/reuse/skip preservation; copied-text restore gating; immutable zero-count replay; invalid match decisions; earlier-save export/restore/retry/conflict confirmation; separate Add after recovery; rejection/edit/retry; close protection; stale worker handling.
+PASS check-bulk-dialog.mjs
+Passed copied text: numbering, bullets, mixed separators, protected meaningful names, confirmed transformations, kept originals and limits without truncation.
+PASS check-bulk-input.mjs
+Passed UX regressions: symmetric pair decisions; canonical reuse; stable separate choices; draft roundtrip; changed and missing matches; wrong dish and malformed files; legacy provenance; immutable pending restoration.
+PASS check-bulk-ux.mjs
+Notebook operation failed Error: Simulated rollback
+    at Object.batch (file:///workspace/labula-workspace/scripts/check-bulk.mjs:26:171)
+    at command (file:///tmp/labula-bulk-oaMTz6/api-bulk.mjs:4649:27)
+    at async POSTHandler (file:///tmp/labula-bulk-oaMTz6/api-bulk.mjs:4677:20)
+    at async file:///tmp/labula-bulk-oaMTz6/api-bulk.mjs:78:26
+    at async Module.<anonymous> (file:///tmp/labula-bulk-oaMTz6/api-bulk.mjs:77:14)
+    at async file:///workspace/labula-workspace/scripts/check-bulk.mjs:34:68
+Notebook operation failed Error: Simulated lost result
+    at Object.first (file:///workspace/labula-workspace/scripts/check-bulk.mjs:25:152)
+    at readNotebook (file:///tmp/labula-bulk-oaMTz6/api-bulk.mjs:4504:125)
+    at async respond2 (file:///tmp/labula-bulk-oaMTz6/api-bulk.mjs:4630:75)
+Large suggestion calculation ms: 2275
+Passed: preserved choices; grouped repeats; within-list matching/separate/cycles; limits; original hidden data; chef/auth/origin; atomic rollback; identical/interleaved/concurrent commands; lost reply; newer writes; ordinary save receipts.
+PASS check-bulk.mjs
+PASS calm sync: latest navigation/date, cancelled GET, stale failed delta, manual refresh fast+legacy, held Retry with fresh cache, Finish queue guard, final Ready and recovered Ready require a post-write whole-plan read.
+PASS check-calm-sync.mjs
+PASS actual StockWorkflow hooks/handlers + API: immediate target, Morning→Manage, no old rows, failed new Add keeps dialog/selection/error, Retry locks modal and creates once, blocked navigation reason visible, truthful initial/retry/error feedback.
+PASS check-calm-ui.mjs
+Passed portal recovery: create/edit input retention; frozen new/existing/suggested actions; retry without closing; stale-prop guard rejection; caught validation errors.
+PASS check-catalog-dialogs.mjs
+PASS actual CatalogManager handlers: per-item/tab alias retention; dirty-merge guard; running→uncertain→retry success modal recovery with download/reauth; alias confirmation cleanup via supplied root callback; type correction/conflict; orphan transfer; stale worker ignored.
+Scope: isolated handlers/effects, not real browser or network timeout. Header/global retry callback consistency is reviewed separately.
+PASS check-catalog-manager.mjs
+{"size":100,"aliasesPerItem":5,"notebookBytes":90220,"pairs":4950,"optimizedMs":326,"sha256":"ac51918361cd1eafe733d3308fb3144b52ee7b9808ec4ba7da76d9e2d47d37c4","referenceMs":10765,"speedup":32.98,"referenceVerified":true}
+{"size":300,"aliasesPerItem":5,"notebookBytes":263820,"pairs":44850,"optimizedMs":3085,"sha256":"042f70a3187ef58031252bd9479a980004e539205017db0438530d8d6ac0fc4a","referenceVerified":false,"referenceSkipped":"Pass --reference for the slow original 300-item implementation","storedReferenceVerified":true}
+PASS: original-reference matching, exact scores and stable order; valid 100/300 fixtures; optional worker results are identical.
+PASS check-catalog-performance.mjs
+Notebook operation failed Error: Simulated lost database response
+    at Object.first (file:///workspace/labula-workspace/scripts/check-catalog.mjs:25:162)
+    at readNotebook (file:///tmp/labula-catalog-aciBGv/cat.mjs:4568:125)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async catalogCommand (file:///tmp/labula-catalog-aciBGv/cat.mjs:4640:24)
+    at async POSTHandler (file:///tmp/labula-catalog-aciBGv/cat.mjs:4664:20)
+    at async file:///tmp/labula-catalog-aciBGv/cat.mjs:78:26
+    at async Module.<anonymous> (file:///tmp/labula-catalog-aciBGv/cat.mjs:77:14)
+    at async file:///workspace/labula-workspace/scripts/check-catalog.mjs:51:126
+Passed: bulk/repeat/limits; aliases; preservation and conflict blocking; legacy migration; matrix states/counts/export; origin/auth/owner permission; generic PUT protections; CAS; atomic audit; retries including lost post-commit response and concurrent same-ID requests; undo and newer-write protection.
+PASS check-catalog.mjs
+PASS station compatibility: legacy stock/remove/re-add, actual merge/Undo with later station edits, interleaved Start captures atomic assignment, add-item snapshots, original v61 Finish journal reload/publication and additive populated migration.
+PASS check-checking-stations-compatibility.mjs
+PASS station UI hooks/handlers: account-scoped durable selection, reload, corrupt preference, immediate flat filters, stable grouped rows/counts, legacy and empty states, explicit Cancel/no-op/choice/Save against actual API, old personal views.
+PASS check-checking-stations-ui.mjs
+Notebook operation failed Error: Synthetic transaction failure
+    at Object.exec (file:///workspace/labula-workspace/scripts/sync-harness.mjs:12:347)
+    at file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:141
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:132)
+    at stationCommand (file:///tmp/labula-sync-QVMTvR/test.mjs?58f8d3b9-35dc-4780-8360-529f858070f6:6928:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async POSTHandler6 (file:///tmp/labula-sync-QVMTvR/test.mjs?58f8d3b9-35dc-4780-8360-529f858070f6:6940:20)
+    at async file:///tmp/labula-sync-QVMTvR/test.mjs?58f8d3b9-35dc-4780-8360-529f858070f6:87:26
+    at async Object.<anonymous> (file:///tmp/labula-sync-QVMTvR/test.mjs?58f8d3b9-35dc-4780-8360-529f858070f6:86:14)
+    at async file:///workspace/labula-workspace/scripts/check-checking-stations.mjs:19:181
+PASS stations: sparse defaults, independent metadata, actual atomic batch/CAS/rollback, no-op/replay, actor/Owner/Manager/Cook/paused/anonymous
+PASS stations: frozen transaction snapshot, legacy snapshot/fingerprint, station groups, two distinct chefs/delta sync, whole-check Finish, immutable publication and unchanged Morning
+PASS stations: original durable recovery, rejected shared review, storage failure and complete/legacy/incomplete backups
+PASS check-checking-stations.mjs
+PASS Cook access: every workspace API denied, unlinked and linked Cook, old collaborator preserved, complete evening-to-morning flow, pause, actor history and unchanged recipes
+PASS check-cook-access.mjs
+Passed review: scope, decimal units, missing/unknown facts, hard conflicts, shared outputs/cycles, immutable source, auth/origin, concurrent revision protection, atomic history, exact retries, and edits during consecutive saves.
+PASS check-data-review.mjs
+PASS desktop preferences: account/scope isolation, round-trip Unicode and filters, corrupt storage fallback, unknown field stripping, no operational selection or writes.
+PASS check-desktop-preferences.mjs
+Direct usage: identity, variant union, inactive/unfinished, non-recursion, sorting/removal, scenario union/reset, dedicated prep and snapshot reactivity passed.
+PASS check-direct-usage.mjs
+PASS Edit items: real bulk route, owner/Cook/legacy gates, independent saves, literal text/clear, confirmed-only filtering, stale CAS, lost ACK replay, draft storage failure, membership independence and scoped view recovery.
+PASS check-edit-items-instructions.mjs
+PASS actual CheckRounds handlers: three Edit items entries, first/return view, confirmed instruction filter, hidden selection, membership review independent of instruction, and failed draft storage prevents filtering away text.
+PASS check-edit-items-ui.mjs
+PASS immediate receipt vs live freshness, other accepted work, legacy compaction, interrupted replacement, quota preservation, 500 completed checks bounded retention, protected ancestry, multiple unresolved dates, foreign supersedes and corrupt record retention.
+PASS check-evening-finish-journal.mjs
+PASS actual EveningChecklist hooks: both choices, quiet/held input, Checked repair, rejection visibility, stations, dialog, account isolation, keyboard focus and scroll anchor
+PASS UI partition uses unchanged actual two-client answers/author/revisions; no new API transport or database schema
+PASS check-evening-layout.mjs
+Notebook operation failed Error: simulated transactional failure
+    at Object.exec (file:///workspace/labula-workspace/scripts/check-evening.mjs:11:311)
+    at file:///workspace/labula-workspace/scripts/check-evening.mjs:12:94
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/check-evening.mjs:12:85)
+    at eveningCommand (file:///tmp/labula-evening-zwA2Hz/test.mjs:5891:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async POSTHandler (file:///tmp/labula-evening-zwA2Hz/test.mjs:5942:21)
+    at async file:///tmp/labula-evening-zwA2Hz/test.mjs:86:26
+    at async Object.<anonymous> (file:///tmp/labula-evening-zwA2Hz/test.mjs:85:14)
+    at async send (file:///workspace/labula-workspace/scripts/check-evening.mjs:19:43)
+PASS evening API: atomic snapshot/start/confirmation, per-row CAS, exact receipts, corrections, plan conflicts, immutable history, Ready/Undo, mapping protection, auth/origin/date rules
+PASS evening client+API: fast queued edits, last intent wins, uncertain commits, reload, account/401 guards, reviewed conflicts, local durability, disposal
+PASS check-evening.mjs
+Notebook operation failed Error: Synthetic transaction failure
+    at Object.exec (file:///workspace/labula-workspace/scripts/sync-harness.mjs:12:347)
+    at file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:141
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:132)
+    at eveningBatch (file:///tmp/labula-sync-bCKjC8/test.mjs?fa64f7fc-08de-40c8-ac07-a186a6956db8:5023:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async POSTHandler11 (file:///tmp/labula-sync-bCKjC8/test.mjs?fa64f7fc-08de-40c8-ac07-a186a6956db8:11044:47)
+    at async file:///tmp/labula-sync-bCKjC8/test.mjs?fa64f7fc-08de-40c8-ac07-a186a6956db8:87:26
+    at async Object.<anonymous> (file:///tmp/labula-sync-bCKjC8/test.mjs?fa64f7fc-08de-40c8-ac07-a186a6956db8:86:14)
+    at async file:///workspace/labula-workspace/scripts/check-fast-sync.mjs:26:151
+PASS fast sync: real SQLite + APIs + controller; ordered batches, partial CAS/dependencies, atomic rollback, exact lost-ACK replay, v47 durable queue, offline, quota, two tabs, two actors, merges during writes, stale ACK, cursor paging/boundary, read-only data, Finish lock/conflict/reconfirmation, immutable published versions, Ready history, auth/pause and disposal.
+PASS check-fast-sync.mjs
+PASS actual History component: newer filtered response survives a stale failure.
+PASS check-history-read-race.mjs
+PASS information UI: actual fetch lifecycle, late replies, timeout/retry, 401/403/404, account mismatch, Cook no-fetch, exact highlight, browser history/back/forward/close, invalid links and foreign-account history.
+PASS check-information-ui.mjs
+PASS information: real SQLite/API, exact variants, multiple related cases, approval vs apply vs stale, open checks, published versions during correction, original actors/names, role boundaries, and unchanged all-table snapshots.
+PASS check-information.mjs
+PASS ingredient groups: 79 ID-verified seed entries, 60 assignments, manual null, idempotency, owner/CAS/exact replay, menu union, pinned evening/morning, legacy check, merge/undo and audit
+PASS check-ingredient-groups.mjs
+PASS insight calculations: active direct use, distinct dishes, unknowns, no period conversion, scope exclusions, frequency conflict, storage clock and source preservation.
+PASS check-kitchen-insights.mjs
+PASS root home: actual autosave in flight, synchronous guard/loading, duplicate click, cancel and ignored late opening
+PASS root success: preserved latest recipe, snapshot accepted only in session, close releases guard and resumes autosave
+PASS catalog preparation entry acquires and releases the real notebook guard
+PASS item-detail preparation entry uses the same transition and guard
+PASS notebook-import handoff: synchronous guard, async failure returns false, staged draft retained and cleared only after handled
+PASS wrong-account notebook import cannot open preparation
+PASS home and catalog batch collection preserve the real autosave/transition guard
+PASS stock navigation preserves unsaved and in-flight recipe edits; stock receives no notebook snapshot setter
+PASS Team navigation preserves actual notebook state, saving, and mounted recipe/catalog editors
+PASS actual KitchenApp + actual useNotebook integration with persistent effects and exercised 1,200 ms autosave
+PASS check-kitchen-preparation-integration.mjs
+PASS actual Checklist settings handlers: full catalog including excluded, Off preparation, optional frequency/station notes, Track without popup, rapid On/Off, Station 4, instruction entry, type/filter/personal view state.
+PASS check-manage-settings-ui.mjs
+Notebook operation failed Error: Synthetic transaction failure
+    at Object.exec (file:///workspace/labula-workspace/scripts/sync-harness.mjs:12:347)
+    at file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:141
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:132)
+    at manageSettingsCommand (file:///tmp/labula-sync-pgg2XA/test.mjs?cc610eed-6cd4-4f81-a42e-8fc06d90c03b:6459:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async POSTHandler2 (file:///tmp/labula-sync-pgg2XA/test.mjs?cc610eed-6cd4-4f81-a42e-8fc06d90c03b:6477:20)
+    at async file:///tmp/labula-sync-pgg2XA/test.mjs?cc610eed-6cd4-4f81-a42e-8fc06d90c03b:87:26
+    at async Object.<anonymous> (file:///tmp/labula-sync-pgg2XA/test.mjs?cc610eed-6cd4-4f81-a42e-8fc06d90c03b:86:14)
+    at async file:///workspace/labula-workspace/scripts/check-manage-settings.mjs:20:230
+PASS unified settings: all frequency/station combinations Off, atomic activation with optional station, excluded catalog, old write guards, stale CAS/rollback/replay, actors, frozen notebook/checks/history
+PASS Station 4: shared snapshot → Finish → Morning → provenance/export/backup; old-client upgrade; measured six queued writes with actual ACK.
+PASS actual durable queue: rapid clicks, single writer, independent conflict, replay after missed ACK/reload, offline queue, account change, storage rejection, revision-safe Undo
+PASS check-manage-settings.mjs
+PASS Manager: separate ownership; administrative API coverage; explicit audited CAS roles; legacy preservation; owner/self protection; atomic revocation; double click; lost ACK; old client; account isolation and durable recovery.
+PASS check-manager-access.mjs
+Passed review workflow: 49 groups / 25 targeted cards / 57 mapped points; mixed packing, phase cycles, top-ups, exclusions, inactive branches, migration, recovery merge, save retries, auth, owner verification, approval and atomic three-way application.
+PASS Manager review: actual verify, approve, explicit apply, rollback, exact retry and immutable Manager authorship.
+PASS check-manager-review.mjs
+Actual UI handlers passed: pure simulator/all/none/reset/view switches, zero network calls, non-mutating display sorting, ID-safe removal, retained query and add feedback.
+PASS check-menu-planning-ui.mjs
+PASS actual group editor handlers: compared names/groups, unchanged-group confirmation, lost response, remount and exact retry, no duplicate audit, stale decision and explicit renewed review
+PASS check-merge-group-review-ui.mjs
+Notebook operation failed Error: Synthetic transaction failure
+    at Object.exec (file:///workspace/labula-workspace/scripts/sync-harness.mjs:12:347)
+    at file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:141
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:132)
+    at ingredientGroupCommand (file:///tmp/labula-sync-rIWQZZ/test.mjs?e9f4d8c8-d0f7-4f51-b2a9-0cdcbda4139f:6137:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async POSTHandler4 (file:///tmp/labula-sync-rIWQZZ/test.mjs?e9f4d8c8-d0f7-4f51-b2a9-0cdcbda4139f:6799:20)
+    at async file:///tmp/labula-sync-rIWQZZ/test.mjs?e9f4d8c8-d0f7-4f51-b2a9-0cdcbda4139f:87:26
+    at async Object.<anonymous> (file:///tmp/labula-sync-rIWQZZ/test.mjs?e9f4d8c8-d0f7-4f51-b2a9-0cdcbda4139f:86:14)
+    at async send (file:///workspace/labula-workspace/scripts/check-merge-group-review.mjs:9:43)
+PASS merged group review: exact merge identity, source/target revision guards, owner authorization, atomic rollback, same-group confirmation, original receipt replay, backup, preserved history, undo/remerge and concurrent new merge
+PASS check-merge-group-review.mjs
+Notebook operation failed Error: Expected test-only transaction rollback
+    at Object.batch (file:///workspace/labula-workspace/scripts/check-merge-server.mjs:47:253)
+    at catalogCommand (file:///tmp/labula-merge-server-hSelHt/catalog-api.mjs:4631:28)
+    at async POSTHandler (file:///tmp/labula-merge-server-hSelHt/catalog-api.mjs:4664:20)
+    at async file:///tmp/labula-merge-server-hSelHt/catalog-api.mjs:78:26
+    at async Module.<anonymous> (file:///tmp/labula-merge-server-hSelHt/catalog-api.mjs:77:14)
+    at async file:///workspace/labula-workspace/scripts/check-merge-server.mjs:88:49
+    at async withDb (file:///workspace/labula-workspace/scripts/check-merge-server.mjs:51:7)
+    at async file:///workspace/labula-workspace/scripts/check-merge-server.mjs:86:2
+Notebook operation failed Error: Expected test-only lost reply
+    at Object.first (file:///workspace/labula-workspace/scripts/check-merge-server.mjs:42:94)
+    at readNotebook (file:///tmp/labula-merge-server-hSelHt/catalog-api.mjs:4568:125)
+    at async catalogCommand (file:///tmp/labula-merge-server-hSelHt/catalog-api.mjs:4640:24)
+    at async POSTHandler (file:///tmp/labula-merge-server-hSelHt/catalog-api.mjs:4664:20)
+    at async file:///tmp/labula-merge-server-hSelHt/catalog-api.mjs:78:26
+    at async Module.<anonymous> (file:///tmp/labula-merge-server-hSelHt/catalog-api.mjs:77:14)
+    at async file:///workspace/labula-workspace/scripts/check-merge-server.mjs:89:39
+    at async withDb (file:///workspace/labula-workspace/scripts/check-merge-server.mjs:51:7)
+    at async file:///workspace/labula-workspace/scripts/check-merge-server.mjs:86:2
+PASS merge server: persisted third-party decisions, dedup/self-pair removal, historical references, exact Undo, current-state replay, owner/actor/origin checks, ordinary-PUT denial, atomic rollback, lost reply, same-ID concurrency, competing catalog writes and ordinary-save CAS race.
+PASS check-merge-server.mjs
+Passed: 19 dishes / 24 variants; nested yields; distinct active-dish counts; duplicate names; cycles; dangling references; invalid and unknown quantities; safety evidence; composition-only completion; planning remains quantity-aware; numeric data preserved; CSV safety.
+PASS check-model.mjs
+PASS actual MorningList hooks: quiet reflow, collapsed Ready, Undo, held pointer/Space safety and account isolation
+PASS check-morning-layout.mjs
+PASS Morning A: 24-row queue, rapid Undo, durable order, exact replay, auth, conflicts, recovery journal, correction concurrency, mappings, actual UI and unchanged notebook/stock
+PASS check-morning.mjs
+Passed restore-plan boundaries: independent foreign edits, explicit legacy removals, unchanged completion, missing/retired ID mapping, fresh IDs, exact pending receipt/localPayload, legacy pending exports and post-conflict base provenance.
+PASS check-notebook-draft.mjs
+PASS 1: successful retry restores included alias drafts.
+PASS 2: a failed proposal refreshes the shared version after an earlier receipt.
+PASS 3: Apply is blocked when newer unsaved alias work exists.
+PASS 4: Retry preserves newer alias work and completes only after that work is resolved.
+PASS 5: refresh protects later unrelated ordinary edits.
+PASS 6: failed/cancelled preparation transition keeps the complete import; successful retry restores preparation and alias drafts together.
+PASS check-notebook-restore-ui.mjs
+Notebook operation failed Error: Synthetic rollback
+    at Object.exec (file:///workspace/labula-workspace/scripts/check-operations.mjs:14:291)
+    at file:///workspace/labula-workspace/scripts/check-operations.mjs:15:90
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/check-operations.mjs:15:81)
+    at outcomeCommand (file:///tmp/labula-operations-GfvxuU/test.mjs:6457:22)
+    at async POSTHandler5 (file:///tmp/labula-operations-GfvxuU/test.mjs:6492:20)
+    at async file:///tmp/labula-operations-GfvxuU/test.mjs:86:26
+    at async Object.<anonymous> (file:///tmp/labula-operations-GfvxuU/test.mjs:85:14)
+    at async file:///workspace/labula-workspace/scripts/check-operations.mjs:61:264
+PASS operations: actual SQLite/API, calendar/DST/exceptions, round debt, old clients, 30 rapid Ready + Undo, offline/reload/exact receipts, cutoff reconstruction, corrections, immutable outcomes, owner/Cook boundaries, read-only snapshots and complete schema backup.
+PASS check-operations.mjs
+PASS P1: peer answer across page boundary blocks stale approval; explicit new approval publishes
+PASS P1: peer Undo across page boundary prevents false all-ready
+PASS shared cursor consumes more than two pages from another check before approving this check
+PASS partial pages cannot stamp verification or finish; bounded live horizon retains cursor
+PASS own acknowledged dependencies retain original approval without unnecessary reconfirmation
+PASS post-verification peer change is rejected by authoritative Confirm CAS
+PASS missing or mismatched terminal proof uses one consistent full-read fallback
+PASS failure during fallback retains unverified state until retry; auth rejection preserves work
+PASS old scope response and disposal cannot complete newer verification
+PASS metadata reset reloads complete data; legacy transport preserves Finish and Ready
+PASS three scoped cooks share a multi-page backlog; simultaneous Finish publishes once
+{"pass":true,"scenarios":["P1: peer answer across page boundary blocks stale approval; explicit new approval publishes","P1: peer Undo across page boundary prevents false all-ready","shared cursor consumes more than two pages from another check before approving this check","partial pages cannot stamp verification or finish; bounded live horizon retains cursor","own acknowledged dependencies retain original approval without unnecessary reconfirmation","post-verification peer change is rejected by authoritative Confirm CAS","missing or mismatched terminal proof uses one consistent full-read fallback","failure during fallback retains unverified state until retry; auth rejection preserves work","old scope response and disposal cannot complete newer verification","metadata reset reloads complete data; legacy transport preserves Finish and Ready","three scoped cooks share a multi-page backlog; simultaneous Finish publishes once"],"archivedV71Compatibility":false}
+PASS check-paged-sync.mjs
+PASS preparation coverage: applicable branches, explicit unknowns, source evidence, independent time starts, Other, multiple/blank setups, active dish union, saved-only counts, rename/reactivation, stable remaining queue, explicit selection, account drafts and orphan pending recovery.
+PASS check-prep-completion.mjs
+PASS Undo free-space then recover original setup, exact content preserved
+LEGACY DRAFT SEMANTICS {"storedEffort":null,"storedBasis":"one-order","workflow":"order","resultEffort":null,"resultBasis":"one-order","complete":false}
+PASS hidden normalization clears only inapplicable/unknown numbers; relevant invalid temperature still rejected
+PASS old-draft correction leaves confirmed base and pending receipt/draft exactly unchanged
+PASS actual workflow selection and preserved same-basis estimate.
+PASS check-prep-fields.mjs
+PASS home prompt actual handlers: saved-only counts, start/resume, remaining list pagination and exact selection, hidden completed/empty state, separate local draft and inactive pending recovery.
+PASS check-prep-home-ui.mjs
+PASS exclusive preparation lease: tab handoff, no stale resurrection, retained volatile memory, cancellation, StrictMode ownership, unchanged pending receipt and account isolation.
+PASS check-prep-local.mjs
+PASS actual feedback/editor handlers: collapsed optional feedback, durable unsubmitted drafts, reopen, explicit Add only, literal text, whitespace/500 limit, pending duplicate guard, owner Cancel/draft/Save and non-owner hidden editor.
+PASS check-prep-notes-ui.mjs
+Notebook operation failed Error: Synthetic transaction failure
+    at Object.exec (file:///workspace/labula-workspace/scripts/sync-harness.mjs:12:347)
+    at file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:141
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:132)
+    at prepNoteCommand (file:///tmp/labula-sync-6fLf00/test.mjs?31465452-8bda-490e-a2c9-d6b179c8c5a5:5141:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async POSTHandler9 (file:///tmp/labula-sync-6fLf00/test.mjs?31465452-8bda-490e-a2c9-d6b179c8c5a5:9330:20)
+    at async file:///tmp/labula-sync-6fLf00/test.mjs?31465452-8bda-490e-a2c9-d6b179c8c5a5:87:26
+    at async Object.<anonymous> (file:///tmp/labula-sync-6fLf00/test.mjs?31465452-8bda-490e-a2c9-d6b179c8c5a5:86:14)
+    at async file:///workspace/labula-workspace/scripts/check-prep-notes.mjs:64:117
+PASS prep notes: actual routes/SQLite/controller, owner/Cook/legacy, immutable snapshots, Sunday→Tuesday, literal text, no task creation, delta counts, Ready independence, lost ACK, reload/two tabs, concurrent queue, drafts/account isolation, quota, stale CAS, paused user, pagination, legacy and rollback.
+PASS check-prep-notes.mjs
+Notebook operation failed Error: simulated pre-commit failure
+    at Object.batch (file:///workspace/labula-workspace/scripts/check-prep-profile.mjs:41:150)
+    at command (file:///tmp/labula-prep-5SVMvy/api-profile.mjs:4544:27)
+    at async POSTHandler (file:///tmp/labula-prep-5SVMvy/api-profile.mjs:4569:20)
+    at async file:///tmp/labula-prep-5SVMvy/api-profile.mjs:78:26
+    at async Module.<anonymous> (file:///tmp/labula-prep-5SVMvy/api-profile.mjs:77:14)
+    at async file:///workspace/labula-workspace/scripts/check-prep-profile.mjs:48:30
+Notebook operation failed Error: simulated lost reply
+    at Object.first (file:///workspace/labula-workspace/scripts/check-prep-profile.mjs:40:189)
+    at readNotebook (file:///tmp/labula-prep-5SVMvy/api-profile.mjs:4458:125)
+    at async respond2 (file:///tmp/labula-prep-5SVMvy/api-profile.mjs:4525:75)
+PASS batch API: exact estimates persisted, storage/recipes unchanged, same receipt replay, stale revision blocked and invalid quantity rejected without a write.
+PASS preparation model + API: branches, exclusive states, effort bounds/bases, multiple setups, independent time anchors and sources, invalid durations, active direct queue, CSV/JSON, old backups and receipts, merge/undo, account/origin, rollback, lost reply, concurrency, idempotency, server attribution and protected fields.
+PASS check-prep-profile.mjs
+PASS batch workflow: current estimates, persisted draft, unchanged storage/recipes, lost response, same-receipt auth/retry, unknown completion, invalid numeric recovery and conflict comparison.
+PASS actual PrepWorkflow handlers: step/back/skip/end/resume, account-scoped drafts, partial validation, confirmed save-only navigation, lost reply with page restore, original receipt retry, reauthentication, same-item conflict comparison, pre/post-commit deadline, duplicate click and ignored late result.
+PASS check-prep-workflow.mjs
+PASS flush cannot report success while newer local edits remain unsaved.
+PASS profile snapshot requires the owning signal and rejects dirty/in-flight state, including a clean-looking local revert.
+PASS beginPreparation synchronously freezes ordinary edits, confirms earlier changes, accepts a clean snapshot, and holds until idempotent release.
+PASS ordinary edits during ordinary autosave remain allowed and survive the next preparation transition.
+PASS failed and pre-aborted preparation opening retain the ordinary draft without leaving a stale lock.
+PASS cancellation does not send follow-up writes or discard edits made after cancellation.
+PASS abort during save preserves edits; an abandoned continuation cannot release the successor preparation lease.
+PASS unconfirmed ordinary and bulk receipts block snapshot replacement and retain exact recovery.
+PASS imported ordinary-save recovery is confirmed before preparation starts.
+PASS imported ordinary-save recovery retains additional local edits before preparation starts.
+PASS active preparation blocks ordinary/bulk/catalog recovery, import reconciliation and shared-version replacement.
+PASS 401 releases only the preparation lease, preserves local work and retains uncertain receipts for same-account retry.
+PASS revision conflict releases the lease and preserves both local and foreign edits through draft export / restore review.
+PASS preparation opening timeout before commit / during network: token released, exact recovery retained, retry idempotent, late response ignored.
+PASS preparation opening timeout after commit / during response body: token released, exact recovery retained, retry idempotent, late response ignored.
+PASS preparation transition regression suite.
+PASS check-preparation-transition.mjs
+PASS private backup download: complete current inventory accepted; missing new tables and inconsistent counts rejected.
+PASS check-private-backup-download.mjs
+PASS private backup: existing owner only; anonymous/chef denied; complete schema inventory; large values retained; read-only SQL; no-store download.
+PASS check-private-backup.mjs
+PASS actual ProfileProvider: single authorised activation/no polling; explicit save; durable original command; uncertain ACK receipt-first retry; no duplicate write; monotonic revisions; explicit two-tab conflict; unmounted account ignores old ACK and keeps original recovery.
+PASS check-profile-client.mjs
+PASS profile photos: all roles own-only; real PNG decode/re-encode/metadata removal/all filters; input/body caps; deny anonymous/unlisted/forged owner/origin/key; paused/revoked transactional guard; R2 and metadata failures; original replay/lost ACK/stale replay/two-tab CAS; private image integrity; remove; immutable snapshot streamed backup/missing object/checksums/legacy; account-bound sign-out recovery.
+PASS check-profile-photo.mjs
+PASS real API + SQLite P1/P8/P10: long close, strict recovery and audit original, bounds/no-write rejects, two first queues/merge/conflict/lost reply, current four exclusions at preview/approve/apply, legacy approval, role-safe withdrawal.
+PASS check-quick-fixes-api.mjs
+PASS quick fixes 2–7/9: temporary vs explicit checks, included labour, legacy selective stamps, state lineage, inactive branches, stable detach/recovery, all trigger mappings.
+PASS check-quick-fixes.mjs
+PASS quick review: bounded cases, honest unknowns/progress, shared work, exclusions, units, labour, preserved recovery, real API role boundaries, exact approval/application, unrelated edits, rollback and idempotence.
+PASS check-quick-review.mjs
+PASS actual quick UI handlers: all eight cases finish independently; unknown and deferred differ; no automatic approval/apply; exact-step resume; synchronous busy guard.
+PASS check-quick-ui.mjs
+Passed completion states: explicit confirmation, bulk reopening, no-op preservation, partial variants, inactive exclusion and empty notebook.
+PASS check-recipe-progress.mjs
+PASS actual group/team dialog hooks and real API: same-revision draft retained, revision comparison, inline error, close/reopen uncertain save, original group/profile Retry, duplicate prevention, one committed pause.
+PASS check-recovery-dialogs.mjs
+PASS review boundaries: supplier/local routes; retained media; incomplete outputs; contradictory packs; duplicate work IDs; version dates; source-specific storage; negative verification; exact migration branches/units; real alias merge and exclusion identity.
+PASS check-review-boundaries.mjs
+PASS six P2 domains: contextual field paths, valid legacy status, readable and honest changes, nested no-link return/reload, blocked storage getter and recovery evidence isolation.
+PASS check-review-p2.mjs
+PASS deeper review readiness: independent scopes, full/top-up confirmations & estimates, shared work identity, recursive composition, stable recovery, conservative migration, reachable planning readiness, dependency expiry and dashboard supersession.
+PASS check-review-readiness.mjs
+PASS review source context: protected production, old closed checks, recovery, navigation, save ACK and isolated sources
+PASS check-review-source-context.mjs
+PASS P2 recovery handlers: C acknowledged while D stays recoverable; exact original retained; reload suppresses only saved merges; changed same-key content returns; auth/conflict/timeout/retry/late receipt.
+PASS focused form UX: full overview retained; primary action preserves validation; row-specific error links and real field anchors survive reorder/in-flight save; safe group and missing-target fallback; skip never confirms.
+PASS actual review handlers: edits during first/second save retain C; truthful saved state; auth repair with new operation; rejected long draft survives remount and repairs through compare/import; late receipt after unmount retains newer accepted input.
+PASS check-review-ui.mjs
+PASS review UX v3: source offers/provenance; no overwrite or duplicate on reload; separate topic confirmation; transitive reconfirmation; honest role-aware progress; assigned vs incomplete checks; latest authority; stable nested inline return/cancellation; old + concurrent recovery; immutable retry; frozen ambiguities and four exclusions.
+PASS check-review-ux-v3.mjs
+Passed review workflow: 49 groups / 25 targeted cards / 57 mapped points; mixed packing, phase cycles, top-ups, exclusions, inactive branches, migration, recovery merge, save retries, auth, owner verification, approval and atomic three-way application.
+PASS check-review-workflow.mjs
+PASS actual approved-data hook: concurrent first load, refresh dedupe, retained data while recipe saves/loading/503, 403 removal, changed identity and stale prior-account response.
+PASS check-reviewed-cache.mjs
+Notebook operation failed Error: Synthetic transaction failure
+    at Object.exec (file:///workspace/labula-workspace/scripts/sync-harness.mjs:12:347)
+    at file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:141
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/sync-harness.mjs:13:132)
+    at roundCommand (file:///tmp/labula-sync-I4Tvb5/test.mjs?cdd03b1e-5fbb-4efc-a006-744aad3c8790:9420:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async POSTHandler10 (file:///tmp/labula-sync-I4Tvb5/test.mjs?cdd03b1e-5fbb-4efc-a006-744aad3c8790:9438:20)
+    at async file:///tmp/labula-sync-I4Tvb5/test.mjs?cdd03b1e-5fbb-4efc-a006-744aad3c8790:87:26
+    at async Object.<anonymous> (file:///tmp/labula-sync-I4Tvb5/test.mjs?cdd03b1e-5fbb-4efc-a006-744aad3c8790:86:14)
+    at async file:///workspace/labula-workspace/scripts/check-round-tracking.mjs:31:122
+PASS round tracking: 3 rounds Off/On, remembered/default membership, counts and filters, one timeline+actor, no-op, replay, CAS/rollback, owner/manager/Cook/anonymous, frozen draft/published/Ready, real controller timeout/lost ACK/reload/conflict/duplicate/unmount.
+PASS check-round-tracking.mjs
+PASS rounds controller: original-request durable retry, reload, committed lost reply, 401, account switch, conflict requires review, local storage rejection before send, double click and unmount.
+PASS check-rounds-client.mjs
+Notebook operation failed Error: Synthetic transaction failure
+    at Object.exec (file:///workspace/labula-workspace/scripts/check-rounds.mjs:14:353)
+    at file:///workspace/labula-workspace/scripts/check-rounds.mjs:15:113
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/check-rounds.mjs:15:104)
+    at roundCommand (file:///tmp/labula-round-tests-YcGbiB/api.mjs:5945:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async POSTHandler3 (file:///tmp/labula-round-tests-YcGbiB/api.mjs:5963:20)
+    at async file:///tmp/labula-round-tests-YcGbiB/api.mjs:86:26
+    at async Object.<anonymous> (file:///tmp/labula-round-tests-YcGbiB/api.mjs:85:14)
+    at async file:///workspace/labula-workspace/scripts/check-rounds.mjs:38:147
+PASS check rounds: additive initialization, stable Track, validation, atomic CAS/rollback/replay, owner/Cook/anonymous, filters/nesting, pinned snapshots, overdue/schedule moves/off intervals, explicit extras, coverage/corrections/Ready, Prague DST and full/legacy backups.
+PASS check-rounds.mjs
+Passed earlier-save recovery: exact request and local payload roundtrips; ordinary ingredient reconciliation; invalid/unsafe notebooks; UUID/revision validation; UTF-8 and escaped file size boundaries; old draft compatibility; mutually exclusive pending commands.
+PASS check-save-recovery.mjs
+PASS speed/simplicity: actual API + SQLite + controllers, shared index dedupe, two-client instruction/draft preservation, feedback avoids index, 403 cache clearing, lightweight settings, durable older-day recovery and Finish→Correct truthful receipt.
+PASS check-speed-simplicity.mjs
+Notebook operation failed Error: event write failed
+    at Object.exec (file:///workspace/labula-workspace/scripts/check-stock-activity.mjs:11:308)
+    at file:///workspace/labula-workspace/scripts/check-stock-activity.mjs:12:152
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/check-stock-activity.mjs:12:143)
+    at eveningCommand (file:///tmp/labula-activity-dAtiQv/test.mjs:5931:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async POSTHandler (file:///tmp/labula-activity-dAtiQv/test.mjs:5982:21)
+    at async file:///tmp/labula-activity-dAtiQv/test.mjs:87:26
+    at async Object.<anonymous> (file:///tmp/labula-activity-dAtiQv/test.mjs:86:14)
+    at async post (file:///workspace/labula-workspace/scripts/check-stock-activity.mjs:17:47)
+PASS stock activity: authenticated identity, pending profile binding, owner-only management/export, pause/CAS, atomic event/state rollback, exact retries, timestamps, Ready/Undo, system effects, immutable history, stable paging, CSV safety, untouched recipes
+PASS check-stock-activity.mjs
+PASS frequency: all 16 transitions, no-op, one timeline event, atomic Track+round, off retention, replay
+Notebook operation failed Error: Synthetic rollback
+    at Object.exec (file:///workspace/labula-workspace/scripts/check-stock-frequency.mjs:14:333)
+    at file:///workspace/labula-workspace/scripts/check-stock-frequency.mjs:15:106
+    at Array.map (<anonymous>)
+    at Object.batch (file:///workspace/labula-workspace/scripts/check-stock-frequency.mjs:15:97)
+    at frequencyCommand (file:///tmp/labula-frequency-tests-BAtJvr/api.mjs:5784:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async POSTHandler2 (file:///tmp/labula-frequency-tests-BAtJvr/api.mjs:5823:20)
+    at async file:///tmp/labula-frequency-tests-BAtJvr/api.mjs:86:26
+    at async Object.<anonymous> (file:///tmp/labula-frequency-tests-BAtJvr/api.mjs:85:14)
+    at async file:///workspace/labula-workspace/scripts/check-stock-frequency.mjs:35:126
+PASS frequency: stale manager/legacy/round/day/calendar CAS, rollback, preserved newer edit, owner/manager/cook/anonymous
+PASS frequency: immutable draft/published plan/Ready, Sunday→Tuesday, calendar exceptions/closed days, unconfirmed debt, cutoff/DST, missing metadata
+PASS frequency: durable replay/account recovery, offline, duplicate click, rejected review, old filters, complete 40-table backup; metadata read 26 SQL statements / 5 ms (in-memory SQLite, 3 items)
+PASS check-stock-frequency.mjs
+PASS actual useSavePulse lifecycle: mount/history, new ACK, pending invalidation, discard, polling rerender, timeout cleanup, identity/day switches and unmount
+PASS check-stock-motion-hooks.mjs
+PASS functional stock feedback: actual API/SQLite ACK chain, newer intents, no-op, polling, lost ACK replay, 401, 409 discard, quota, remount, disposal, progress, stale completion and account isolation
+PASS check-stock-motion.mjs
+PASS stock wording: calendar dates, unchecked, historical meaning, unchanged legacy payload and CSV values.
+PASS check-stock-wording.mjs
+PASS stock menu categories: active saved recipes, shared/nested inputs, inactive/unused items, composed filters, unchanged stock settings
+PASS stock API: dynamic initialization, tombstones, per-row CAS, atomic multi-add, identities/origin, idempotency, old notebook restores, merge/undo and raced merge
+PASS stock client+API: uncertain pre/post-commit retry, reload/unmount, no duplicate clicks, 401/account isolation, explicit conflicts/rebase, durable intents, bounded body/fetch deadlines
+PASS check-stock.mjs
+PASS recovery: exhausted fast/legacy retries, throttled hints, one writer, held GET accepts durable answers, current poll reuse and obsolete poll replacement, identity block, lost compact ACK, post-commit read retry, old/new server compatibility, storage rejection.
+PASS check-sync-recovery.mjs
+PASS expected stable account header and requestJson station compatibility
+PASS all membership 403 codes latch access loss and stop further HTTP
+PASS 401 latches; ordinary domain conflict does not revoke membership
+PASS response for a changed server account is refused before application state
+PASS late successful response from old account is ignored after account switch
+PASS late rejected response from old account cannot revoke the new account
+PASS account switch during denied body parsing cannot revoke new account
+PASS Team original outbox preserved across revocation, retry and account switch
+PASS Evening accepted answer and feedback draft/outbox preserved without more HTTP
+PASS feedback accepted command survives revoked write and cannot cross account
+PASS restored original account rechecks access and does not auto-submit old Finish
+PASS ordinary offline Finish retains established automatic recovery
+PASS AccessBoundary keeps children mounted and hides body portals on loss
+PASS application access client: 13 focused cases; identity header, latch, stable outboxes, switched-account and stale-response rejection, restored Finish review, original offline recovery, mounted private UI and portal hiding.
+PASS check-team-access-client.mjs
+PASS application access migration: only verified audience seeded; Wen Cook; original columns/paused stock unchanged; historical profile denied; ledger replay cannot reactivate; complete schema snapshot and initialization marker.
+PASS check-team-access-migration.mjs
+PASS application access: 41 direct API methods; anonymous/unlisted/disabled; first-link race; owner/self protection; access/stock separation; complete four-role guard matrix; invalid role/DB failure fail closed; expected-account identity mismatch; withheld read and sensitive GET demotion; invalid-role commit rollback; Evening batch/Finish/Ready revocation; review manager-to-legacy demotion; transactional revocation/demotion; original lost-ACK retry; concurrent identities and zero leaked guard rows.
+PASS check-team-application-access.mjs
+PASS Team workspace: read-only owner directory, legacy recovery, normalized duplicates, lost replies, concurrent records, malformed/blocked storage, disposal, double-click, account change, revision conflicts and owner protection
+PASS check-team-workspace.mjs
+{
+  "source": "working tree",
+  "environment": "Actual EveningController + actual API handlers + isolated in-memory SQLite; 3 separate cook identities and storage instances, 20ms simulated request delay; not production/browser/load certification",
+  "results": [
+    {
+      "scenario": "three cooks answer separate items",
+      "pass": true,
+      "answers": 80,
+      "correctAuthors": 80
+    },
+    {
+      "scenario": "three simultaneous Finish approvals",
+      "pass": true,
+      "phases": [
+        "complete",
+        "attention",
+        "attention"
+      ],
+      "publishedVersions": 1,
+      "morningTasks": 16
+    },
+    {
+      "scenario": "other two cooks change reviewed content before Finish",
+      "pass": true,
+      "staleApprovalBlocked": true,
+      "explicitReapprovalTasks": 18
+    },
+    {
+      "scenario": "three cooks choose same value on same item",
+      "pass": true,
+      "savedAuthors": 1,
+      "conflicts": 2,
+      "reviewedIdenticalValueResolved": true
+    },
+    {
+      "scenario": "one cook offline while two others save, then reconnect",
+      "pass": true,
+      "allThreePreserved": true,
+      "originalCommandsReplayedOnce": true
+    },
+    {
+      "scenario": "three simultaneous Start, Sunday to Tuesday",
+      "pass": true,
+      "checks": 1,
+      "answers": 80
+    },
+    {
+      "scenario": "identical rejected prefix with a later different local answer",
+      "pass": true,
+      "actualAnswerEvents": 2
+    },
+    {
+      "scenario": "offline answer arrives after a colleague Finish",
+      "pass": true,
+      "originalPreserved": true,
+      "publishedPlanNotOverwritten": true
+    }
+  ]
+}
+PASS check-three-cooks-evening.mjs
+PASS UX behavior: URL round-trips and detail compatibility; inverse Undo preserves later edits; explicit mixed station state; complete calendar diff; precise validation paths; step validation accepts unknowns.
+PASS check-ux-behavior.mjs
+All 94 regression scripts passed.
+
+> labula-workspace@0.1.0 build
+> vinext build
+
+
+  vinext build  (Vite 8.3.0)
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - JSON import "./.openai/hosting.json" without import attributes (vite.config.ts:3:27). Add `with { type: 'json' }`
+  - import "./build/sites-vite-plugin" without a file extension (vite.config.ts:4:23). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - JSON import "./.openai/hosting.json" without import attributes (vite.config.ts:3:27). Add `with { type: 'json' }`
+  - import "./build/sites-vite-plugin" without a file extension (vite.config.ts:4:23). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[1/5] analyze client references...
+transforming...
+✓ 480 modules transformed.
+rendering chunks...
+✓ built in 2.77s
+[2/5] analyze server references...
+transforming...
+✓ 1066 modules transformed.
+rendering chunks...
+✓ built in 3.85s
+[33m[PLUGIN_TIMINGS] [0mPlugin hooks ran for 3.8s of this 3.8s build (100%).
+6 hooks are listed without a time. Their calls overlapped, so the time inside one call includes work from other calls. To find their cost, profile the build with `node --cpu-prof`:
+  - vinext:og-inline-fetch-assets resolveId (4706 calls)
+  - alias resolveId (5538 calls)
+  - vinext:optimize-imports transform (813 calls)
+  … and 3 more
+See https://rolldown.rs/reference/InputOptions.checks#plugintimings for more details.
+
+[3/5] build rsc environment...
+transforming...
+✓ 471 modules transformed.
+rendering chunks...
+computing gzip size...
+✓ built in 1.88s
+[4/5] build client environment...
+transforming...
+✓ 2879 modules transformed.
+rendering chunks...
+computing gzip size...
+✓ built in 8.70s
+[5/5] build ssr environment...
+transforming...
+✓ 1074 modules transformed.
+rendering chunks...
+computing gzip size...
+✓ built in 6.56s
+[0m
+  Route (app)
+  ┌ ƒ /
+  ├ λ /api/activity
+  ├ λ /api/bulk
+  ├ λ /api/catalog
+  ├ λ /api/check-rounds
+  ├ λ /api/checking-stations
+  ├ λ /api/data-review
+  ├ λ /api/evening
+  ├ λ /api/evening/batch
+  ├ λ /api/evening/sync
+  ├ λ /api/information
+  ├ λ /api/ingredient-groups
+  ├ λ /api/me/avatar
+  ├ λ /api/me/profile
+  ├ λ /api/notebook
+  ├ λ /api/operating-calendar
+  ├ λ /api/operations
+  ├ λ /api/prep-instructions
+  ├ λ /api/prep-notes
+  ├ λ /api/prep-profile
+  ├ λ /api/private-backup
+  ├ λ /api/review-status
+  ├ λ /api/review-workflow
+  ├ λ /api/review-workflow/archive
+  ├ λ /api/reviewed-data
+  ├ λ /api/stock
+  ├ λ /api/stock-frequency
+  ├ λ /api/stock-settings
+  ├ λ /api/team
+  ├ ƒ /review
+  ├ ƒ /review-backup
+  ├ ƒ /review/archive
+  └ ƒ /review/archive/edit
+
+  λ API  ƒ Dynamic
+
+  Build complete. Run `vinext start` to start the production server.
+
