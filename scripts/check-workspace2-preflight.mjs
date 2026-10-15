@@ -70,6 +70,27 @@ const legacyPolicyManifest=await createWorkspaceManifest(legacyPolicy,options),p
 assert.equal(policyAddition.preservationPassed,true,'known additive release-control table is distinct from restaurant data');assert.equal(policyAddition.runtimePolicy.changed,true);assert.equal(policyAddition.releaseApproved,false);
 const pausedPolicy=structuredClone(backup);pausedPolicy.tables.workspace_runtime_policy[0].write_paused=1;
 assert.equal(compareWorkspaceManifests(before,await createWorkspaceManifest(pausedPolicy,options)).runtimePolicy.changed,true,'freeze state remains visible in comparison');
+const auditAddition=structuredClone(backup);delete auditAddition.tables.workspace_runtime_policy_commands;delete auditAddition.counts.workspace_runtime_policy_commands;
+assert.equal(compareWorkspaceManifests(await createWorkspaceManifest(auditAddition,options),before).preservationPassed,true,'only the explicit additive maintenance audit table is accepted as release control');
+const audited=structuredClone(backup),operationId='77777777-7777-4777-8777-777777777777',recordedAt='2026-10-15T08:10:00Z';
+audited.tables.workspace_runtime_policy_commands=[{operation_id:operationId,actor_id:'synthetic-owner',request:JSON.stringify({operationId,expectedRevision:0,action:'pause'}),action:'pause',expected_revision:0,prior_write_paused:0,prior_min_client_version:1,write_paused:1,min_client_version:1,revision:1,recorded_at:recordedAt}];audited.counts.workspace_runtime_policy_commands=1;
+Object.assign(audited.tables.workspace_runtime_policy[0],{write_paused:1,revision:1,updated_at:recordedAt});
+const auditManifest=await createWorkspaceManifest(audited,options),auditComparison=compareWorkspaceManifests(before,auditManifest);
+assert.equal(auditComparison.preservationPassed,true);assert.equal(auditComparison.runtimeMaintenance.appended,1);assert.equal(auditComparison.runtimeMaintenance.changed,true);assert.equal(auditComparison.releaseApproved,false);
+const erasedAudit=structuredClone(audited);erasedAudit.tables.workspace_runtime_policy_commands=[];erasedAudit.counts.workspace_runtime_policy_commands=0;
+assert.equal(compareWorkspaceManifests(auditManifest,await createWorkspaceManifest(erasedAudit,options)).preservationPassed,false,'deleting existing release audit fails preservation');
+const changedAudit=structuredClone(audited);changedAudit.tables.workspace_runtime_policy_commands[0].actor_id='another-owner';
+assert.equal(compareWorkspaceManifests(auditManifest,await createWorkspaceManifest(changedAudit,options)).preservationPassed,false,'editing existing release audit fails preservation');
+const brokenAudit=structuredClone(audited);brokenAudit.tables.workspace_runtime_policy_commands[0].prior_write_paused=1;
+await assert.rejects(createWorkspaceManifest(brokenAudit,options),/maintenance audit transition/);
+const downgradeAudit=structuredClone(audited),downgradeRow=downgradeAudit.tables.workspace_runtime_policy_commands[0];
+Object.assign(downgradeRow,{action:'resume',prior_write_paused:1,prior_min_client_version:3,write_paused:0,min_client_version:2,request:JSON.stringify({operationId,expectedRevision:0,action:'resume'})});
+Object.assign(downgradeAudit.tables.workspace_runtime_policy[0],{write_paused:0,min_client_version:2});
+await assert.rejects(createWorkspaceManifest(downgradeAudit,options),/maintenance audit transition/,'a future minimum client version cannot be silently lowered');
+const mismatchedPolicy=structuredClone(audited);mismatchedPolicy.tables.workspace_runtime_policy[0].revision=2;
+await assert.rejects(createWorkspaceManifest(mismatchedPolicy,options),/does not match current policy/);
+const markedMissingAudit=structuredClone(auditAddition);markedMissingAudit.runtimeMaintenance=1;
+await assert.rejects(createWorkspaceManifest(markedMissingAudit,options),/incomplete/);
 
 async function detected(change,label){const next=structuredClone(backup);change(next);next.counts=Object.fromEntries(Object.entries(next.tables).map(([table,rows])=>[table,rows.length]));assert.equal(compareWorkspaceManifests(before,await createWorkspaceManifest(next,options)).preservationPassed,false,label);}
 function editNotebook(backup,change){const n=JSON.parse(backup.tables.notebooks[0].payload);change(n);backup.tables.notebooks[0].payload=JSON.stringify(n);}

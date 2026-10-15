@@ -50,7 +50,9 @@ try{
  assert.equal(db.prepare('SELECT total_changes() AS count').get().count,changesBeforeReads,'mature daily/settings/identity reads issue no database mutations while frozen');
  await m.recordSignIn(globalThis.runtimeTestUser);assert.equal(db.prepare('SELECT last_sign_in_at FROM kitchen_team WHERE id=\'owner\'').get().last_sign_in_at,null,'read-only session visit does not write a stamp');
  assert.throws(()=>db.prepare("UPDATE notebooks SET revision=99 WHERE id='kitchen'").run(),/workspace_write_paused/,'unguarded legacy writes cannot bypass freeze');
- const tableNames=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all().map(row=>row.name).filter(name=>!['workspace_runtime_policy','access_write_guards'].includes(name));
+ // The explicit Owner-only audit stays insertable for resume while frozen.
+ // Its own triggers enforce owner/revision and prohibit UPDATE/DELETE.
+ const tableNames=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all().map(row=>row.name).filter(name=>!['workspace_runtime_policy','workspace_runtime_policy_commands','access_write_guards'].includes(name));
  for(const table of tableNames)for(const action of ['insert','update','delete'])assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE type='trigger' AND name=?").get('workspace_freeze_'+table+'_'+action),'freeze covers '+table+' '+action);
  assert.equal(db.prepare('SELECT revision FROM notebooks').get().revision,frozenRevision);
  // A freeze raised AFTER admission still rolls back the transaction completely.

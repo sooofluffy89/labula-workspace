@@ -51,15 +51,28 @@ export async function createWorkspaceManifest(backup,{environment,cutoverDay}={}
   strictDay(cutoverDay);
   const domain=await loadPreflightDomain();
   const policyCaptured=Array.isArray(backup?.tables?.workspace_runtime_policy);
+  const auditCaptured=Array.isArray(backup?.tables?.workspace_runtime_policy_commands);
   // Historical exports predate the additive release-control table. Its known
   // addition is reported separately; no restaurant data or receipts are ignored.
   if(!policyCaptured&&backup?.runtimePolicy===undefined&&backup?.tables&&backup?.counts)backup={...backup,tables:{...backup.tables,workspace_runtime_policy:[]},counts:{...backup.counts,workspace_runtime_policy:0}};
+  if(!auditCaptured&&backup?.runtimeMaintenance===undefined&&backup?.tables&&backup?.counts)backup={...backup,tables:{...backup.tables,workspace_runtime_policy_commands:[]},counts:{...backup.counts,workspace_runtime_policy_commands:0}};
   if(!domain.isCompletePrivateBackup(backup)||!await domain.verifyPrivateBackupPhotos(backup))throw Error('The backup is incomplete or a referenced photo failed its byte checksum. Use the complete private backup, not a notebook draft or CSV.');
   const tableNames=Object.keys(backup.tables).sort();
   if(tableNames.some(table=>!Array.isArray(backup.tables[table])||backup.counts[table]!==backup.tables[table].length))throw Error('Backup table counts do not match rows.');
   const policyRows=backup.tables.workspace_runtime_policy;
   if(policyRows.length>1||policyRows.some(row=>row.id!=='kitchen'||![0,1].includes(row.write_paused)||!Number.isSafeInteger(row.min_client_version)||row.min_client_version<1||!Number.isSafeInteger(row.revision)||row.revision<0))throw Error('Invalid runtime policy control state.');
-  const tableInventory=tableNames.filter(table=>table!=='workspace_runtime_policy').map(table=>{
+  const auditRows=[...backup.tables.workspace_runtime_policy_commands].sort((a,b)=>a.revision-b.revision);
+  for(let index=0;index<auditRows.length;index++){
+    const row=auditRows[index],previous=auditRows[index-1];
+    if(typeof row.operation_id!=='string'||typeof row.actor_id!=='string'||typeof row.request!=='string'||!Number.isSafeInteger(row.expected_revision)||row.expected_revision<0||row.revision!==row.expected_revision+1||![0,1].includes(row.prior_write_paused)||!Number.isSafeInteger(row.prior_min_client_version)||row.prior_min_client_version<1||!((row.action==='pause'&&row.prior_write_paused===0&&row.write_paused===1&&row.min_client_version===row.prior_min_client_version)||(row.action==='resume'&&row.prior_write_paused===1&&row.prior_min_client_version<=2&&row.write_paused===0&&row.min_client_version===2))||!Number.isFinite(Date.parse(row.recorded_at)))throw Error('Invalid runtime maintenance audit transition.');
+    let request;try{request=JSON.parse(row.request);}catch{throw Error('Invalid runtime maintenance audit request.');}
+    if(request.operationId!==row.operation_id||request.action!==row.action||request.expectedRevision!==row.expected_revision)throw Error('Runtime maintenance audit request does not match its transition.');
+    if(previous&&(row.expected_revision!==previous.revision||row.prior_write_paused!==previous.write_paused||row.prior_min_client_version!==previous.min_client_version))throw Error('Runtime maintenance audit chain is inconsistent.');
+  }
+  if(new Set(auditRows.map(row=>row.operation_id)).size!==auditRows.length)throw Error('Duplicate maintenance operation ID.');
+  const lastAudit=auditRows.at(-1),currentPolicy=policyRows[0];
+  if(lastAudit&&(!currentPolicy||lastAudit.revision!==currentPolicy.revision||lastAudit.write_paused!==currentPolicy.write_paused||lastAudit.min_client_version!==currentPolicy.min_client_version||lastAudit.recorded_at!==currentPolicy.updated_at))throw Error('Runtime maintenance audit does not match current policy.');
+  const tableInventory=tableNames.filter(table=>!['workspace_runtime_policy','workspace_runtime_policy_commands'].includes(table)).map(table=>{
     const rows=sorted(backup.tables[table].map(row=>retainedRow(table,row)));
     return {table,count:rows.length,digest:digest(rows),rows:rows.map(row=>({key:rowKey(row),digest:digest(row)}))};
   });
@@ -95,7 +108,7 @@ export async function createWorkspaceManifest(backup,{environment,cutoverDay}={}
   const preservation={tables:tableInventory,notebooks,photos};
   return {
     format:'Workspace 2.0 preservation manifest',version:1,environment,cutoverDay,capturedAt:backup.capturedAt,
-    preservation,digest:digest(preservation),runtimePolicy:{captured:policyCaptured,rows:policyRows,digest:digest(policyRows)},warnings,
+    preservation,digest:digest(preservation),runtimePolicy:{captured:policyCaptured,rows:policyRows,digest:digest(policyRows)},runtimeMaintenance:{captured:auditCaptured,rows:auditRows,digest:digest(auditRows)},warnings,
     boundaries:{readOnly:true,compositionReviewId:domain.REVIEW_ID,knownTables:domain.privateBackupTables.length,unknownTables:tableNames.filter(table=>!domain.privateBackupTables.includes(table)),
       browserDrafts:'Not captured by the server backup. Inventory each browser and export unsaved recovery files before cutover; preserve existing keys.',
       releaseApproval:'This report does not grant deployment or production migration approval.',
@@ -107,6 +120,9 @@ export function compareWorkspaceManifests(before,after){
   if(before.format!=='Workspace 2.0 preservation manifest'||after.format!==before.format||before.version!==1||after.version!==1)throw Error('Unsupported preservation manifest.');
   if(before.environment!==after.environment||before.cutoverDay!==after.cutoverDay)throw Error('Compare the same environment and cutover day.');
   const changes=[];
+  const beforeAudit=before.runtimeMaintenance?.rows??[],afterAudit=after.runtimeMaintenance?.rows??[];
+  const retainedAudit=new Map(afterAudit.map(row=>[row.operation_id,row]));
+  if(beforeAudit.some(row=>digest(row)!==digest(retainedAudit.get(row.operation_id)??null)))changes.push({kind:'runtime-maintenance-history',detail:'A pre-existing maintenance audit row was changed or removed.'});
   const aTables=new Map(before.preservation.tables.map(table=>[table.table,table]));
   const bTables=new Map(after.preservation.tables.map(table=>[table.table,table]));
   for(const table of [...new Set([...aTables.keys(),...bTables.keys()])].sort()){
@@ -117,6 +133,7 @@ export function compareWorkspaceManifests(before,after){
   return {format:'Workspace 2.0 preservation comparison',version:1,environment:after.environment,cutoverDay:after.cutoverDay,
     preservationPassed:changes.length===0,beforeDigest:before.digest,afterDigest:after.digest,changes,
     runtimePolicy:{before:before.runtimePolicy,after:after.runtimePolicy,changed:digest(before.runtimePolicy)!==digest(after.runtimePolicy),explanation:'Known release-control state is reported separately from restaurant data. Check the freeze and client-version gates; preservation equality never authorizes resuming writes.'},
+    runtimeMaintenance:{before:before.runtimeMaintenance??null,after:after.runtimeMaintenance??null,changed:digest(before.runtimeMaintenance??null)!==digest(after.runtimeMaintenance??null),appended:afterAudit.filter(row=>!beforeAudit.some(old=>old.operation_id===row.operation_id)).length,explanation:'Only this explicit immutable Owner release-control audit is separate from restaurant data. Existing rows must remain identical; valid appended transitions and current policy are always reported for review. Frozen deployment comparison should have zero appended actions.'},
     exceptions:[...after.warnings],
     remainingReleaseGates:['Verify the current protected production snapshot and retain a verified full backup.','Resolve or acknowledge each data exception without changing the preserved menu silently.','Inventory unsaved browser drafts and preserve account-scoped recovery.','Pause writes server-side and close old clients; verify delayed commands cannot write during cutover.','Decide each live legacy plan policy explicitly; do not bulk flip plan_policy_version.','Verify the new schema, authenticated roles and production smoke checks before reopening writes.'],
     releaseApproved:false};
