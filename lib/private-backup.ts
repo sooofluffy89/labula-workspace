@@ -1,7 +1,7 @@
 // Keep the API export and browser download check on the same explicit inventory.
 // New persistent tables must be added here before they can be called backed up.
 export const privateBackupTables = [
-  'notebooks', 'kitchen_owner', 'notebook_commands', 'catalog_operations',
+  'menu_scope_sources', 'notebooks', 'kitchen_owner', 'notebook_commands', 'catalog_operations',
   'data_reviews', 'data_review_commands', 'review_actions', 'review_authority',
   'reviewed_entities', 'review_import_chunks', 'stock_items', 'stock_commands', 'ingredient_group_commands',
   'stock_catalog_effects', 'evening_checks', 'evening_answers', 'evening_versions',
@@ -17,6 +17,7 @@ export type PrivateBackup = {
   format: 'Labula private database backup';
   version: 1;
   stations?: 1;
+  menuScope?: 1;
   access?: 1;
   profiles?: 1;
   photos?: {userId:string;revision:number;objectKey:string;sha256:string;size:number;mime:'image/png';dataBase64:string}[];
@@ -55,6 +56,8 @@ export function readPrivateBackup(value:unknown){
  if(typeof value!=='object'||!value)return null;
  const b=value as PrivateBackup;
  const upgraded={...b,tables:{...b.tables},counts:{...b.counts}};
+ if(b.menuScope===1&&b.tables?.menu_scope_sources===undefined)return null;
+ if(b.tables?.menu_scope_sources===undefined){upgraded.tables.menu_scope_sources=[];upgraded.counts.menu_scope_sources=0;}
  const photos=['user_photos','user_photo_commands','user_photo_uploads'];
  const missingPhotos=b.profiles===undefined&&b.photos===undefined&&photos.every(t=>b.tables?.[t]===undefined);
  if(missingPhotos){for(const t of photos){upgraded.tables[t]=[];upgraded.counts[t]=0;}upgraded.profiles=1;upgraded.photos=[];}

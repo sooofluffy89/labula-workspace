@@ -1,0 +1,543 @@
+{
+  "results": [
+    {
+      "name": "Responsive layout, one visible h1 and no document overflow",
+      "status": "passed"
+    },
+    {
+      "name": "Recipe detail remains usable at 1100,1280,1440 and docked 1600",
+      "status": "passed"
+    },
+    {
+      "name": "Back, Forward, Refresh and selected recipe preserve context",
+      "status": "passed"
+    },
+    {
+      "name": "Back restores scroll when delayed content grows",
+      "status": "passed"
+    },
+    {
+      "name": "No-results state and reset",
+      "status": "passed"
+    },
+    {
+      "name": "Dirty dialog protects input and restores keyboard focus",
+      "status": "passed"
+    },
+    {
+      "name": "Reduced motion and input boundary contrast",
+      "status": "passed"
+    },
+    {
+      "name": "Recipe removal Undo restores ingredient and completion",
+      "status": "passed"
+    },
+    {
+      "name": "Batch Back returns to Preparation without closing the form",
+      "status": "passed"
+    },
+    {
+      "name": "Preparation validation identifies the field and accepts explicit unknown",
+      "status": "passed"
+    },
+    {
+      "name": "Checklist has labelled native controls and coherent focus order",
+      "status": "passed"
+    },
+    {
+      "name": "Bulk station opening makes no implicit changes",
+      "status": "passed"
+    },
+    {
+      "name": "Hidden history filters remain visible and resettable",
+      "status": "passed"
+    },
+    {
+      "name": "Review stays in the workspace and preserves alternative-name drafts",
+      "status": "passed"
+    },
+    {
+      "name": "100-item synthetic catalog keeps preparation entry above results",
+      "status": "passed"
+    },
+    {
+      "name": "Report browser runtime has no page exceptions",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "view": "insights",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 300
+        }
+      ],
+      "firstCard": 628.4375
+    },
+    {
+      "view": "recipes",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 138
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 320,
+      "scrollWidth": 320,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 138
+        }
+      ],
+      "prep": 237.375
+    },
+    {
+      "view": "insights",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 250
+        }
+      ],
+      "firstCard": 526.4375
+    },
+    {
+      "view": "recipes",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 138
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 360,
+      "scrollWidth": 360,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 138
+        }
+      ],
+      "prep": 237.375
+    },
+    {
+      "view": "insights",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 250
+        }
+      ],
+      "firstCard": 526.4375
+    },
+    {
+      "view": "recipes",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 138
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 390,
+      "scrollWidth": 390,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 138
+        }
+      ],
+      "prep": 237.375
+    },
+    {
+      "view": "insights",
+      "width": 759,
+      "scrollWidth": 759,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 218
+        }
+      ],
+      "firstCard": 494.4375
+    },
+    {
+      "view": "recipes",
+      "width": 759,
+      "scrollWidth": 759,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 138
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 759,
+      "scrollWidth": 759,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 138
+        }
+      ],
+      "prep": 207.375
+    },
+    {
+      "view": "insights",
+      "width": 760,
+      "scrollWidth": 760,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 218
+        }
+      ],
+      "firstCard": 494.4375
+    },
+    {
+      "view": "recipes",
+      "width": 760,
+      "scrollWidth": 760,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 138
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 760,
+      "scrollWidth": 760,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 138
+        }
+      ],
+      "prep": 207.375
+    },
+    {
+      "view": "insights",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 218
+        }
+      ],
+      "firstCard": 494.4375
+    },
+    {
+      "view": "recipes",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 138
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 768,
+      "scrollWidth": 768,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 138
+        }
+      ],
+      "prep": 244.75
+    },
+    {
+      "view": "insights",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 218
+        }
+      ],
+      "firstCard": 494.4375
+    },
+    {
+      "view": "recipes",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 138
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 138
+        }
+      ],
+      "prep": 220.75
+    },
+    {
+      "view": "insights",
+      "width": 1099,
+      "scrollWidth": 1099,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 218
+        }
+      ],
+      "firstCard": 494.4375
+    },
+    {
+      "view": "recipes",
+      "width": 1099,
+      "scrollWidth": 1099,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 138
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 1099,
+      "scrollWidth": 1099,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 138
+        }
+      ],
+      "prep": 220.75
+    },
+    {
+      "view": "insights",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 79.34375
+        }
+      ],
+      "firstCard": 353.1875
+    },
+    {
+      "view": "recipes",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 79
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 1100,
+      "scrollWidth": 1100,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 79
+        }
+      ],
+      "prep": 169.75
+    },
+    {
+      "view": "insights",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 79.34375
+        }
+      ],
+      "firstCard": 336
+    },
+    {
+      "view": "recipes",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 79
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 79
+        }
+      ],
+      "prep": 169.75
+    },
+    {
+      "view": "insights",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Preparation analysis",
+          "y": 79.34375
+        }
+      ],
+      "firstCard": 336
+    },
+    {
+      "view": "recipes",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Dish recipes",
+          "y": 79
+        }
+      ]
+    },
+    {
+      "view": "catalog",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "headings": [
+        {
+          "text": "Ingredients",
+          "y": 79
+        }
+      ],
+      "prep": 169.75
+    },
+    {
+      "viewport": 320,
+      "editor": 318,
+      "scrollWidth": 318,
+      "clientWidth": 318,
+      "clipped": []
+    },
+    {
+      "viewport": 360,
+      "editor": 358,
+      "scrollWidth": 358,
+      "clientWidth": 358,
+      "clipped": []
+    },
+    {
+      "viewport": 390,
+      "editor": 388,
+      "scrollWidth": 388,
+      "clientWidth": 388,
+      "clipped": []
+    },
+    {
+      "viewport": 768,
+      "editor": 766,
+      "scrollWidth": 766,
+      "clientWidth": 766,
+      "clipped": []
+    },
+    {
+      "viewport": 1024,
+      "editor": 782,
+      "scrollWidth": 767,
+      "clientWidth": 767,
+      "clipped": []
+    },
+    {
+      "viewport": 1100,
+      "editor": 858,
+      "scrollWidth": 843,
+      "clientWidth": 843,
+      "clipped": []
+    },
+    {
+      "viewport": 1280,
+      "editor": 1020,
+      "scrollWidth": 1005,
+      "clientWidth": 1005,
+      "clipped": []
+    },
+    {
+      "viewport": 1440,
+      "editor": 1180,
+      "scrollWidth": 1165,
+      "clientWidth": 1165,
+      "clipped": []
+    },
+    {
+      "viewport": 1535,
+      "editor": 1275,
+      "scrollWidth": 1260,
+      "clientWidth": 1260,
+      "clipped": []
+    },
+    {
+      "viewport": 1536,
+      "editor": 1276,
+      "scrollWidth": 1261,
+      "clientWidth": 1261,
+      "clipped": []
+    },
+    {
+      "viewport": 1600,
+      "editor": 1340,
+      "scrollWidth": 1325,
+      "clientWidth": 1325,
+      "clipped": []
+    },
+    {
+      "inputContrast": 3.3332956698346514
+    },
+    {
+      "manageTabStops": 6
+    },
+    {
+      "catalogSize": 100,
+      "prepY": 237.375
+    }
+  ],
+  "errors": []
+}

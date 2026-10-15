@@ -1,0 +1,562 @@
+{
+  "baseline": "1b583b61b75d7585e73c9ca90d6837b27d54c255",
+  "findings": [
+    {
+      "id": "01",
+      "priority": "P1",
+      "finding": "Detailový panel ořezává editor receptu",
+      "change": "Detail pod 1536 px používá overlay; container query sbalí výběr jídel a vnitřní mřížky podle obsahu. Odstraněno vynucené zobrazení sidebaru. Aktuální Sites v83 používá navíc adaptivní Menu review; jeho detail je při 1100 px široký 858 px a všechny ovladače jsou uvnitř kontejneru. Zachován nový editor i všechny jeho funkce.",
+      "files": [
+        "app/ux.css",
+        "app/use-desktop.ts",
+        "app/information-detail.tsx",
+        "app/dish-workspace.tsx",
+        "app/menu-review.css"
+      ],
+      "acceptance": "1100/1280/1440 px, detail otevřený i zavřený: celé ovládání je viditelné, dosažitelné a nezakrývá se; dlouhé názvy se zalamují.",
+      "status": "verified",
+      "verification": [
+        "Chromium: šířky 320–1440; detail 1100/1280/1440/1600; geometrie editoru a dlouhý název."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "02",
+      "priority": "P2",
+      "finding": "Mobilní obsah je pod několika patry navigace a bannerů",
+      "change": "Mobil má jediný výběr hlavní destinace a výběr analýzy. Onboarding receptů je sbalený, review status přesunutý dolů.",
+      "files": [
+        "app/desktop-navigation.tsx",
+        "app/kitchen-app.tsx",
+        "app/kitchen-insights.tsx",
+        "app/review-status.tsx"
+      ],
+      "acceptance": "Na 390×844 px je bez scrollu vidět název úlohy, její hlavní akce a začátek pracovního obsahu; onboarding lze sbalit a stav si pamatuje.",
+      "status": "verified",
+      "verification": [
+        "Chromium: první karta v 390×844; screenshoty dashboardu před/po."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "03",
+      "priority": "P2",
+      "finding": "Příprava a skladování jsou až za celým katalogem",
+      "change": "Preparation & storage a Batch details jsou nad kompaktními řádky katalogu. V novém katalogu jsou Preparation & storage a Batch details před filtry i seznamem, na y=237 px při 390×844 s 100 položkami.",
+      "files": [
+        "app/kitchen-app.tsx",
+        "app/batch-collection.tsx",
+        "app/ux.css",
+        "app/catalog-workspace.tsx"
+      ],
+      "acceptance": "Vstup do přípravy je na stejném místě při 12 i 100 položkách a nevyžaduje scroll za katalog.",
+      "status": "verified",
+      "verification": [
+        "Chromium: 12 a 100 syntetických položek; pozice Preparation nezávisí na délce seznamu."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "04",
+      "priority": "P2",
+      "finding": "Přechody mezi sekcemi neuchovávají srozumitelný kontext",
+      "change": "URL obsahuje sekci, jídlo, variantu, datum denní práce a filtr katalogu. Historie ukládá scroll a přesouvá fokus na nadpis. Zachovává stav Vinext i informační detail. URL zahrnuje i nový Needs review filtr a Current menu / All items. Opožděný onLocation z neaktivní denní práce nesmí přepsat otevřenou hlavní sekci.",
+      "files": [
+        "lib/workspace-navigation.ts",
+        "app/use-workspace-navigation.ts",
+        "app/kitchen-app.tsx",
+        "app/cook-app.tsx",
+        "app/stock-workflow.tsx"
+      ],
+      "acceptance": "Sekvence Recipes → položka → Overview → Back → Refresh vrací předvídatelnou sekci a výběr, bez ztráty konceptu.",
+      "status": "verified",
+      "verification": [
+        "check-ux-behavior; Chromium: Back/Forward/Refresh, scroll, vybraný recept, přímé datum a #info.",
+        "Chromium: odložený růst obsahu při Back obnoví uložený scroll; přímé datum, editace data bez otevření, Open date a Back přes datum i sekci. Odmítnutá navigace hlásí skutečný pohled."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "05",
+      "priority": "P2",
+      "finding": "Mobil může zvýraznit dvě aktuální sekce zároveň",
+      "change": "Aktivní denní volba je podmíněná nepřítomností Operations. Hlavní navigace má jedinou destinaci.",
+      "files": [
+        "app/stock-workflow.tsx",
+        "app/desktop-navigation.tsx"
+      ],
+      "acceptance": "History, Operations a Calendar mají na mobilu i desktopu vždy právě jednu aktivní hlavní destinaci.",
+      "status": "verified",
+      "verification": [
+        "Chromium: History/Calendar a Cook Check/Prep; check-calm-ui."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "06",
+      "priority": "P3",
+      "finding": "Tablet ukazuje nesprávný globální název stránky",
+      "change": "Odstraněn statický receptový nadpis shellu; každý zobrazený pohled má vlastní h1.",
+      "files": [
+        "app/kitchen-app.tsx",
+        "app/kitchen-insights.tsx"
+      ],
+      "acceptance": "Ve všech šířkách 320–1440 px odpovídá hlavní nadpis právě zobrazené úloze.",
+      "status": "verified",
+      "verification": [
+        "Chromium: právě jeden viditelný h1 ve 33 kombinacích sekce/šířka."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "07",
+      "priority": "P2",
+      "finding": "Ukládání, sdílení a dokončení nemají jednotnou hierarchii",
+      "change": "Koncept, Saving, Autosaved a sdílený stav mají společnou hierarchii. Answers saved výslovně odlišuje nepublikovaný plán; Plan published potvrzený plán. Globální Save je kontextový.",
+      "files": [
+        "app/kitchen-app.tsx",
+        "lib/stock-feedback.ts",
+        "app/prep-workflow.tsx"
+      ],
+      "acceptance": "Kuchař po jedné změně umí správně určit, zda je jen na zařízení, sdílená týmu, nebo už součástí potvrzeného plánu.",
+      "status": "verified",
+      "verification": [
+        "check-stock-motion, check-calm-ui; Chromium: autosave, validace, Evening/Finish/Morning."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "08",
+      "priority": "P2",
+      "finding": "Frekvence a stanice na mobilu ztrácejí viditelné popisky",
+      "change": "Frekvence a stanice mají viditelné místní popisky a nativní select s textovými volbami.",
+      "files": [
+        "app/stock-list.tsx",
+        "app/ux.css"
+      ],
+      "acceptance": "Na desátém řádku lze bez návratu k legendě určit a změnit frekvenci i stanici; zobrazení funguje i bez barev.",
+      "status": "verified",
+      "verification": [
+        "check-manage-settings-ui; Chromium 390 px: oba popisky a dvě skupinové tab zastávky."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "09",
+      "priority": "P2",
+      "finding": "Katalog bez výsledků neřekne, co se stalo",
+      "change": "Katalog rozlišuje načítání, chybu, prázdná data a nulový výsledek. Výsledky mají počet a reset; Batch details vlastní počet a Clear search.",
+      "files": [
+        "app/kitchen-app.tsx",
+        "app/batch-collection.tsx",
+        "components/ui/empty.tsx"
+      ],
+      "acceptance": "Neexistující výraz, kombinace typu a hledání i prázdný katalog mají odlišný srozumitelný stav.",
+      "status": "verified",
+      "verification": [
+        "Chromium: skutečné hledání/reset; GET fixtures pro empty/loading/503; check-batch-collection."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "10",
+      "priority": "P2",
+      "finding": "Historie skrývá přetrvávající filtry",
+      "change": "Všechny aktivní filtry historie mají viditelné chips, jednotlivé odstranění, počet More filters a Reset all i bez výsledků.",
+      "files": [
+        "app/operations-workspace.tsx"
+      ],
+      "acceptance": "Po návratu do historie je každý aktivní filtr patrný bez rozbalování a jedním krokem lze obnovit nezúžený pohled.",
+      "status": "verified",
+      "verification": [
+        "Chromium: uložený filtr po odchodu a návratu, viditelné odstranění a reset."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "11",
+      "priority": "P2",
+      "finding": "Názvy sekcí nevysvětlují rozdíly mezi podobnými funkcemi",
+      "change": "Jednotné názvy Ingredients, Dish recipes, Checklist settings, Preparation analysis, Menu analysis, Operations history. Detail rozlišuje Instruction history a All item activity.",
+      "files": [
+        "app/desktop-navigation.tsx",
+        "app/kitchen-app.tsx",
+        "app/information-detail.tsx",
+        "app/stock-workflow.tsx",
+        "app/manage-frequency.tsx",
+        "app/stock-activity.tsx"
+      ],
+      "acceptance": "Nový manager při scénářích změnit frekvenci, najít složení a dohledat změnu instrukce zvolí správnou sekci bez nápovědy.",
+      "status": "verified",
+      "verification": [
+        "Chromium: navigace a detail; příslušné existující UI regresní testy."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "12",
+      "priority": "P2",
+      "finding": "Oprava typu ingredience je schovaná jinde a copy zaměňuje role",
+      "change": "Correct type je přímo v detailu ingredience i editoru. Otevírá existující náhled dopadů. Role v nápovědě odpovídají Manager oprávněním.",
+      "files": [
+        "app/information-detail.tsx",
+        "app/catalog-editor.tsx",
+        "app/catalog-manager.tsx",
+        "app/access-page.tsx",
+        "app/notebook-restore.tsx",
+        "app/stock-activity.tsx",
+        "app/stock-group-editor.tsx",
+        "app/stock-workflow.tsx",
+        "app/team-workspace.tsx",
+        "app/review/quick.tsx",
+        "app/review/review.tsx",
+        "app/review/ux.tsx",
+        "app/review/archive/read-only.tsx"
+      ],
+      "acceptance": "Manager opraví typ přímo z detailu a text oprávnění odpovídá skutečné roli.",
+      "status": "verified",
+      "verification": [
+        "Chromium se skutečnou rolí Manager: detail → Correct type → bezpečný náhled; check-catalog-manager a role/API suite."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "13",
+      "priority": "P2",
+      "finding": "Úplnou zálohu nelze najít přes běžnou navigaci",
+      "change": "Export obsahuje Complete workspace backup a samostatně pojmenované CSV a notebookový koncept. Oprávnění zálohy jsou zachována.",
+      "files": [
+        "app/kitchen-app.tsx"
+      ],
+      "acceptance": "Manager najde kompletní zálohu bez znalosti URL a rozezná ji od notebookového konceptu.",
+      "status": "verified",
+      "verification": [
+        "Chromium: Owner i Manager vidí zálohu, Cook API 403; check-private-backup a check-profile-photo."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "14",
+      "priority": "P2",
+      "finding": "Odebrání ingredience nemá rychlé Undo",
+      "change": "Odebrání nabízí Undo jako inverzní operaci konkrétní ingredience. Novější pole zachová; dokončení vrací pouze při nezměněném zbytku receptu. Nový menu editor používá tutéž bezpečnou inverzní změnu; příznaky ingredientsReviewed, reviewStatus a workshop se obnoví jen při shodě aktuálního receptu s výsledkem odebrání.",
+      "files": [
+        "lib/recipe-undo.ts",
+        "app/kitchen-app.tsx",
+        "app/recipe-ui.tsx",
+        "app/dish-workspace.tsx"
+      ],
+      "acceptance": "Omylem odstraněnou ingredienci lze vrátit jednou akcí, bez přepsání novějších změn jiného člověka.",
+      "status": "verified",
+      "verification": [
+        "check-ux-behavior: novější úpravy, opakování, smazaný cíl; Chromium: remove → Undo."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "15",
+      "priority": "P2",
+      "finding": "Back z Batch details zavírá celý formulář",
+      "change": "Back ze Storage i Batch details vrací Preparation; Close je samostatné zavření. Hodnoty zůstávají v konceptu.",
+      "files": [
+        "app/prep-workflow.tsx"
+      ],
+      "acceptance": "Preparation → Batch details → Back vrátí Preparation s uchovanými údaji.",
+      "status": "verified",
+      "verification": [
+        "check-prep-workflow: Batch Back, hodnoty a nezavřený formulář; Chromium: krok 3 → Back → krok 1."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "16",
+      "priority": "P2",
+      "finding": "Lokální chyba formuláře nabízí synchronizační řešení",
+      "change": "Vstup se validuje před požadavkem. Chyby mají cestu k poli, aria-invalid/describedby, souhrn s odkazy a fokus. Síť/konflikt mají vlastní zotavení.",
+      "files": [
+        "app/field-validation.tsx",
+        "app/prep-workflow.tsx",
+        "lib/prep-profile.ts",
+        "app/recipe-ui.tsx"
+      ],
+      "acceptance": "Chyba konkrétního vstupu ukáže příslušné pole a jeho opravu bez potřeby aktualizovat data.",
+      "status": "verified",
+      "verification": [
+        "check-ux-behavior, check-prep-workflow; Chromium: chybějící počátek trvání a platné Not sure bez sync CTA."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "17",
+      "priority": "P2",
+      "finding": "Dva „krátké“ kroky skrývají dlouhý mobilní formulář",
+      "change": "Storage používá rozbalitelné Conditions/Quality/Recorded rule a relevantní podmíněná pole. Dialog sleduje visualViewport, má rolovatelné tělo a hlídá viditelnost aktivního pole nad patičkou.",
+      "files": [
+        "app/prep-fields.tsx",
+        "app/prep-workflow.tsx",
+        "components/viewport-size.tsx",
+        "app/ux.css",
+        "app/layout.tsx"
+      ],
+      "acceptance": "Na telefonu i při zvětšeném textu lze rozpoznat aktuální položku, zbývající krok a najít uložení bez zbytečného hledání.",
+      "status": "verified",
+      "verification": [
+        "Chromium: 390×500, fokus pole bez překrytí patičkou; vizuální kontrola; check-prep-fields."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "18",
+      "priority": "P2",
+      "finding": "Hromadná stanice předvolí odřazení položek",
+      "change": "Jednotný výběr začíná současnou stanicí, smíšený neutrální volbou. Unassign je explicitní. Save je zakázané bez skutečného rozdílu.",
+      "files": [
+        "app/checking-stations.tsx",
+        "lib/ux-controls.ts"
+      ],
+      "acceptance": "Otevření dialogu pro dvě položky stejné stanice nepřipraví jejich odřazení; uložit lze až vědomě zvolenou změnu.",
+      "status": "verified",
+      "verification": [
+        "check-ux-behavior: shodné/null/mixed; Chromium: Station 1 a Save disabled; existující CAS/replay testy."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "19",
+      "priority": "P2",
+      "finding": "Review kalendáře neukáže všechny měněné hodnoty",
+      "change": "Potvrzení vypíše úplný diff dnů, deadlines, posunů, výjimek a jejich odstranění i účinnost. Neplatná konfigurace vysvětluje blokaci.",
+      "files": [
+        "app/operating-calendar-editor.tsx",
+        "lib/ux-controls.ts"
+      ],
+      "acceptance": "Změna deadline i jedné výjimky je v potvrzení explicitně viditelná před zápisem.",
+      "status": "verified",
+      "verification": [
+        "check-ux-behavior; Chromium GET fixture: změna dne, 09:30, odstranění obou druhů výjimek a účinnost, bez serverového zápisu."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "20",
+      "priority": "P2",
+      "finding": "Quick review odkládá validaci a přeplňuje druhý krok",
+      "change": "Druhý krok Quick review člení Output/Work/Frequency. Continue kontroluje aktuální krok, chyby odkazují na téma/pole. Explicitní unknown zůstává platný; draft a Finish mají oddělený význam.",
+      "files": [
+        "app/review/quick.tsx",
+        "lib/quick-review/ux.ts",
+        "app/ux.css"
+      ],
+      "acceptance": "Neúplný vstup se vysvětlí u místa vzniku a oprava nevyžaduje prohledávat celý předchozí formulář.",
+      "status": "verified",
+      "verification": [
+        "check-quick-ui: osm případů, blokace neúplného kroku, resume/unknown; Chromium review fixture: chyba, odkaz a fokus."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "21",
+      "priority": "P2",
+      "finding": "Zavírací křížek modálu má jen 16 × 16 px",
+      "change": "Sdílené zavírací X má skutečnou plochu 44×44 px, menší ikonu a rezervu v nadpisu.",
+      "files": [
+        "app/ux.css",
+        "components/ui/dialog.tsx"
+      ],
+      "acceptance": "Každý mobilní modal má jasně dosažitelné zavření i jednou rukou; cíl nekoliduje s nadpisem.",
+      "status": "verified",
+      "verification": [
+        "Chromium: měřený bounding box X a vizuální kontrola dialogu."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "22",
+      "priority": "P2",
+      "finding": "Zavřený dialog vrací klávesnici na začátek aplikace",
+      "change": "Dialog uchovává spouštěč a vrací fokus; při zmizení cíle použije otevřený dialog nebo hlavní obsah. Přidán Skip to content a fokus nadpisu po navigaci.",
+      "files": [
+        "components/ui/dialog.tsx",
+        "app/desktop-navigation.tsx",
+        "app/use-workspace-navigation.ts",
+        "app/cook-app.tsx"
+      ],
+      "acceptance": "New item → Escape/Cancel vrátí fokus na New item; Tab pokračuje v původní části stránky.",
+      "status": "verified",
+      "verification": [
+        "Chromium: Escape, Keep editing, Discard, X a fokus spouštěče; navigační fokus; existující vnořené UI testy."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "23",
+      "priority": "P2",
+      "finding": "Nová položka zahodí rozepsaný název po běžném zavření",
+      "change": "Změněná nová položka a přejmenování vyžadují Keep editing / Discard changes při X, Escape i Cancel. Text se při pokračování zachová. Stejná ochrana navíc platí pro novou funkci Add dish / Duplicate dish v aktuálních Sites zdrojích.",
+      "files": [
+        "app/discard-changes.tsx",
+        "app/catalog-editor.tsx",
+        "app/dish-workspace.tsx"
+      ],
+      "acceptance": "Náhodné zavření neztratí rozepsaný nový název bez upozornění; opětovné otevření nabízí pokračování.",
+      "status": "verified",
+      "verification": [
+        "check-catalog-dialogs; Chromium: Escape → Keep editing → zachovaný název → Discard a návrat fokusu."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "24",
+      "priority": "P2",
+      "finding": "Manage list má příliš mnoho tab kroků a nesouhlasící pořadí",
+      "change": "Nativní select nahradily série frekvencí a stanic. DOM řadí instruction před More stejně jako vizuální pořadí.",
+      "files": [
+        "app/stock-list.tsx",
+        "app/ux.css"
+      ],
+      "acceptance": "Tab přechází mezi skupinami, šipky mezi volbami; pořadí jde logicky shora dolů v mobilním i desktopovém zobrazení.",
+      "status": "verified",
+      "verification": [
+        "check-manage-settings-ui; Chromium: počet tab zastávek a přístupné názvy."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "25",
+      "priority": "P2",
+      "finding": "Hranice formulářového pole je příliš slabá",
+      "change": "Vstupy používají výraznější token hranice #7d8795, konzistentní focus a invalid stav; nativní select v review i workspace má stejný kontrast.",
+      "files": [
+        "app/ux.css",
+        "app/recipe-ui.tsx"
+      ],
+      "acceptance": "Input je rozeznatelný i bez placeholderu a po ztrátě fokusu; hraniční kontrast nového tokenu je změřen.",
+      "status": "verified",
+      "verification": [
+        "Chromium: vypočtený kontrast hranice vůči výplni ≥3:1, invalid aria a focus; screenshoty formulářů."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "26",
+      "priority": "P3",
+      "finding": "Reduced motion nepokrývá obecné dialogy",
+      "change": "Reduced motion vypne nepodstatné animace a přechody včetně sdílených dialogů a overlay.",
+      "files": [
+        "app/ux.css"
+      ],
+      "acceptance": "Emulace reduce vypne nepodstatné transformace a animace dialogů, aniž zhorší fokus či feedback.",
+      "status": "verified",
+      "verification": [
+        "Chromium emulace prefers-reduced-motion: animationName none a zachované ovládání/fokus."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "27",
+      "priority": "P3",
+      "finding": "Široký displej automaticky znamená drobné ovládání",
+      "change": "Coarse a hybridní pointer ponechává nejméně 44 px pro ovládání bez ohledu na šířku viewportu.",
+      "files": [
+        "app/ux.css"
+      ],
+      "acceptance": "Tablet landscape a dotykový notebook mají pohodlné cíle; myší desktop může využít kompaktní režim.",
+      "status": "verified",
+      "verification": [
+        "Chromium hasTouch při 1280 px: any-pointer coarse a měřená výška New item ≥44; Cook 48 px."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "28",
+      "priority": "P3",
+      "finding": "Cook mobilní navigace používá mřížku pro jiný počet položek",
+      "change": "Cook navigace tvoří dvě rovnocenné široké buňky Check a Prep.",
+      "files": [
+        "app/cook-app.tsx",
+        "app/stock-workflow.tsx",
+        "app/ux.css"
+      ],
+      "acceptance": "Cook na 320/390 px vidí Check a Prep se stejnou šířkou a pohodlnými cíli.",
+      "status": "verified",
+      "verification": [
+        "Chromium: skutečná Cook role, 320/390, právě dvě stejně široké volby a aktivní stav."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "29",
+      "priority": "P3",
+      "finding": "Review přerušuje společnou navigaci novými kartami",
+      "change": "Kitchen review je součást pracovního shellu ve stejné kartě. Back vrací předchozí destinaci a kontext. Staré /review odkazy přesměrují do workspace; aplikace po Apply načte nový notebook.",
+      "files": [
+        "app/kitchen-app.tsx",
+        "app/review/page.tsx",
+        "app/review/review.tsx",
+        "app/use-workspace-navigation.ts",
+        "app/reviewed-insights.tsx"
+      ],
+      "acceptance": "Běžný přechod do review a zpět nevytváří další karty a vrací původní kontext.",
+      "status": "verified",
+      "verification": [
+        "Chromium: jedna karta, návrat do katalogu, zachovaný koncept alternativních názvů; existující review save/recovery/API testy."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "30",
+      "priority": "P3",
+      "finding": "Editace kol a prázdný ranní plán vyžadují odhad dalšího kroku",
+      "change": "Přehled kol trvale vysvětluje model; položky nabízejí Move to round přes původní náhled a potvrzení. Morning bez plánu odkazuje do předchozí otevřené Evening podle kalendáře.",
+      "files": [
+        "app/check-rounds.tsx",
+        "app/morning-list.tsx"
+      ],
+      "acceptance": "Přesun mezi koly a vytvoření chybějícího ranního plánu mají jasný další krok bez hledání v jiné sekci.",
+      "status": "verified",
+      "verification": [
+        "Chromium: chybějící Morning 19 Oct → Evening 18 Oct; model přesunu a ovladače; check-rounds a check-edit-items-ui."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    },
+    {
+      "id": "31",
+      "priority": "P2",
+      "finding": "Ranní práci zatěžuje potvrzení předchozího večerního kroku",
+      "change": "Morning má kompaktní potvrzení bez CTA na sebe, společné datum/progress a rozbalitelný zdroj/refresh. Undo last change je mimo přesunutý hotový řádek.",
+      "files": [
+        "app/morning-list.tsx",
+        "app/stock-workflow.tsx",
+        "app/ux.css"
+      ],
+      "acceptance": "Po potvrzení checku je v Morning na 390×844 vidět první úkol bez scrollu a žádné tlačítko neotevírá tutéž stránku; původní potvrzení lze dohledat.",
+      "status": "verified",
+      "verification": [
+        "Chromium: Evening → Finish → Morning → Ready → Undo; stejné datum 15 Oct a dvě úlohy jako audit, první úloha nad hranicí 844 px; check-morning-layout.",
+        "check-morning-layout: novější peer revize odstraní staré Undo."
+      ],
+      "currentReleaseEvidence": "release-evidence-2026-10-15/verification.json"
+    }
+  ],
+  "environment": {
+    "node": "24.19.0",
+    "browser": "Chromium / Playwright",
+    "data": "synthetic, local D1/R2 only",
+    "production": "not deployed or verified",
+    "physical_devices": "not available"
+  },
+  "completedAt": "2026-10-15T00:26:06.720430+00:00",
+  "validation": {
+    "command": "npm run validate",
+    "regressionScripts": 94,
+    "result": "passed",
+    "evidence": "evidence/verification.json"
+  },
+  "releaseReconciliation": {
+    "siteVersion": 83,
+    "siteSourceCommit": "85f8243f08dc5605e7c503d593fc9edc9ce67e04",
+    "report": "release-2026-10-15.md",
+    "verification": "release-evidence-2026-10-15/verification.json",
+    "note": "Current Sites UI and menu model were reconciled before publication. Original audit evidence remains historical; this release adds current-code verification."
+  }
+}

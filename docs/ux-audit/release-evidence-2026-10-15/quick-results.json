@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "name": "Quick review blocks an incomplete step and links to the missing field (browser fixture)",
+      "status": "passed"
+    },
+    {
+      "name": "Quick review step exposes Output, Work and Frequency groups",
+      "status": "passed"
+    },
+    {
+      "name": "Quick review has no runtime exceptions",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "quickInputStyle": {
+        "border": "rgb(125, 135, 149)",
+        "background": "rgb(255, 255, 255)"
+      }
+    }
+  ],
+  "errors": []
+}

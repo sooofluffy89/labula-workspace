@@ -164,7 +164,7 @@ export class EveningController {
  ready(itemId:string,value:boolean){
   const check=this.visibleCheck();
   if(!check||readyBlocked(this.state,itemId))return this.refuse('This task cannot be changed yet. Finish the current step or review its saved changes.');
-  const task=check.tasks.find(t=>t.itemId===itemId&&!t.cancelled&&t.mappingValid);if(!task)return this.refuse('This task is no longer available. Refresh the shared plan.');if(task.ready===value)return true;
+  const task=check.tasks.find(t=>t.itemId===itemId&&!t.cancelled&&!t.suspended&&t.mappingValid);if(!task)return this.refuse('This task is no longer available. Refresh the shared plan.');if(task.ready===value)return true;
   return this.enqueue({id:crypto.randomUUID(),scope:'kitchen',actorId:this.accountId,kind:'ready',checkId:check.id,itemId,revision:task.revision,value});
  }
  toggleReady(itemId:string){const task=this.visibleCheck()?.tasks.find(t=>t.itemId===itemId);return task?this.ready(itemId,!task.ready):false;}
@@ -380,7 +380,7 @@ export class EveningController {
   const keep=useLocal?before:[];
   if(keep.some(p=>p.command.kind!==kind||!check||p.command.kind==='start'||p.command.checkId!==check.id)||(kind==='answer'&&keep.length&&(check?.stage!=='draft'||keep.some(p=>p.command.kind==='answer'&&p.command.generation!==check.version)))){this.emit({error:'The check changed. Keep the shared result and review the check before making new changes.'});return false;}
   // A fresh fetch cannot silently expand the user's approval to a different shared result.
-  const rows=kind==='ready'?check?.tasks.filter(t=>!t.cancelled&&t.mappingValid):check?.answers.filter(a=>a.mappingValid&&!a.supersededBy);
+  const rows=kind==='ready'?check?.tasks.filter(t=>!t.cancelled&&!t.suspended&&t.mappingValid):check?.answers.filter(a=>a.mappingValid&&!a.supersededBy&&!a.suspended);
   const revisions=new Map(rows?.map(a=>[a.itemId,a.revision]));
   const values=new Map(rows?.map(a=>[a.itemId,'value' in a?a.value:a.ready]));
   if(keep.some(p=>!('itemId' in p.command)||!revisions.has(p.command.itemId))){this.emit({error:'A listed item is no longer available. Keep the shared result and use Correct check to resolve its link.'});return false;}
@@ -408,11 +408,11 @@ export function visibleEveningCheck(state:EveningState){
   if(c.kind==='ready'&&c.checkId===copy.id){const t=copy.tasks.find(t=>t.itemId===c.itemId);if(t&&!t.cancelled&&t.mappingValid){t.ready=c.value;t.revision=c.revision+1;}}
  }return copy;
 }
-export function morningProgress(state:EveningState,now=Date.now()){const check=visibleEveningCheck(state),tasks=check?.version?check.tasks.filter(t=>!t.cancelled):[],rejected=new Set(state.pending.flatMap(p=>p.rejected&&p.command.kind==='ready'&&p.command.checkId===check?.id?[p.command.itemId]:[])),ready=tasks.filter(t=>t.ready&&t.mappingValid&&!rejected.has(t.itemId)).length;return {tasks,ready,remaining:tasks.length-ready,complete:tasks.length>0&&ready===tasks.length&&!state.publicationLoading&&!state.loading&&!state.verifying&&!state.needsVerification&&!state.saving&&!state.pending.length&&!state.error&&!state.unauthorized&&!state.recoveryBlocked&&!state.freshnessError&&!!state.lastVerifiedAt&&now-state.lastVerifiedAt<75000};}
+export function morningProgress(state:EveningState,now=Date.now()){const check=visibleEveningCheck(state),tasks=check?.version?check.tasks.filter(t=>!t.cancelled&&!t.suspended):[],rejected=new Set(state.pending.flatMap(p=>p.rejected&&p.command.kind==='ready'&&p.command.checkId===check?.id?[p.command.itemId]:[])),ready=tasks.filter(t=>t.ready&&t.mappingValid&&!rejected.has(t.itemId)).length;return {tasks,ready,remaining:tasks.length-ready,complete:tasks.length>0&&ready===tasks.length&&!state.publicationLoading&&!state.loading&&!state.verifying&&!state.needsVerification&&!state.saving&&!state.pending.length&&!state.error&&!state.unauthorized&&!state.recoveryBlocked&&!state.freshnessError&&!!state.lastVerifiedAt&&now-state.lastVerifiedAt<75000};}
 
-export function readyBlocked(state:EveningState,itemId:string){const check=state.snapshot?.check;return !check||check.version<1||state.finishing||state.publicationLoading||state.loading||state.unauthorized||state.recoveryBlocked||!!state.error&&state.errorKind!=='network'&&state.errorKind!=='conflict'||state.pending.some(p=>p.command.kind!=='ready'||p.command.checkId!==check.id||p.rejected&&p.command.itemId===itemId);}
+export function readyBlocked(state:EveningState,itemId:string){const check=state.snapshot?.check;return !check||check.tasks.some(t=>t.itemId===itemId&&t.suspended)||check.version<1||state.finishing||state.publicationLoading||state.loading||state.unauthorized||state.recoveryBlocked||!!state.error&&state.errorKind!=='network'&&state.errorKind!=='conflict'||state.pending.some(p=>p.command.kind!=='ready'||p.command.checkId!==check.id||p.rejected&&p.command.itemId===itemId);}
 
-export function answerBlocked(state:EveningState,itemId:string){const check=state.snapshot?.check;return !check||state.finishing||state.publicationLoading||state.loading||state.unauthorized||state.recoveryBlocked||!!state.error&&state.errorKind!=='network'&&state.errorKind!=='conflict'||state.pending.some(p=>p.command.kind!=='answer'||p.command.checkId!==check.id||p.rejected&&p.command.itemId===itemId);}
+export function answerBlocked(state:EveningState,itemId:string){const check=state.snapshot?.check;return !check||check.answers.some(a=>a.itemId===itemId&&a.suspended)||state.finishing||state.publicationLoading||state.loading||state.unauthorized||state.recoveryBlocked||!!state.error&&state.errorKind!=='network'&&state.errorKind!=='conflict'||state.pending.some(p=>p.command.kind!=='answer'||p.command.checkId!==check.id||p.rejected&&p.command.itemId===itemId);}
 
 const finishControllers=new Map<string,EveningController>();
 export function acquireEveningController(account:string,storage:Storage,selection:EveningSelection){

@@ -1,7 +1,9 @@
+import {menuUsage} from './menu-scope';
+import type {AppliedRecord} from './review-v2/applied';
 import {z} from 'zod';
 import {profileSchema,editableProfileSchema,validateProfile,sameProfile,effortBasis,type PrepProfile} from './prep-profile';
 import {validateNotebook,type Notebook} from './notebook';
-import {directUsage,compareUsage} from './direct-usage';
+import {compareUsage} from './direct-usage';
 import {preparationProgress} from './prep-completion';
 import {batchProgress,type BatchScope} from './batch-progress';
 
@@ -22,10 +24,11 @@ export function readPrepDraft(content:string,account:string):PrepDraft{
  for(const [id,entry] of Object.entries(d.drafts)){if(d.pending?.command.itemId===id)continue;const basis=effortBasis(entry.value.workflow);if(entry.value.effortBasis&&entry.value.effortBasis!==basis){entry.value.effort=null;entry.value.effortBasis=basis;}}
  return d;
 }
-export function preparationQueue(n:Notebook){const index=directUsage(n);return n.items.filter(i=>(index.itemDishes.get(i.id)?.size??0)>0).sort((a,b)=>compareUsage(index,a.id,b.id)).map(i=>i.id);}
+export function preparationQueue(n:Notebook,records:AppliedRecord[]=[]){const index=menuUsage(n,records);return n.items.filter(i=>(index.itemDishes.get(i.id)?.size??0)>0).sort((a,b)=>compareUsage(index,a.id,b.id)).map(i=>i.id);}
 export function applyProfileCommand(n:Notebook,c:ProfileCommand){
  const next=structuredClone(n),item=next.items.find(i=>i.id===c.itemId);if(!item)throw Error('This item was removed or merged. Keep your draft and open its current catalog entry.');
  if(!sameProfile(item.prepProfile,c.base))throw Error('These preparation answers changed. Load the latest answers and compare before saving.');
+ if(next.processes.some(p=>p.outputs.some(o=>o.itemId===item.id))&&JSON.stringify(item.prepProfile.batch)!==JSON.stringify(c.next.batch))throw Error('This item uses a current production task. Edit its batch and work figures in Production; your older batch draft is kept.');
  item.prepProfile=validateProfile(c.next);return validateNotebook(next);
 }
 export function makePrepEntry(p:PrepProfile){return {base:structuredClone(p),value:structuredClone(p),step:'preparation' as const};}
@@ -35,19 +38,19 @@ export function hasPrepDraftChanges(d:PrepDraft|null){return !!d&&(!!d.pending||
 export function changedPrepEntry(entry:PrepDraft['drafts'][string]){
  try{return !sameProfile(validateProfile(entry.value),entry.base);}catch{return true;}
 }
-export function resumePreparation(n:Notebook,d:PrepDraft|null){
+export function resumePreparation(n:Notebook,d:PrepDraft|null,records:AppliedRecord[]=[]){
  if(!d)return null;
  if(d.pending)return {itemId:d.pending.command.itemId,step:d.drafts[d.pending.command.itemId]?.step??'storage' as const,pending:true};
- const active=new Set(preparationQueue(n));
+ const active=new Set(preparationQueue(n,records));
  const last=d.queue[d.cursor];
  const id=[last,...Object.keys(d.drafts).reverse()].find(id=>(active.has(id)||d.drafts[id]?.step==='batch'&&n.items.some(i=>i.id===id&&i.kind==='prep'))&&d.drafts[id]&&changedPrepEntry(d.drafts[id]));
  return id?{itemId:id,step:d.drafts[id].step,pending:false}:null;
 }
-export function initialPreparationSession(n:Notebook,d:PrepDraft|null,account:string,options:{remaining?:boolean;startItemId?:string;itemId?:string;batchScope?:BatchScope}={}){
- const batches=options.batchScope?batchProgress(n,options.batchScope):null;
- const eligible=batches?(options.remaining?batches.remaining:batches.items).map(i=>i.item.id):options.remaining?preparationProgress(n).remaining.map(i=>i.item.id):preparationQueue(n);
+export function initialPreparationSession(n:Notebook,d:PrepDraft|null,account:string,options:{remaining?:boolean;startItemId?:string;itemId?:string;batchScope?:BatchScope}={},records:AppliedRecord[]=[]) {
+ const batches=options.batchScope?batchProgress(n,options.batchScope,records):null;
+ const eligible=batches?(options.remaining?batches.remaining:batches.items).map(i=>i.item.id):options.remaining?preparationProgress(n,records).remaining.map(i=>i.item.id):preparationQueue(n,records);
  const session:PrepDraft=d?structuredClone(d):{format:'labula-preparation-draft',version:1,account,queue:[],cursor:0,drafts:{},pending:null};
- const resume=resumePreparation(n,session);
+ const resume=resumePreparation(n,session,records);
  const resumable=resume&&(!batches||eligible.includes(resume.itemId))?resume:null;
  const target=session.pending?.command.itemId??options.itemId??options.startItemId??(options.remaining?resumable?.itemId??eligible[0]:batches?resumable?.itemId??eligible[0]:session.queue[session.cursor]??eligible[0]);
  session.queue=[...session.queue.filter(id=>eligible.includes(id)),...eligible.filter(id=>!session.queue.includes(id))];
@@ -58,10 +61,10 @@ export function initialPreparationSession(n:Notebook,d:PrepDraft|null,account:st
  if(batches&&target&&session.drafts[target]&&!session.pending)session.drafts[target].step='batch';
  return session;
 }
-export function nextPreparationCursor(n:Notebook,s:PrepDraft,remaining:boolean,batchScope?:BatchScope){
- const batches=batchScope?batchProgress(n,batchScope):null;
- const needed=new Set(batches?(remaining?batches.remaining:batches.items).map(i=>i.item.id):(remaining?preparationProgress(n).remaining.map(i=>i.item.id):preparationQueue(n)));
- const active=new Set(batches?batches.items.map(i=>i.item.id):preparationQueue(n));
+export function nextPreparationCursor(n:Notebook,s:PrepDraft,remaining:boolean,batchScope?:BatchScope,records:AppliedRecord[]=[]){
+ const batches=batchScope?batchProgress(n,batchScope,records):null;
+ const needed=new Set(batches?(remaining?batches.remaining:batches.items).map(i=>i.item.id):(remaining?preparationProgress(n,records).remaining.map(i=>i.item.id):preparationQueue(n,records)));
+ const active=new Set(batches?batches.items.map(i=>i.item.id):preparationQueue(n,records));
  for(let i=s.cursor+1;i<s.queue.length;i++)if(needed.has(s.queue[i])||active.has(s.queue[i])&&s.drafts[s.queue[i]]&&changedPrepEntry(s.drafts[s.queue[i]]))return i;
  return null;
 }

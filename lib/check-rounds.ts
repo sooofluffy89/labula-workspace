@@ -29,7 +29,7 @@ export function filteredRoundItems(items:RoundItem[],target:RoundId,f:RoundFilte
  const ids=new Set(stockRows(items,f.search,f.tracking,true,f.type,f.menu).map(i=>i.itemId));
  return items.filter(i=>ids.has(i.itemId)&&(f.group==='all'||(i.groupId??'none')===f.group)&&(f.current==='all'||(f.current==='this'?i.roundId===target:f.current==='other'?!!i.roundId&&i.roundId!==target:f.current==='none'?!i.roundId:i.roundId===f.current))).sort((a,b)=>a.name.localeCompare(b.name,'en')||a.itemId.localeCompare(b.itemId));
 }
-export function roundCounts(items:RoundItem[]){return {active:items.filter(i=>i.included&&i.track).length,off:items.filter(i=>i.included&&!i.track).length,outside:items.filter(i=>!i.included).length};}
+export function roundCounts(items:RoundItem[]){return {active:items.filter(i=>i.included&&i.track&&i.menuScope!=='inactive').length,paused:items.filter(i=>i.included&&i.track&&i.menuScope==='inactive').length,off:items.filter(i=>i.included&&!i.track).length,outside:items.filter(i=>!i.included).length};}
 export function toggleCandidates(selected:string[],candidates:string[]){const all=candidates.every(id=>selected.includes(id));return all?selected.filter(id=>!candidates.includes(id)):[...new Set([...selected,...candidates])];}
 export type Timeline={seq:number;itemId:string;roundId:RoundId|null;days:number[];scheduleRevision:number;active:boolean;recordedAt:string;source:string};
 export type RoundReason={scheduleNeedsReview?:boolean;roundId:RoundId|null;days:number[];scheduleRevision:number;reason:'scheduled'|'overdue'|'extra';firstDue:string|null;lastDue:string|null;lastConfirmed:string|null;planningRevision:number};

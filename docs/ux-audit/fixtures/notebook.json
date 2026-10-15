@@ -1,0 +1,1301 @@
+{
+  "schemaVersion": 3,
+  "distinctPairs": [],
+  "items": [
+    {
+      "id": "audit-item-1",
+      "name": "Chilli garlic sauce",
+      "aliases": [],
+      "kind": "prep",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    },
+    {
+      "id": "audit-item-2",
+      "name": "Silken tofu",
+      "aliases": [],
+      "kind": "bought",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    },
+    {
+      "id": "audit-item-3",
+      "name": "Spring onions, washed & finely sliced",
+      "aliases": [],
+      "kind": "prep",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    },
+    {
+      "id": "audit-item-4",
+      "name": "Roasted sesame oil",
+      "aliases": [],
+      "kind": "bought",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": [
+          {
+            "id": "8764e4d3-fd79-40ba-a542-c7ec85352ee8",
+            "states": [],
+            "stateOther": "",
+            "pack": null,
+            "mode": null,
+            "temperature": null,
+            "temperatureUnknown": false,
+            "container": "",
+            "quality": {
+              "value": 2,
+              "unit": "hours",
+              "unknown": false,
+              "start": "unknown",
+              "startOther": ""
+            },
+            "source": null,
+            "ruleKind": null,
+            "rule": {
+              "value": null,
+              "unit": "hours",
+              "unknown": false,
+              "start": null,
+              "startOther": ""
+            },
+            "reference": "",
+            "ruleText": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "audit-item-5",
+      "name": "Spicy braised beef",
+      "aliases": [],
+      "kind": "prep",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    },
+    {
+      "id": "audit-item-6",
+      "name": "Cucumber salad dressing",
+      "aliases": [],
+      "kind": "prep",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    },
+    {
+      "id": "audit-item-7",
+      "name": "Fresh coriander",
+      "aliases": [],
+      "kind": "bought",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    },
+    {
+      "id": "audit-item-8",
+      "name": "Sichuan peppercorns",
+      "aliases": [],
+      "kind": "bought",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    },
+    {
+      "id": "audit-item-9",
+      "name": "Chicken broth",
+      "aliases": [],
+      "kind": "prep",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    },
+    {
+      "id": "audit-item-10",
+      "name": "Wood ear mushrooms, soaked & trimmed",
+      "aliases": [],
+      "kind": "prep",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    },
+    {
+      "id": "audit-item-11",
+      "name": "Rice noodles",
+      "aliases": [],
+      "kind": "bought",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    },
+    {
+      "id": "audit-item-12",
+      "name": "Crispy chilli garnish",
+      "aliases": [],
+      "kind": "prep",
+      "unit": "g",
+      "specification": "",
+      "inputs": [],
+      "yieldAmount": null,
+      "activeMinutes": null,
+      "passiveMinutes": null,
+      "frequencyHours": null,
+      "batchMinimum": null,
+      "batchMaximum": null,
+      "method": "",
+      "storage": {
+        "condition": "unknown",
+        "temperatureC": null,
+        "container": "",
+        "qualityHours": null,
+        "safetyHours": null,
+        "evidence": "unknown",
+        "reference": "",
+        "cooling": "",
+        "afterOpeningHours": null,
+        "thawing": ""
+      },
+      "prepProfile": {
+        "version": 1,
+        "workflow": null,
+        "frequency": null,
+        "effort": null,
+        "effortBasis": null,
+        "problems": null,
+        "issues": [],
+        "note": "",
+        "storage": []
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "s1-v1",
+      "menuId": "s1",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-1",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-2",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": true,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "s2-v1",
+      "menuId": "s2",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-2",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "s3-v1",
+      "menuId": "s3",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "s4-v1",
+      "menuId": "s4",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": true,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "s5-v1",
+      "menuId": "s5",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-8",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "s6-v1",
+      "menuId": "s6",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-8",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-9",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "s7-v1",
+      "menuId": "s7",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-8",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-9",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-10",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": true,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "m1-v1",
+      "menuId": "m1",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-1",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-2",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "m1-v2",
+      "menuId": "m1",
+      "variant": "Beef MAX",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-2",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "m2-v1",
+      "menuId": "m2",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": true,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "m2-v2",
+      "menuId": "m2",
+      "variant": "Tofu with chicken broth — confirm",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "m2-v3",
+      "menuId": "m2",
+      "variant": "Marinated tofu version",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-8",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "m3-v1",
+      "menuId": "m3",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-8",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-9",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": true,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "m3-v2",
+      "menuId": "m3",
+      "variant": "Braised tofu version",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-8",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-9",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-10",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "m4-v1",
+      "menuId": "m4",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-1",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-2",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "m5-v1",
+      "menuId": "m5",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-2",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": true,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "m6-v1",
+      "menuId": "m6",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "p1-v1",
+      "menuId": "p1",
+      "variant": "Chicken feet",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "p1-v2",
+      "menuId": "p1",
+      "variant": "Pork feet",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-8",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": true,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "p2-v1",
+      "menuId": "p2",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-8",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-9",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "p3-v1",
+      "menuId": "p3",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-7",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-8",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-9",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-10",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "p4-v1",
+      "menuId": "p4",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-1",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-2",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": true,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "p5-v1",
+      "menuId": "p5",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-2",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    },
+    {
+      "id": "p6-v1",
+      "menuId": "p6",
+      "variant": "Standard",
+      "portions": null,
+      "inputs": [
+        {
+          "itemId": "audit-item-3",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-4",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-5",
+          "amount": null,
+          "note": ""
+        },
+        {
+          "itemId": "audit-item-6",
+          "amount": null,
+          "note": ""
+        }
+      ],
+      "notes": "",
+      "active": true,
+      "recorded": false,
+      "weekdayPortions": null,
+      "busyPortions": null
+    }
+  ],
+  "equipment": {
+    "blastChiller": "unknown",
+    "notes": ""
+  }
+}

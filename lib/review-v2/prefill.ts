@@ -8,9 +8,9 @@ export function offers(d:Draft,e:Entity,group:string,source:ReviewSource):Offer[
  const item=source.notebook.items.find(i=>i.id===e.sourceId),dish=source.notebook.recipes.find(r=>r.id===e.sourceId),out:Offer[]=[];
  const add=(key:string,label:string,value:string,path:string,rowKey?:string)=>{const id='fact-'+stable([source.revision,e.id,group,key,value].join('|')),rowId=rowKey?'previous-'+stable(id):undefined;out.push({id,target:{entityId:e.id,group,path:rowKey?[rowKey,rowId!,key]:[key]},label,value,sourcePath:path,rowKey,rowId});};
  if(group==='ITEM-01'&&item)add('name','Product name',item.name,`items/${item.id}/name`);
- if(group==='MENU-01'&&dish)add('name','Dish / variant name',recipeTitle(dish),`recipes/${dish.id}/title`);
+ if(group==='MENU-01'&&dish)add('name','Dish / variant name',recipeTitle(dish,source.notebook),`recipes/${dish.id}/title`);
  if(group==='DISH-01'&&dish)for(const input of dish.inputs)if(entity(d,input.itemId))add('item',`${source.notebook.items.find(i=>i.id===input.itemId)?.name??'Product'} — previously listed directly${dish.active?'':' (inactive listing)'}`,input.itemId,`recipes/${dish.id}/inputs/${input.itemId}`,'components');
- if(group==='ITEM-05'&&item)for(const recipe of source.notebook.recipes.filter(r=>r.inputs.some(i=>i.itemId===item.id)))add('destination',`${recipeTitle(recipe)} — previous direct use${recipe.active?'':' (inactive listing)'}`,'dish:'+recipe.id,`recipes/${recipe.id}/inputs/${item.id}`,'uses');
+ if(group==='ITEM-05'&&item)for(const recipe of source.notebook.recipes.filter(r=>r.inputs.some(i=>i.itemId===item.id)))add('destination',`${recipeTitle(recipe,source.notebook)} — previous direct use${recipe.active?'':' (inactive listing)'}`,'dish:'+recipe.id,`recipes/${recipe.id}/inputs/${item.id}`,'uses');
  return out.filter((o,i)=>out.findIndex(x=>x.id===o.id)===i);
 }
 export function offerBlocked(d:Draft,o:Offer):string|undefined{

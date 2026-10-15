@@ -7,7 +7,7 @@ const repo=process.cwd();
 const dir=await mkdtemp(path.join(tmpdir(),'labula-review-fields-'));
 try{
 const react=path.join(dir,'react.mjs'),ui=path.join(dir,'ui.mjs');
-await writeFile(react,`export const Fragment='Fragment';export const jsx=(type,props)=>({type,props});export const jsxs=jsx;export const useId=()=>Math.random().toString();export function useState(initial){const h=globalThis.hooks,i=h.cursor++;if(!(i in h.values))h.values[i]=typeof initial==='function'?initial():initial;return [h.values[i],v=>{h.values[i]=typeof v==='function'?v(h.values[i]):v;}];}`);
+await writeFile(react,`export const createContext=value=>({value,Provider:'Provider'}),useContext=context=>context.value;export const Fragment='Fragment';export const jsx=(type,props)=>({type,props});export const jsxs=jsx;export const useId=()=>Math.random().toString();export function useState(initial){const h=globalThis.hooks,i=h.cursor++;if(!(i in h.values))h.values[i]=typeof initial==='function'?initial():initial;return [h.values[i],v=>{h.values[i]=typeof v==='function'?v(h.values[i]):v;}];}`);
 await writeFile(ui,`export const Button='Button',Input='Input',Textarea='Textarea',Checkbox='Checkbox',RadioGroup='RadioGroup',RadioGroupItem='RadioGroupItem',Choice='Choice',Field='Field',NumberField='NumberField';`);
 const contents=await readFile(repo+'/app/prep-fields.tsx','utf8');
 const outfile=path.join(dir,'fields.mjs');

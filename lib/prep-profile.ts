@@ -52,17 +52,27 @@ export function prepValidationMessage(error:unknown){
  const field=path.slice(at?2:0).map(p=>labels[String(p)]??String(p)).join(' — ');
  return `${at}${field||'Answer'}: ${issue.message}. Your input is kept.`;
 }
-export function profileProblems(raw:PrepProfile):string[]{
- const p=cleanProfile(raw),errors:string[]=[];
- if(p.problems==='yes'&&!p.issues.length)errors.push('Choose at least one recurring problem, choose Not sure, or skip this item.');
+export type PrepFieldIssue={path:(string|number)[];message:string};
+export function profileIssues(raw:PrepProfile):PrepFieldIssue[]{
+ const p=cleanProfile(raw),errors:PrepFieldIssue[]=[];
+ const add=(path:(string|number)[],message:string)=>errors.push({path,message});
+ if(p.problems==='yes'&&!p.issues.length)add(['issues'],'Choose at least one recurring problem, choose Not sure, or skip this item.');
  const ids=new Set<string>();for(const [i,s] of p.storage.entries()){
-  const at=`Storage setup ${i+1}: `;if(ids.has(s.id))errors.push(at+'repeated setup.');ids.add(s.id);
-  if(s.states.includes('raw')&&s.states.includes('cooked')||s.states.includes('whole')&&s.states.includes('cut')||s.states.includes('unknown')&&s.states.length>1)errors.push(at+'choose compatible food states.');
-  if(s.states.includes('other')&&!s.stateOther.trim())errors.push(at+'describe the other food state.');
-  for(const [label,t] of [['Quality duration',s.quality],['Duration in the rule',s.rule]] as const){if(t.value!==null&&!t.start)errors.push(at+label+' needs a starting event or Not sure.');if(t.start==='other'&&!t.startOther.trim())errors.push(at+label+' needs a description of when time starts.');}
-  if(documentedSource(s.source)&&(s.rule.value!==null||s.ruleKind==='packdate'||s.ruleText.trim())&&!s.reference.trim())errors.push(at+'add a product or document reference for the stated rule.');
+  const at=`Storage setup ${i+1}: `,path=(...field:string[])=>['storage',i,...field];
+  if(ids.has(s.id))add(path('id'),at+'repeated setup.');ids.add(s.id);
+  if(s.states.includes('raw')&&s.states.includes('cooked')||s.states.includes('whole')&&s.states.includes('cut')||s.states.includes('unknown')&&s.states.length>1)add(path('states'),at+'choose compatible food states.');
+  if(s.states.includes('other')&&!s.stateOther.trim())add(path('stateOther'),at+'describe the other food state.');
+  for(const [key,label,t] of [['quality','Quality duration',s.quality],['rule','Duration in the rule',s.rule]] as const){
+   if(t.value!==null&&!t.start)add(path(key,'start'),at+label+' needs a starting event or Not sure.');
+   if(t.start==='other'&&!t.startOther.trim())add(path(key,'startOther'),at+label+' needs a description of when time starts.');
+  }
+  if(documentedSource(s.source)&&(s.rule.value!==null||s.ruleKind==='packdate'||s.ruleText.trim())&&!s.reference.trim())add(path('reference'),at+'add a product or document reference for the stated rule.');
  }
  return errors;
+}
+export function profileProblems(raw:PrepProfile):string[]{return profileIssues(raw).map(issue=>issue.message);}
+export function prepFieldIssues(raw:PrepProfile):PrepFieldIssue[]{
+ try{return profileIssues(raw);}catch(error){if(error instanceof z.ZodError)return error.issues.map(issue=>({path:issue.path,message:prepValidationMessage(new z.ZodError([issue]))}));return [{path:[],message:prepValidationMessage(error)}];}
 }
 export function validateProfile(raw:unknown):PrepProfile{const p=profileSchema.parse(raw),clean=cleanProfile(p);if(JSON.stringify(p)!==JSON.stringify(clean))throw Error('Some preparation answers do not apply. Review this item before saving.');const errors=profileProblems(p);if(errors.length)throw Error(errors[0]);return p;}
 export const profileEmpty=(p:PrepProfile)=>JSON.stringify(cleanProfile(p))===JSON.stringify(emptyProfile());

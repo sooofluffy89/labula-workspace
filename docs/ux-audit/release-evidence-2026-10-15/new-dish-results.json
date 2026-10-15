@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "name": "A new dish keeps unsaved text after accidental dismissal",
+      "status": "passed"
+    },
+    {
+      "name": "Report browser runtime has no page exceptions",
+      "status": "passed"
+    }
+  ],
+  "metrics": [],
+  "errors": []
+}

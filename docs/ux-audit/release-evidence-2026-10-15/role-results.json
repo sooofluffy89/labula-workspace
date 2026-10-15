@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "name": "Actual Owner access and complete backup entry",
+      "status": "passed"
+    },
+    {
+      "name": "Actual Manager retains settings, safe type correction and backup",
+      "status": "passed"
+    },
+    {
+      "name": "Actual Cook sees exactly two equal daily choices at 320 and390px",
+      "status": "passed"
+    }
+  ],
+  "metrics": [
+    {
+      "role": "Cook",
+      "width": 320,
+      "button": {
+        "x": 12,
+        "y": 60,
+        "width": 144,
+        "height": 48
+      }
+    },
+    {
+      "role": "Cook",
+      "width": 390,
+      "button": {
+        "x": 12,
+        "y": 60,
+        "width": 179,
+        "height": 48
+      }
+    }
+  ],
+  "errors": []
+}

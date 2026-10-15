@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
+import {commonStation} from '@/lib/ux-controls';
 import {stationIds,stationLabel,stationFilterSchema,makeStationCommand,isStationCommand,matchesStation,stationGroups,type StationId,type StationFilter} from '@/lib/checking-stations';
 import type {StockItem} from '@/lib/stock';
 import type {StockController,StockState} from '@/lib/stock-client';
@@ -19,23 +20,23 @@ export function useStationSelection(account:string){
 export type StationReview={items:StockItem[];desired?:StationId|null};
 export function StationEditor({review,onClose,state,getController,onRefresh,onReturnFocus}:{review:StationReview|null;onClose:()=>void;state:StockState;getController:()=>StockController|null;onRefresh:()=>void;onReturnFocus:()=>void}){
  const [sending,setSending]=useState(false);
- const [desired,setDesired]=useState<StationId|null>(null),[baseline,setBaseline]=useState<StockItem[]>([]);
+ const [desired,setDesired]=useState<StationId|null|undefined>(undefined),[baseline,setBaseline]=useState<StockItem[]>([]);
  const pending=isStationCommand(state.pending?.command)?state.pending!:null;
- useEffect(()=>{if(review)queueMicrotask(()=>{setBaseline(review.items);setDesired(review.desired!==undefined?review.desired:review.items.length===1?review.items[0].stationId??null:null);});},[review]);
+ useEffect(()=>{if(review)queueMicrotask(()=>{setBaseline(review.items);setDesired(review.desired!==undefined?review.desired:commonStation(review.items));});},[review]);
  const current=baseline.map(i=>state.snapshot?.items.find(x=>x.itemId===i.itemId));
  const changed=current.some((i,n)=>!i||i.stationRevision!==baseline[n].stationRevision);
- const changes=baseline.filter(i=>(i.stationId??null)!==desired);
+ const changes=desired===undefined?[]:baseline.filter(i=>(i.stationId??null)!==desired);
  const busy=sending||state.saving||state.loading;
  const recover=async()=>{if(busy)return;setSending(true);try{if(await getController()?.retry())onClose();}finally{setSending(false);}};
- const save=async()=>{if(!state.snapshot||busy||changed||state.pending||state.error||!changes.length)return;const c=makeStationCommand(changes,desired,state.snapshot.accountId);setSending(true);try{if(await getController()?.changeStation(c))onClose();}finally{setSending(false);}};
+ const save=async()=>{if(!state.snapshot||busy||changed||state.pending||state.error||desired===undefined||!changes.length)return;const c=makeStationCommand(changes,desired,state.snapshot.accountId);setSending(true);try{if(await getController()?.changeStation(c))onClose();}finally{setSending(false);}};
  return <Dialog open={!!review} onOpenChange={open=>{if(!open&&!busy)onClose();}}><DialogContent showCloseButton={!busy} className="station-dialog" onCloseAutoFocus={e=>{e.preventDefault();onReturnFocus();}}><DialogHeader><DialogTitle>Assign checking station</DialogTitle><DialogDescription>Applies to new checks. Existing checks keep their station assignment.</DialogDescription></DialogHeader>
-  <label>Checking station<select value={desired??'none'} disabled={busy||!!state.pending} onChange={e=>setDesired(e.target.value==='none'?null:e.target.value as StationId)}><option value="none">Not assigned</option>{stationIds.map(id=><option key={id} value={id}>{stationLabel(id)}</option>)}</select></label>
+  <label>Checking station<select aria-label="Checking station" value={desired===undefined?'choose':desired??'none'} disabled={busy||!!state.pending} onChange={e=>setDesired(e.target.value==='none'?null:e.target.value as StationId)}><option value="choose" disabled>Choose a station… (mixed current stations)</option><option value="none">Unassign — no station</option>{stationIds.map(id=><option key={id} value={id}>{stationLabel(id)}</option>)}</select></label>
   <p>{baseline.length} selected · {changes.length} {changes.length===1?'change':'changes'}</p>
-  <ul className="station-review-items">{baseline.map((i,n)=><li key={i.itemId}><strong>{i.name}</strong><span>{stationLabel(i.stationId)} → {stationLabel(desired)}</span>{changed&&<small>Shared: {current[n]?stationLabel(current[n]?.stationId):'No longer in list'}</small>}</li>)}</ul>
+  <ul className="station-review-items">{baseline.map((i,n)=><li key={i.itemId}><strong>{i.name}</strong><span>{stationLabel(i.stationId)} → {desired===undefined?'Choose a station':stationLabel(desired)}</span>{changed&&<small>Shared: {current[n]?stationLabel(current[n]?.stationId):'No longer in list'}</small>}</li>)}</ul>
   {busy&&<p role="status">{state.saving?'Checking and saving stations…':'Loading shared stations…'}</p>}
   {state.error&&<p className="error" role="alert">{state.error}</p>}
   {!sending&&(changed||pending?.rejected)&&<div className="notice"><p>Shared settings changed. Your selection is kept. Refresh, compare and review before saving again.</p><Button variant="outline" disabled={busy} onClick={onRefresh}>Refresh shared stations</Button>{!state.error&&!busy&&<Button variant="outline" disabled={current.some(i=>!i)} onClick={async()=>{if(pending&&!await getController()?.keepShared())return;const s=getController()?.state.snapshot;const latest=baseline.map(i=>s?.items.find(x=>x.itemId===i.itemId)).filter((i):i is StockItem=>!!i);if(latest.length===baseline.length)setBaseline(latest);}}>Use my selection after review</Button>}</div>}
-  <DialogFooter><Button variant="outline" disabled={busy} onClick={onClose}>{state.pending?'Close · keep pending change':'Cancel'}</Button>{pending&&!pending.rejected?<Button disabled={busy} onClick={()=>void recover()}>{busy?'Verifying original save…':'Retry original save'}</Button>:<Button disabled={busy||!!state.pending||!!state.error||changed||!changes.length} onClick={()=>void save()}>{busy?'Saving stations…':'Save station'}</Button>}</DialogFooter>
+  <DialogFooter><Button variant="outline" disabled={busy} onClick={onClose}>{state.pending?'Close · keep pending change':'Cancel'}</Button>{pending&&!pending.rejected?<Button disabled={busy} onClick={()=>void recover()}>{busy?'Verifying original save…':'Retry original save'}</Button>:<Button disabled={busy||!!state.pending||!!state.error||changed||desired===undefined||!changes.length} onClick={()=>void save()}>{busy?'Saving stations…':'Save station'}</Button>}</DialogFooter>
  </DialogContent></Dialog>;
 }
 

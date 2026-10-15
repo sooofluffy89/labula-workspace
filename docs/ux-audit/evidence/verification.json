@@ -1,0 +1,793 @@
+{
+  "completedAt": "2026-10-15T00:26:06.720430+00:00",
+  "baseline": "1b583b61b75d7585e73c9ca90d6837b27d54c255",
+  "node": "24.19.0",
+  "validation": {
+    "command": "npm run validate",
+    "regressionScripts": 94,
+    "result": "passed",
+    "evidence": "evidence/verification.json"
+  },
+  "browser": "Chromium 154 via Playwright",
+  "data": "synthetic local D1/R2; local sign-in only",
+  "emulated": [
+    "viewport and zoom-equivalent CSS viewport",
+    "coarse touch pointer",
+    "reduced motion",
+    "503/loading/empty GET fixtures",
+    "calendar GET fixture, writes blocked",
+    "Quick review GET/receipt fixture, no backend changes"
+  ],
+  "notVerified": [
+    "physical phones and tablets",
+    "physical software keyboard",
+    "Safari/iOS",
+    "Firefox",
+    "current production deployment"
+  ],
+  "sourceSha256": {
+    "app/discard-changes.tsx": "4206fcfa56d2594ee29e2f69bd6ce81a9c8e555588ec17be8f63c71b77c15c63",
+    "app/field-validation.tsx": "8a7fbb36f55f9fe6cb0c64bc2728cf81a3a0bcd64d773640d7e7597260d8609c",
+    "app/use-workspace-navigation.ts": "73ca0ed837c0366174e6d93261358e8a39bebcb99dbe9e8e9de8586d20c2b9e2",
+    "app/ux.css": "ddf912dc9e22e4d6c4bf5852ca592197294ddded76787e98ea4371e66f5592e2",
+    "components/viewport-size.tsx": "639ea1d373078640b7b0ee7115b81cd5b33fcfc1ec7bebfc3e4d1c3522ced979",
+    "lib/quick-review/ux.ts": "fdbbd7d4e8df092a7d046a64b48237eaf3eebb37c2f9c6f7f2d938f730a7a182",
+    "lib/recipe-undo.ts": "789e8fa8210c1689ef76b4a8074ff4d804c1b6ecca8a8016e09e2fbae30e1378",
+    "lib/ux-controls.ts": "aa11c8f6a406a7d0a84237f405283fe8fbe178486b4d44dfa9c354f7041f0cad",
+    "lib/workspace-navigation.ts": "031287ddd308c96ae82c8a6a1a50b57527c0b0f3fc552edc3945280bbba23edc",
+    "scripts/check-ux-behavior.mjs": "4f50e9c5e96c6eceef2bbe6e89f0b9a52db00b1207c9cd5cf53c3db909c7a105",
+    "scripts/verify-ux-all.mjs": "b9e3713d3daa7a81a655b40e7e904ef83ca978f7d82eb5d2e280cc7671f08e74",
+    "scripts/verify-ux-browser.mjs": "5c60c6d1be7277a53dba2b5e864a80a9046f7f011ad181c3ca2ad432550611dd",
+    "scripts/verify-ux-comparison.mjs": "db64394970d70a387fa028d616374fe493519c931199155e298ecd3f0c3c63d1",
+    "scripts/verify-ux-details.mjs": "65383c03f837f33aa95480efa94e1ffc49343d780c9708f024d2f255c15de315",
+    "scripts/verify-ux-quick-browser.mjs": "639d077ce53295485d04417a00202ecde4e92c967a05f965639464d8eca63652",
+    "scripts/verify-ux-roles.mjs": "c31120641c216bb03a058d52f5deb5ca21356a96640ba541fa0ff6fd4af48484",
+    "scripts/verify-ux-scenarios.mjs": "bf79687740affb86fa6c04acaccbcfe3636f9273222b7736544a1dd11092cec7",
+    "app/access-page.tsx": "1bf3cc868af015dee9a3e40e72b65d0b39064c7be93f0900c56bf72427d14e97",
+    "app/batch-collection.tsx": "b2331e60b973d5c65d8ce69196732f910cf0d69db827eeed39d6cf8e5900e085",
+    "app/catalog-editor.tsx": "f347d905af1df0fb4d0fb62a7a2137d70104eefe3e0643cbe223912ed8ac054b",
+    "app/catalog-manager.tsx": "a128e1f38905dce9893c35a06ba1474f42df350c9df4fdf9d1dcb68d727f1fbc",
+    "app/check-rounds.tsx": "054400357d5da9565be40b8dd7f1561454bd6df9d0dd4a69457c068f84cbe8b7",
+    "app/checking-stations.tsx": "22e838943960b38c1fa6b3c55e896584e54d367403adba05bbd775843370b0fc",
+    "app/cook-app.tsx": "e26c89739fdbfbe8dcb453bd09a3f9b30152abbdcbcc18131c7dc28675e1be92",
+    "app/desktop-navigation.tsx": "8a5a40134a82def5de703eabcd5541206719c935f21b3a166b09c82fd3e2422c",
+    "app/information-detail.tsx": "3939f97b1032df0520788b1361158d34d0bab12f36c38b1fe9e936ac668c3f21",
+    "app/kitchen-app.tsx": "3a671f1a1d48736316951439df9a4192a1c20b4fc0e50725a77ac898d3a5f6f0",
+    "app/kitchen-insights.tsx": "9012f3f38e913568a14ceb682bbacf44f928ed6a12d83ba2717745186816c904",
+    "app/layout.tsx": "17bdbe48e132737f51bf6c63f9792923cf6f8054f197a9d9b9c5b9abdd1875eb",
+    "app/manage-frequency.tsx": "39f4cc5c0341147ed7bfcbef12d837b6577e665f4395fc47e4bbd72570e8b09e",
+    "app/morning-list.tsx": "1424c9a5a854b8ef629bad9491891bdbe1e0e644a1b2e3d50c91b68cf5a3ea94",
+    "app/notebook-restore.tsx": "c61e8201ef8a8f42d8f31b46f41df85d1fcc555befd6b801817167be3a697b0f",
+    "app/operating-calendar-editor.tsx": "1ba4cd3fbe33f84d5dfb32642806036f8c2c137c0e347ebb713fa3011c789e87",
+    "app/operations-workspace.tsx": "2a505c6f479c2f47897aae450a628dc1dc6239e3adbac3c14a5c23eb7b7e663d",
+    "app/prep-fields.tsx": "34cdfa23db4e5dd91a9048701846ed6494eca14d4288bac3ab8eee36814b5486",
+    "app/prep-workflow.tsx": "a100613389346303c696ee4ea3218cdb429309df7f89c1139f5ea391a3767e55",
+    "app/recipe-ui.tsx": "25fb3aecefe52fced5ab0edf8d414f0c500dfa1c8267d362c7a8fd314b630299",
+    "app/review-status.tsx": "ac53518ddea09755384ee98ee63d7680fe83fcc8896932c01c46bcfcf83c84c1",
+    "app/review/archive/read-only.tsx": "b6a95d30e8d8d605f47b00aa6bf0c934e1c7490e797ca77d504ae14466bebb4d",
+    "app/review/page.tsx": "83c14d11aa225ceefa444c86dab235ca3160f986d557e09afc6ccf9ed785ee36",
+    "app/review/quick.tsx": "518b4d41b9822120bfcef35811035300a5dae93e4b774b16ce40979e8d7c9c6a",
+    "app/review/review.tsx": "a53a873610c8ae9fd5b6fc5eca56eb1b15fd9f4c58d3cb79845df810f7d01e07",
+    "app/review/ux.tsx": "871d5885be809fd2c76dbba7521a81989919fc7a27d1c1b42078e646243bdc25",
+    "app/reviewed-insights.tsx": "fd424489c43491bed98dd883f6cff5a992ce308d9af80ef8778e84a162a6262c",
+    "app/stock-activity.tsx": "139cfb15bbf249f5d83ca799a1631c846f4ceb59402dfbbfdab830bb0da43f39",
+    "app/stock-group-editor.tsx": "4c24a9467b6d7b910ccdc8862a5c62c181c6585ee64e8d5872535e7b9da2870f",
+    "app/stock-list.tsx": "77d7c8e50d2757badefe7c897af089c7d79a67feaba3f7652a98d1681294fc29",
+    "app/stock-workflow.tsx": "c9859960a474a2401a18e1b6e71e4f90316b502eba339d9de7ae756246993439",
+    "app/team-workspace.tsx": "8812efa292fbd69fad13a5c13fe56c8e40835be19a14c419c5265d69194dcf61",
+    "app/use-desktop.ts": "1c4f87e41c44b06da21d2a2c38b612f2428fc3c948959830e69a48d821a046ea",
+    "components/ui/dialog.tsx": "176cebdb2689ec6153519932a1b6025bf2a60d50c5402ab047f62ac0d5f6ffa7",
+    "components/ui/empty.tsx": "9bd36fd040c3b3dfec27c08c29254980f1814f1d816cb6be6d96e2c0cbef154f",
+    "lib/prep-profile.ts": "5d2e18ed34865aa7215f9284dbad566f12addbe2b20e1cde2d5d4cfe663c4d42",
+    "lib/stock-feedback.ts": "de7ec034fed67244ace89788b586b36ac0ec2b1981a0203546657314404645f3",
+    "scripts/check-calm-ui.mjs": "d8cfc690d6f0de289216f543a9cefa37ce7fb200cd89aa86d362aa26f4ba3e6d",
+    "scripts/check-catalog-dialogs.mjs": "e1c07a6a93c4bacee928f4d3038aa598a9bbd33fd0c964fd15c1bd9bd9137837",
+    "scripts/check-kitchen-preparation-integration.mjs": "cd208a4ebcedd7ddb31d32027ee733de8f1742d2fa6ccfc0e9994c61aa3bba1c",
+    "scripts/check-manage-settings-ui.mjs": "68b9f039c4f680ef6b9abc904cc46f35e27adf1a555a6d3be7a71ded5f0ada81",
+    "scripts/check-menu-planning-ui.mjs": "620823653b76b6c46b963a43d1d32f8aa80ff233d9232e39f83110ad9a70f265",
+    "scripts/check-morning-layout.mjs": "244bdfd99c458ce2bebc87bdfe33a4f4a316be36fff61893b29f9b29d1d3c969",
+    "scripts/check-prep-fields.mjs": "e22dc386f32e4e2c9a681a2de5ee6e229dd371ae391f91a863fbbce81243361c",
+    "scripts/check-prep-workflow.mjs": "7a6106e2e37eb58639fe3eb68d6d6ca581ca1075a09a2e11e7a4a11e8b8b4d35",
+    "scripts/check-quick-ui.mjs": "6ece18df4a6c524d33324b20b5044db9b86ed4810ea996675a862d8a97ff76f8"
+  },
+  "results": {
+    "browser": {
+      "results": [
+        {
+          "name": "Responsive layout, one visible h1 and no document overflow",
+          "status": "passed"
+        },
+        {
+          "name": "Recipe detail remains usable at 1100,1280,1440 and docked 1600",
+          "status": "passed"
+        },
+        {
+          "name": "Back, Forward, Refresh and selected recipe preserve context",
+          "status": "passed"
+        },
+        {
+          "name": "Back restores scroll when delayed content grows",
+          "status": "passed"
+        },
+        {
+          "name": "No-results state and reset",
+          "status": "passed"
+        },
+        {
+          "name": "Dirty dialog protects input and restores keyboard focus",
+          "status": "passed"
+        },
+        {
+          "name": "Reduced motion and input boundary contrast",
+          "status": "passed"
+        },
+        {
+          "name": "Recipe removal Undo restores ingredient and completion",
+          "status": "passed"
+        },
+        {
+          "name": "Batch Back returns to Preparation without closing the form",
+          "status": "passed"
+        },
+        {
+          "name": "Preparation validation identifies the field and accepts explicit unknown",
+          "status": "passed"
+        },
+        {
+          "name": "Checklist has labelled native controls and coherent focus order",
+          "status": "passed"
+        },
+        {
+          "name": "Bulk station opening makes no implicit changes",
+          "status": "passed"
+        },
+        {
+          "name": "Hidden history filters remain visible and resettable",
+          "status": "passed"
+        },
+        {
+          "name": "Review stays in the workspace and preserves alternative-name drafts",
+          "status": "passed"
+        },
+        {
+          "name": "100-item synthetic catalog keeps preparation entry above results",
+          "status": "passed"
+        },
+        {
+          "name": "Report browser runtime has no page exceptions",
+          "status": "passed"
+        }
+      ],
+      "metrics": [
+        {
+          "view": "insights",
+          "width": 320,
+          "scrollWidth": 320,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 300
+            }
+          ],
+          "firstCard": 628.4375
+        },
+        {
+          "view": "recipes",
+          "width": 320,
+          "scrollWidth": 320,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 404.59375
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 320,
+          "scrollWidth": 320,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 138
+            }
+          ],
+          "prep": 228.375
+        },
+        {
+          "view": "insights",
+          "width": 360,
+          "scrollWidth": 360,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 250
+            }
+          ],
+          "firstCard": 526.4375
+        },
+        {
+          "view": "recipes",
+          "width": 360,
+          "scrollWidth": 360,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 386.59375
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 360,
+          "scrollWidth": 360,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 138
+            }
+          ],
+          "prep": 228.375
+        },
+        {
+          "view": "insights",
+          "width": 390,
+          "scrollWidth": 390,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 250
+            }
+          ],
+          "firstCard": 526.4375
+        },
+        {
+          "view": "recipes",
+          "width": 390,
+          "scrollWidth": 390,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 386.59375
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 390,
+          "scrollWidth": 390,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 138
+            }
+          ],
+          "prep": 228.375
+        },
+        {
+          "view": "insights",
+          "width": 759,
+          "scrollWidth": 759,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 218
+            }
+          ],
+          "firstCard": 494.4375
+        },
+        {
+          "view": "recipes",
+          "width": 759,
+          "scrollWidth": 759,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 380.59375
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 759,
+          "scrollWidth": 759,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 138
+            }
+          ],
+          "prep": 207.375
+        },
+        {
+          "view": "insights",
+          "width": 760,
+          "scrollWidth": 760,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 218
+            }
+          ],
+          "firstCard": 494.4375
+        },
+        {
+          "view": "recipes",
+          "width": 760,
+          "scrollWidth": 760,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 380.59375
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 760,
+          "scrollWidth": 760,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 138
+            }
+          ],
+          "prep": 207.375
+        },
+        {
+          "view": "insights",
+          "width": 768,
+          "scrollWidth": 768,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 218
+            }
+          ],
+          "firstCard": 494.4375
+        },
+        {
+          "view": "recipes",
+          "width": 768,
+          "scrollWidth": 768,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 401.59375
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 768,
+          "scrollWidth": 768,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 138
+            }
+          ],
+          "prep": 220.75
+        },
+        {
+          "view": "insights",
+          "width": 1024,
+          "scrollWidth": 1024,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 218
+            }
+          ],
+          "firstCard": 494.4375
+        },
+        {
+          "view": "recipes",
+          "width": 1024,
+          "scrollWidth": 1024,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 317.59375
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 1024,
+          "scrollWidth": 1024,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 138
+            }
+          ],
+          "prep": 220.75
+        },
+        {
+          "view": "insights",
+          "width": 1099,
+          "scrollWidth": 1099,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 218
+            }
+          ],
+          "firstCard": 494.4375
+        },
+        {
+          "view": "recipes",
+          "width": 1099,
+          "scrollWidth": 1099,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 323.59375
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 1099,
+          "scrollWidth": 1099,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 138
+            }
+          ],
+          "prep": 220.75
+        },
+        {
+          "view": "insights",
+          "width": 1100,
+          "scrollWidth": 1100,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 79.34375
+            }
+          ],
+          "firstCard": 353.1875
+        },
+        {
+          "view": "recipes",
+          "width": 1100,
+          "scrollWidth": 1100,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 355.1875
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 1100,
+          "scrollWidth": 1100,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 79
+            }
+          ],
+          "prep": 169.75
+        },
+        {
+          "view": "insights",
+          "width": 1280,
+          "scrollWidth": 1280,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 79.34375
+            }
+          ],
+          "firstCard": 336
+        },
+        {
+          "view": "recipes",
+          "width": 1280,
+          "scrollWidth": 1280,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 271.1875
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 1280,
+          "scrollWidth": 1280,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 79
+            }
+          ],
+          "prep": 169.75
+        },
+        {
+          "view": "insights",
+          "width": 1440,
+          "scrollWidth": 1440,
+          "headings": [
+            {
+              "text": "Preparation analysis",
+              "y": 79.34375
+            }
+          ],
+          "firstCard": 336
+        },
+        {
+          "view": "recipes",
+          "width": 1440,
+          "scrollWidth": 1440,
+          "headings": [
+            {
+              "text": "Silken tofu chili",
+              "y": 271.1875
+            }
+          ]
+        },
+        {
+          "view": "catalog",
+          "width": 1440,
+          "scrollWidth": 1440,
+          "headings": [
+            {
+              "text": "Ingredients",
+              "y": 79
+            }
+          ],
+          "prep": 169.75
+        },
+        {
+          "width": 1100,
+          "mode": "closed",
+          "editor": 852,
+          "clipped": []
+        },
+        {
+          "width": 1280,
+          "mode": "closed",
+          "editor": 718,
+          "clipped": []
+        },
+        {
+          "width": 1440,
+          "mode": "closed",
+          "editor": 878,
+          "clipped": []
+        },
+        {
+          "width": 1100,
+          "editor": 852,
+          "createLeft": 878.5,
+          "createRight": 1045,
+          "editorRight": 1076,
+          "clipped": [],
+          "overlay": true,
+          "docked": false
+        },
+        {
+          "width": 1280,
+          "editor": 718,
+          "createLeft": 1058.5,
+          "createRight": 1225,
+          "editorRight": 1256,
+          "clipped": [],
+          "overlay": true,
+          "docked": false
+        },
+        {
+          "width": 1440,
+          "editor": 878,
+          "createLeft": 1218.5,
+          "createRight": 1385,
+          "editorRight": 1416,
+          "clipped": [],
+          "overlay": true,
+          "docked": false
+        },
+        {
+          "width": 1535,
+          "editor": 973,
+          "createLeft": 1313.5,
+          "createRight": 1480,
+          "editorRight": 1511,
+          "clipped": [],
+          "overlay": true,
+          "docked": false
+        },
+        {
+          "width": 1536,
+          "editor": 604,
+          "createLeft": 944.5,
+          "createRight": 1111,
+          "editorRight": 1142,
+          "clipped": [],
+          "overlay": false,
+          "docked": true
+        },
+        {
+          "width": 1600,
+          "editor": 668,
+          "createLeft": 1008.5,
+          "createRight": 1175,
+          "editorRight": 1206,
+          "clipped": [],
+          "overlay": false,
+          "docked": true
+        },
+        {
+          "inputContrast": 3.3332956698346514
+        },
+        {
+          "manageTabStops": 6
+        },
+        {
+          "catalogSize": 100,
+          "prepY": 228.375
+        }
+      ],
+      "errors": []
+    },
+    "scenario": {
+      "results": [
+        {
+          "name": "Evening → Finish → Morning → Ready → Undo on actual local data",
+          "status": "passed"
+        },
+        {
+          "name": "Short viewport, 200% zoom equivalent, touch and long names",
+          "status": "passed"
+        },
+        {
+          "name": "Complete calendar confirmation uses a browser-only synthetic GET fixture",
+          "status": "passed"
+        },
+        {
+          "name": "Empty, loading and request-error states are distinct (browser GET fixtures)",
+          "status": "passed"
+        },
+        {
+          "name": "Runtime stays free of browser exceptions",
+          "status": "passed"
+        }
+      ],
+      "metrics": [
+        {
+          "morningFirstTask": 630.984375,
+          "comparisonDay": "2026-10-15",
+          "clientTime": "2026-10-14T20:32:00Z",
+          "plannedItems": [
+            "Chilli garlic sauce",
+            "Cucumber salad dressing"
+          ]
+        }
+      ],
+      "errors": []
+    },
+    "detail": {
+      "results": [
+        {
+          "name": "Morning first task is visible on the original audit day",
+          "status": "passed"
+        },
+        {
+          "name": "No-plan Morning offers the preceding Evening with the correct date",
+          "status": "passed"
+        },
+        {
+          "name": "Short preparation dialog keeps the focused field clear of its footer",
+          "status": "passed"
+        },
+        {
+          "name": "Information Back, Forward, Refresh and direct detail links remain intact",
+          "status": "passed"
+        },
+        {
+          "name": "Check rounds exposes the transfer model and Move to controls",
+          "status": "passed"
+        },
+        {
+          "name": "No runtime exceptions in detail and short-window flows",
+          "status": "passed"
+        }
+      ],
+      "metrics": [
+        {
+          "auditMorningFirstTask": 558.484375,
+          "date": "2026-10-15"
+        }
+      ],
+      "errors": []
+    },
+    "quick": {
+      "results": [
+        {
+          "name": "Quick review blocks an incomplete step and links to the missing field (browser fixture)",
+          "status": "passed"
+        },
+        {
+          "name": "Quick review step exposes Output, Work and Frequency groups",
+          "status": "passed"
+        },
+        {
+          "name": "Quick review has no runtime exceptions",
+          "status": "passed"
+        }
+      ],
+      "metrics": [
+        {
+          "quickInputStyle": {
+            "border": "rgb(125, 135, 149)",
+            "background": "rgb(255, 255, 255)"
+          }
+        }
+      ],
+      "errors": []
+    },
+    "role": {
+      "results": [
+        {
+          "name": "Actual Owner access and complete backup entry",
+          "status": "passed"
+        },
+        {
+          "name": "Actual Manager retains settings, safe type correction and backup",
+          "status": "passed"
+        },
+        {
+          "name": "Actual Cook sees exactly two equal daily choices at 320 and390px",
+          "status": "passed"
+        }
+      ],
+      "metrics": [
+        {
+          "role": "Cook",
+          "width": 320,
+          "button": {
+            "x": 12,
+            "y": 60,
+            "width": 144,
+            "height": 48
+          }
+        },
+        {
+          "role": "Cook",
+          "width": 390,
+          "button": {
+            "x": 12,
+            "y": 60,
+            "width": 179,
+            "height": 48
+          }
+        }
+      ],
+      "errors": []
+    },
+    "comparison": {
+      "results": [
+        {
+          "name": "Same-data before/after screenshots use the original 12 synthetic identities",
+          "status": "passed"
+        },
+        {
+          "name": "Comparison fixtures produce no browser exceptions",
+          "status": "passed"
+        }
+      ],
+      "metrics": [
+        {
+          "fixture": "12 original synthetic items; browser GET only",
+          "prepY": 228.375
+        }
+      ],
+      "errors": []
+    }
+  }
+}
