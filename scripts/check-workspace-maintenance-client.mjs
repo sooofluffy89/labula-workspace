@@ -22,7 +22,7 @@ try{
  // retains the exact maintenance operation and can retry through the latch.
  const calls=[];let fail=true;
  globalThis.fetch=async(url,init)=>{assert.equal(url,'/api/workspace-maintenance');assert.equal(new Headers(init.headers).get('X-Labula-Account-Id'),'owner');calls.push(init);return init.method?(fail?response({error:'Retry safely.',code:'maintenance_unavailable'},503):response(body(1,1))):response(body());};
- mount();await settle();let tree=render();button(tree,'Pause writes').props.onClick();await settle();tree=render();
+ mount();await settle();let tree=render();const probe=nodes(tree).find(node=>node.type==='form');assert.equal(probe.props.method,'POST');assert.equal(probe.props.action,'/api/catalog');assert.equal(probe.props.target,'_blank');assert.equal(probe.props.rel,'noopener');assert.equal(probe.props.onSubmit,undefined,'probe uses native browser form submission');const fields=nodes(probe).filter(node=>node.type==='input');assert.deepEqual(fields.map(node=>[node.props.type,node.props.name,node.props.value]),[['hidden','maintenance_guard_probe','legacy-client']]);assert(button(probe,'Check legacy-client block'));button(tree,'Pause writes').props.onClick();await settle();tree=render();
  assert.equal(lost,0);assert(button(tree,'Retry the same pending action'));assert.equal(button(tree,'Pause writes').props.disabled,true);
  const original=calls.find(c=>c.method).body;fail=false;button(tree,'Retry the same pending action').props.onClick();await settle();tree=render();
  assert.equal(calls.filter(c=>c.method).length,2);assert.equal(calls.filter(c=>c.method)[1].body,original);assert.equal(button(tree,'Pause writes').props.disabled,true);assert.equal(button(tree,'Resume writes — client version 2').props.disabled,false);
