@@ -19,7 +19,7 @@ export default function CookApp({account}:{account:string}){
   const next:WorkspaceRoute=['recipes','catalog','house-made','morning','evening'].includes(input.view)?input:{view:'morning'};
   active.current=next.view;setRoute(next);
   if(next.view==='recipes'||next.view==='catalog'||next.view==='house-made'){
-   lastMenu.current=next;setVisited(true);setMenu({view:next.view==='recipes'?'dishes':next.view==='house-made'||next.kind==='prep'?'house-made':'ingredients',dishId:next.dish,variantId:next.variant,itemId:next.item,itemPath:next.itemPath,query:next.query,kind:next.kind==='review'?'all':next.kind,scope:next.scope??(next.view==='house-made'?'all':'current')});
+   lastMenu.current=next;setVisited(true);setMenu({view:next.view==='recipes'?'dishes':next.view==='house-made'||next.kind==='prep'?'house-made':'ingredients',dishId:next.dish,variantId:next.variant,itemId:next.item,itemPath:next.itemPath,query:next.query,kind:next.kind==='review'?'all':next.kind,scope:next.view==='recipes'?(next.scope??'current'):'current'});
   }else{lastToday.current=next;pending.current=next.view;pendingDay.current=next.day;setRequest(r=>({view:next.view==='evening'?'evening':'morning',day:next.day,serial:r.serial+1}));}
  },'morning');
  const locationChanged=(view:WorkspaceDestination,day?:string,blocked=false)=>{
