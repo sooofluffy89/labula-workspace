@@ -1,0 +1,104 @@
+{
+  "basis": "Built Worker on loopback, explicit synthetic identity, read-only checks",
+  "errors": [],
+  "metrics": [
+    {
+      "width": 1366,
+      "pageWidth": 1366,
+      "row": {
+        "width": 983,
+        "height": 42,
+        "top": 298.296875,
+        "bottom": 340.296875,
+        "display": "table-row"
+      },
+      "panel": {
+        "width": 320,
+        "height": 714,
+        "top": 174,
+        "bottom": 888,
+        "display": "flex"
+      },
+      "actions": {
+        "width": 998,
+        "height": 48,
+        "top": 839,
+        "bottom": 887,
+        "display": "flex"
+      },
+      "font": "13px"
+    },
+    {
+      "width": 1440,
+      "pageWidth": 1440,
+      "row": {
+        "width": 1057,
+        "height": 42,
+        "top": 298.296875,
+        "bottom": 340.296875,
+        "display": "table-row"
+      },
+      "panel": {
+        "width": 320,
+        "height": 714,
+        "top": 174,
+        "bottom": 888,
+        "display": "flex"
+      },
+      "actions": {
+        "width": 1072,
+        "height": 48,
+        "top": 839,
+        "bottom": 887,
+        "display": "flex"
+      },
+      "font": "13px"
+    },
+    {
+      "width": 1920,
+      "pageWidth": 1920,
+      "row": {
+        "width": 1473,
+        "height": 42,
+        "top": 298.296875,
+        "bottom": 340.296875,
+        "display": "table-row"
+      },
+      "panel": {
+        "width": 380,
+        "height": 714,
+        "top": 174,
+        "bottom": 888,
+        "display": "flex"
+      },
+      "actions": {
+        "width": 1488,
+        "height": 48,
+        "top": 839,
+        "bottom": 887,
+        "display": "flex"
+      },
+      "font": "14px"
+    },
+    {
+      "width": 390,
+      "pageWidth": 390,
+      "row": {
+        "width": 740,
+        "height": 52,
+        "top": 623.9375,
+        "bottom": 675.9375,
+        "display": "table-row"
+      },
+      "panel": null,
+      "actions": {
+        "width": 364,
+        "height": 48,
+        "top": 929,
+        "bottom": 977,
+        "display": "flex"
+      },
+      "font": "13px"
+    }
+  ]
+}

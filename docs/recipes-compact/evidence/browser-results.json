@@ -1,0 +1,175 @@
+{
+  "basis": "Chromium and loopback synthetic identity; no production data",
+  "results": [
+    {
+      "name": "Desktop table, panel, actions and density at 1366/1440/1920",
+      "status": "passed"
+    },
+    {
+      "name": "Filtered counts, exact variant IDs, hidden selection and Show selected",
+      "status": "passed"
+    },
+    {
+      "name": "Shared-item detail replaces the panel and preserves filter, selection and scroll",
+      "status": "passed"
+    },
+    {
+      "name": "Ingredient edit, original quantities retained, failed save and exact retry across navigation",
+      "status": "passed"
+    },
+    {
+      "name": "Bulk preview includes hidden variants, menu impact and held rows until reapply",
+      "status": "passed"
+    },
+    {
+      "name": "Stale preview cannot apply after a collaborator changes the notebook",
+      "status": "passed"
+    },
+    {
+      "name": "Existing recipe editor and catalog remain reachable",
+      "status": "passed"
+    },
+    {
+      "name": "New local item shows Not shared yet and copied-text bulk editor remains available",
+      "status": "passed"
+    },
+    {
+      "name": "Mobile and 200-percent-equivalent reflow, local table scroll and keyboard",
+      "status": "passed"
+    }
+  ],
+  "measurements": [
+    {
+      "width": 1366,
+      "pageWidth": 1366,
+      "row": {
+        "width": 983,
+        "height": 42,
+        "top": 298.296875,
+        "bottom": 340.296875,
+        "display": "table-row"
+      },
+      "list": {
+        "width": 1000,
+        "height": 714,
+        "top": 174,
+        "bottom": 888,
+        "display": "flex"
+      },
+      "panel": {
+        "width": 320,
+        "height": 714,
+        "top": 174,
+        "bottom": 888,
+        "display": "flex"
+      },
+      "actions": {
+        "width": 998,
+        "height": 48,
+        "top": 839,
+        "bottom": 887,
+        "display": "flex"
+      },
+      "font": "13px"
+    },
+    {
+      "width": 1440,
+      "pageWidth": 1440,
+      "row": {
+        "width": 1057,
+        "height": 42,
+        "top": 298.296875,
+        "bottom": 340.296875,
+        "display": "table-row"
+      },
+      "list": {
+        "width": 1074,
+        "height": 714,
+        "top": 174,
+        "bottom": 888,
+        "display": "flex"
+      },
+      "panel": {
+        "width": 320,
+        "height": 714,
+        "top": 174,
+        "bottom": 888,
+        "display": "flex"
+      },
+      "actions": {
+        "width": 1072,
+        "height": 48,
+        "top": 839,
+        "bottom": 887,
+        "display": "flex"
+      },
+      "font": "13px"
+    },
+    {
+      "width": 1920,
+      "pageWidth": 1920,
+      "row": {
+        "width": 1473,
+        "height": 42,
+        "top": 298.296875,
+        "bottom": 340.296875,
+        "display": "table-row"
+      },
+      "list": {
+        "width": 1490,
+        "height": 714,
+        "top": 174,
+        "bottom": 888,
+        "display": "flex"
+      },
+      "panel": {
+        "width": 380,
+        "height": 714,
+        "top": 174,
+        "bottom": 888,
+        "display": "flex"
+      },
+      "actions": {
+        "width": 1488,
+        "height": 48,
+        "top": 839,
+        "bottom": 887,
+        "display": "flex"
+      },
+      "font": "14px"
+    },
+    {
+      "width": 320,
+      "height": 844,
+      "documentWidth": 320,
+      "tableWidth": 279,
+      "tableScroll": 740,
+      "basis": "viewport emulation"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "tableWidth": 349,
+      "tableScroll": 740,
+      "basis": "viewport emulation"
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "documentWidth": 768,
+      "tableWidth": 703,
+      "tableScroll": 740,
+      "basis": "viewport emulation"
+    },
+    {
+      "width": 720,
+      "height": 450,
+      "documentWidth": 720,
+      "tableWidth": 679,
+      "tableScroll": 740,
+      "basis": "1440×900 at 200% equivalent CSS viewport"
+    }
+  ],
+  "errors": []
+}

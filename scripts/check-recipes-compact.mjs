@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+const dir=await mkdtemp(tmpdir()+'/recipes-compact-');
+try{
+ await build({stdin:{contents:"export * from './lib/recipes-compact';export {initialNotebook,newItem,validateNotebook} from './lib/notebook';export {workspaceMenu} from './lib/workspace-menu';export {validateOrdinaryEdit} from './lib/catalog';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile:dir+'/model.mjs',logLevel:'silent'});
+ const m=await import(dir+'/model.mjs'),n=m.initialNotebook();
+ n.items=[{...m.newItem('Synthetic crème sauce','prep'),id:'prep',aliases:['Cultured cream']},{...m.newItem('Synthetic rice'),id:'rice'}];
+ n.dishes=[{id:'a',name:'Synthetic bowl',category:'Main Dishes',state:'ready'},{id:'b',name:'Synthetic special',category:'Specials',state:'ready'},{id:'c',name:'Archived synthetic',category:'Starters',state:'archived'},{id:'d',name:'Draft synthetic',category:'Specials',state:'draft'}];
+ const base=n.recipes[0];
+ n.recipes=[{...base,id:'a1',menuId:'a',variant:'Standard',active:true,recorded:true,inputs:[{itemId:'prep',amount:25,note:'Retained note',unit:'g'}]},{...base,id:'a2',menuId:'a',variant:'Rice version',active:true,recorded:false,inputs:[{itemId:'rice',amount:null,note:''}]},{...base,id:'b1',menuId:'b',variant:'Standard',active:false,recorded:false,inputs:[]},{...base,id:'c1',menuId:'c',variant:'Standard',active:false,recorded:false,inputs:[]},{...base,id:'d1',menuId:'d',variant:'Standard',active:false,recorded:false,inputs:[]}];
+ m.validateNotebook(n);
+ const menu=m.workspaceMenu(n,[],{revision:7,updatedAt:'2026-10-17T09:00:00Z',accountId:'synthetic-owner',role:'owner'}),rows=m.compactRecipeRows(menu);
+ const all={query:'',scope:'all',category:'all',state:'all'};
+ assert.equal(rows.length,5);assert.equal(new Set(rows.map(row=>row.dish.id)).size,4);
+ assert.deepEqual(rows.map(row=>row.state),['confirmed','progress','inactive','inactive','inactive']);assert.equal(rows[0].houseMade,1);
+ assert.deepEqual(m.filterRecipeRows(rows,{...all,scope:'current'},menu).map(row=>row.recipe.id),['a1','a2']);
+ assert.deepEqual(m.filterRecipeRows(rows,{...all,query:'cultured cream'},menu).map(row=>row.recipe.id),['a1'],'ingredient aliases participate in search');
+ assert.deepEqual(m.filterRecipeRows(rows,{...all,query:'creme'},menu).map(row=>row.recipe.id),['a1']);
+ assert.deepEqual(m.filterRecipeRows(rows,{...all,scope:'off'},menu).map(row=>row.recipe.id),['b1','d1']);
+ assert.deepEqual(m.filterRecipeRows(rows,{...all,scope:'archived'},menu).map(row=>row.recipe.id),['c1']);
+ assert.deepEqual(m.filterRecipeRows(rows,{...all,state:'confirmed'},menu).map(row=>row.recipe.id),['a1']);
+ let selected=['a1','b1'];selected=m.toggleRecipeSelection(selected,['a2'],true);assert.deepEqual(selected,['a1','b1','a2']);selected=m.toggleRecipeSelection(selected,['a1'],false);assert.deepEqual(selected,['b1','a2'],'hidden selections survive a filtered toggle');
+ const preview=m.buildRecipePreview(n,['a1','a1','a2','b1'],'off',7);assert.equal(preview.rows.length,3);assert.equal(preview.rows.filter(row=>row.changed).length,2);assert.deepEqual(preview.leavingDishes,['Synthetic bowl']);assert.equal(preview.activeDishesAfter,0);
+ const off=m.applyRecipePreview(n,preview,7);m.validateNotebook(off);m.validateOrdinaryEdit(n,off,true);
+ assert.equal(n.recipes[0].active,true,'preview and application never mutate their source');assert.equal(off.recipes[0].active,false);assert.equal(off.recipes[1].active,false);assert.deepEqual(off.recipes[0].inputs,n.recipes[0].inputs);assert.deepEqual(off.items,n.items);assert.deepEqual(off.dishes,n.dishes);assert.deepEqual(off.processes,n.processes);
+ const reopened=m.applyRecipePreview(n,m.buildRecipePreview(n,['a1'],'reopen',7),7);assert.equal(reopened.recipes[0].recorded,false);assert.deepEqual(reopened.recipes[0].inputs,n.recipes[0].inputs);assert.equal(reopened.recipes[0].active,true);assert.deepEqual(reopened.recipes[1],n.recipes[1]);m.validateOrdinaryEdit(n,reopened,true);
+ assert.throws(()=>m.applyRecipePreview(n,preview,8),/changed after/);
+ const newer=structuredClone(n);newer.recipes[1].notes='A newer local edit';assert.throws(()=>m.applyRecipePreview(newer,preview,7),/changed after/,'even an unrelated local edit invalidates the pinned whole-notebook preview');
+ assert.throws(()=>m.buildRecipePreview(n,['missing'],'off',7),/unavailable/);assert.throws(()=>m.buildRecipePreview(n,[],'off',7),/Select at least/);assert.throws(()=>m.buildRecipePreview(n,['c1'],'on',7),/archived/);assert.throws(()=>m.buildRecipePreview(n,['d1'],'on',7),/draft/);
+ console.log('PASS Recipes Compact: dynamic variants and dishes, scoped states, aliases, archived/draft handling, hidden ID selections, deduplicated bulk preview, last active variant impact, stale revision/local edits, retained quantities and protected notebook data.');
+}finally{await rm(dir,{recursive:true,force:true});}
