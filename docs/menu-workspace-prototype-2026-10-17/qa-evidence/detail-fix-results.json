@@ -1,0 +1,56 @@
+[
+  {
+    "width": 1440,
+    "status": "passed",
+    "detailInitiallyVisible": true,
+    "errors": []
+  },
+  {
+    "width": 1000,
+    "status": "passed",
+    "detailInitiallyVisible": true,
+    "errors": []
+  },
+  {
+    "width": 900,
+    "status": "passed",
+    "detailInitiallyVisible": true,
+    "errors": []
+  },
+  {
+    "width": 760,
+    "status": "passed",
+    "detailInitiallyVisible": true,
+    "errors": []
+  },
+  {
+    "width": 720,
+    "status": "passed",
+    "detailInitiallyVisible": true,
+    "errors": []
+  },
+  {
+    "width": 640,
+    "status": "passed",
+    "detailInitiallyVisible": true,
+    "errors": []
+  },
+  {
+    "width": 560,
+    "status": "passed",
+    "detailInitiallyVisible": true,
+    "errors": []
+  },
+  {
+    "width": 559,
+    "status": "passed",
+    "detailInitiallyVisible": false,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "status": "passed",
+    "detailInitiallyVisible": false,
+    "errors": []
+  }
+]

@@ -1,0 +1,61 @@
+{
+  "results": [
+    {
+      "name": "Shared desktop and narrow detail layout",
+      "status": "passed"
+    },
+    {
+      "name": "Nested composition, confirmation and transitive dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "All house-made and bought ingredient boundary",
+      "status": "passed"
+    },
+    {
+      "name": "Local draft survives navigation and reload, saved amounts retained",
+      "status": "passed"
+    },
+    {
+      "name": "Uncertain product write replays exact request after reload",
+      "status": "passed"
+    },
+    {
+      "name": "Hidden bulk selection, exact preview and safe Undo",
+      "status": "passed"
+    },
+    {
+      "name": "Off-menu list can be confirmed and keyboard search works",
+      "status": "passed"
+    },
+    {
+      "name": "Create shared item from composition with durable text and stable identity",
+      "status": "passed"
+    },
+    {
+      "name": "House-made bulk request survives reload with exact retry",
+      "status": "passed"
+    },
+    {
+      "name": "Bulk category deduplicates variants to one whole dish",
+      "status": "passed"
+    },
+    {
+      "name": "Mobile detail, return and modal focus",
+      "status": "passed"
+    },
+    {
+      "name": "Today and Settings retain real navigation and shared shell",
+      "status": "passed"
+    },
+    {
+      "name": "Real Evening check publication, Morning Ready and frozen plan after menu edit",
+      "status": "passed"
+    },
+    {
+      "name": "Low-height reflow equivalent to 200 percent at 1440 by 900",
+      "status": "passed"
+    }
+  ],
+  "errors": []
+}

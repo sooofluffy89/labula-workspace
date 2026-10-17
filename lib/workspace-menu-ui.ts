@@ -2,7 +2,7 @@ import {newItem,normalizeName,safeCsvCell,validateNotebook,type Notebook,type Re
 import {addDish,addDishVariant,patchDishVariant,updateDish} from './dish-workspace';
 import type {WorkspaceMenu} from './workspace-menu';
 
-export type MenuSelection={view:'dishes'|'ingredients';dishId?:string;variantId?:string;itemId?:string;itemPath?:string[];query?:string;kind?:'all'|'bought'|'prep';scope?:'current'|'all'|'off'|'archived';checkedOnly?:boolean};
+export type MenuSelection={view:'dishes'|'house-made'|'ingredients';dishId?:string;variantId?:string;itemId?:string;itemPath?:string[];query?:string;kind?:'all'|'bought'|'prep';scope?:'current'|'all'|'off'|'archived';checkedOnly?:boolean};
 export function menuItemSelection(current:MenuSelection,id:string):MenuSelection{return {...current,itemId:id,itemPath:current.itemId&&current.itemId!==id?[...(current.itemPath??[]),current.itemId]:current.itemPath};}
 export function menuParentSelection(current:MenuSelection):MenuSelection{const parent=current.itemPath?.at(-1);if(parent)return {...current,itemId:parent,itemPath:current.itemPath!.length>1?current.itemPath!.slice(0,-1):undefined};if(current.itemId&&current.dishId)return {...current,itemId:undefined,itemPath:undefined};return {...current,itemId:undefined,itemPath:undefined,dishId:undefined,variantId:undefined};}
 export function menuDishes(menu:WorkspaceMenu,selection:MenuSelection){
@@ -17,14 +17,14 @@ export function menuItems(menu:WorkspaceMenu,selection:MenuSelection,checkedIds?
  const query=normalizeName(selection.query??''),scope=selection.scope??'current';
  return menu.items.filter(item=>{
   const used=item.usedIn.some(u=>u.recipeIds.some(id=>active.has(id)));
-  return (!selection.kind||selection.kind==='all'||item.kind===selection.kind)&&(scope==='all'||scope==='current'&&used||scope==='off'&&!used)&&(!selection.checkedOnly||checkedIds?.has(item.id))&&normalizeName([item.name,...item.aliases].join(' ')).includes(query);
+  return (selection.view!=='house-made'||item.kind==='prep')&&(!selection.kind||selection.kind==='all'||item.kind===selection.kind)&&(scope==='all'||scope==='current'&&used||scope==='off'&&!used)&&(!selection.checkedOnly||checkedIds?.has(item.id))&&normalizeName([item.name,...item.aliases].join(' ')).includes(query);
  }).sort((a,b)=>a.name.localeCompare(b.name,'en'));
 }
 export function recipeBasis(portions:number|null){return portions===null?'Full recipe · portions not recorded':portions===1?'Per portion':`For ${portions} portions`;}
 export function itemBasis(amount:number|null,unit:string){return amount===null?'Full batch · yield not recorded':`For a ${amount} ${unit} batch`;}
 export function menuViewCsv(menu:WorkspaceMenu,selection:MenuSelection,checkedIds?:Set<string>){
  const rows:unknown[][]=[];
- if(selection.view==='ingredients'){
+ if(selection.view!=='dishes'){
   rows.push(['Item','Origin','Base unit','Dish use','Batch yield','Composition source']);
   for(const item of menuItems(menu,selection,checkedIds))rows.push([item.name,item.kind==='prep'?'House-made':'Bought',item.unit,item.usedIn.map(u=>u.name).join('; '),item.yieldAmount,item.composition.sourceLabel]);
  }else{

@@ -57,3 +57,23 @@ export async function writeWorkspaceMenu(user:ChatGPTUser,revision:number,body:u
  if(!result[0].meta.changes||!result[1].meta.changes){if(await replay())return {...await readWorkspaceMenu(user),operationId:command.operationId,replayed:true};await legacyPlanScopeGuard(notebook,next,{beforeRecords:records,afterRecords:records});throw new RequestError('The shared recipe changed during saving. Your draft is kept.',409,'revision_conflict');}
  return {...await readWorkspaceMenu(user),operationId:command.operationId,replayed:false};
 }
+
+/** Reopening is an explicit management command; it never changes composition or production scope. */
+export async function reopenWorkspaceCompositions(user:ChatGPTUser,revision:number,raw:unknown){
+ if(!await canManage(user))throw new RequestError('Only the owner or a Manager can reopen house-made lists.',403,'role_restricted');
+ const {z}=await import('zod');const command=z.object({operationId:z.string().uuid(),itemIds:z.array(z.string().min(1).max(100)).min(1).max(1000)}).strict().parse(raw);
+ if(new Set(command.itemIds).size!==command.itemIds.length)throw new RequestError('Select each shared item once.');
+ const request=JSON.stringify(command),db=getRawDb();
+ const replay=async()=>{const prior=await db.prepare('SELECT id,request,actor_id,before_revision FROM catalog_operations WHERE id=?').bind(command.operationId).first<MenuReceipt>();if(!prior)return false;if(prior.actor_id!==user.userId||prior.before_revision!==revision||prior.request!==request)throw new RequestError('This request ID belongs to another change.',409,'command_mismatch');return true;};
+ if(await replay())return {...await readWorkspaceMenu(user),replayed:true};
+ const before=await readNotebook(user);if(before.revision!==revision){if(await replay())return {...await readWorkspaceMenu(user),replayed:true};throw new RequestError('The shared menu changed. Refresh this preview.',409,'revision_conflict');}
+ const next=migrateNotebook(JSON.parse(before.payload));for(const id of command.itemIds)if(next.items.find(item=>item.id===id)?.kind!=='prep')throw new RequestError('Select existing house-made items.');
+ for(const definition of next.workspaceRecipes??[])if(command.itemIds.includes(definition.itemId))delete definition.compositionCheck;
+ const payload=notebookPayload(next),now=new Date().toISOString();
+ const result=await db.batch([
+  db.prepare("INSERT INTO catalog_operations (id,kind,request,actor_id,actor_email,before_revision,after_revision,before_payload,after_payload,summary,created_at,retired_id,undo_of) SELECT ?,'workspace-reopen',?,?,?,revision,revision+1,payload,?,?,?,NULL,NULL FROM notebooks WHERE id=? AND revision=?").bind(command.operationId,request,user.userId,user.email,payload,'Reopened house-made ingredient lists',now,'kitchen',revision),
+  db.prepare('UPDATE notebooks SET payload=?,revision=revision+1,updated_at=?,updated_by=? WHERE id=? AND revision=? AND EXISTS (SELECT 1 FROM catalog_operations WHERE id=? AND before_revision=?)').bind(payload,now,user.email,'kitchen',revision,command.operationId,revision),
+ ]);
+ if(!result[0].meta.changes||!result[1].meta.changes){if(await replay())return {...await readWorkspaceMenu(user),replayed:true};throw new RequestError('The menu changed during saving. Refresh the preview.',409,'revision_conflict');}
+ return {...await readWorkspaceMenu(user),replayed:false};
+}

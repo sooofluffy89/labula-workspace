@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {mkdtemp,writeFile,rm} from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import {pathToFileURL} from 'node:url';
+import {harness} from './sync-harness.mjs';
+const dir=await mkdtemp(path.join(os.tmpdir(),'labula-composition-'));let h;
+try{
+ const out=path.join(dir,'model.mjs');await build({stdin:{contents:"export * from './lib/notebook';export * from './lib/workspace-menu';export * from './lib/menu-composition';export * from './lib/catalog';export * from './lib/composition-fingerprint';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile:out,logLevel:'silent'});const m=await import(pathToFileURL(out));
+ const n=m.initialNotebook();n.recipes.forEach(r=>{r.active=false;r.inputs=[];r.recorded=false;});const part=id=>({itemId:id,amount:null,note:''});
+ n.items=[{...m.newItem('Synthetic chilli sauce','prep'),id:'sauce',inputs:[part('paste'),part('bought')]},{...m.newItem('Synthetic garlic paste','prep'),id:'paste',inputs:[{itemId:'garlic',amount:2,note:'Preserve clove meaning',unit:'pcs',pieceMeaning:'one clove',conversion:{from:'pcs',to:'g',factor:3}}]},{...m.newItem('Synthetic bought sauce'),id:'bought'},{...m.newItem('Synthetic garlic'),id:'garlic'},{...m.newItem('Synthetic label-only ingredient'),id:'label'},{...m.newItem('Synthetic unused house-made','prep'),id:'unused'}];
+ const recipes=[n.recipes[0],n.recipes.find(r=>r.menuId!==n.recipes[0].menuId)];for(const recipe of recipes){recipe.active=true;recipe.recorded=true;recipe.inputs=[part('sauce')];}
+ const context={revision:1,updatedAt:'2026-10-17T12:00:00.000Z',accountId:'owner',role:'owner'};
+ const view=value=>m.workspaceMenu(value,[],context),report=value=>m.menuComposition(view(value));
+ const change=(value,id,confirmed,inputs)=>{const item=view(value).items.find(i=>i.id===id);return m.applyWorkspaceMenuCommand(value,[],{operationId:crypto.randomUUID(),itemId:id,baseToken:item.composition.token,inputs:inputs??item.composition.inputs,method:item.method,yieldAmount:item.yieldAmount,reference:id==='bought'?'Synthetic label':item.composition.reference,confirmed:true,listConfirmed:confirmed},2,context.updatedAt);};
+ assert.equal(report(n).complete,0);assert.equal(report(n).houseToCheck.length,2);assert.equal(report(n).ownToCheck,0);assert.equal(view(n).items.filter(i=>i.kind==='prep').length,3,'Unused house-made retained');
+ let current=change(change(n,'paste',true),'sauce',true);assert.equal(report(current).complete,2);assert.equal(report(current).issues.length,0);assert.equal(report(current).currentUses('garlic').length,2);
+ current=change(current,'bought',false,[part('label')]);assert.equal(report(current).currentUses('label').length,0,'Supplier label does not become a kitchen ingredient dependency');assert.equal(report(current).complete,2);
+ const both=structuredClone(current);both.recipes[0].inputs.push(part('garlic'));assert.equal(report(both).currentUses('garlic').find(use=>use.recipeId===both.recipes[0].id).direct,true,'Direct use is retained even when the same ingredient was reached through house-made first');
+ const original=structuredClone(current),renamed=structuredClone(current);renamed.items.find(i=>i.id==='garlic').name='Synthetic renamed garlic';assert.equal(report(renamed).complete,2,'Rename keeps content identity');
+ const changed=change(current,'paste',false,[part('garlic'),part('bought')]);assert.equal(report(changed).complete,0);assert.equal(report(changed).houseToCheck.length,1);assert.equal(report(changed).states.get('sauce').ownConfirmed,true,'Child change preserves checked parent direct list');
+ const old=current.workspaceRecipes.find(r=>r.itemId==='paste');assert.deepEqual(old.inputs[0],n.items.find(i=>i.id==='paste').inputs[0]);
+ const rewritten=structuredClone(current);rewritten.workspaceRecipes.find(r=>r.itemId==='paste').inputs=[part('bought')];assert.equal(report(rewritten).complete,0,'Changed content invalidates retained old evidence across write paths');
+ const stripped=structuredClone(current);delete stripped.workspaceRecipes;assert.throws(()=>m.validateOrdinaryEdit(current,stripped,true),/Workspace/);
+ const cycle=view(current);cycle.items.find(i=>i.id==='paste').composition.inputs=[part('sauce')];assert(m.menuComposition(cycle).issues.some(i=>i.id.startsWith('cycle:')));
+ const broken=view(current);broken.items.find(i=>i.id==='paste').composition.inputs=[part('absent')];assert(m.menuComposition(broken).issues.some(i=>i.id==='missing:absent'));
+ const off=structuredClone(current);off.recipes.forEach(r=>r.active=false);assert.equal(report(off).active.length,0);assert.equal(report(off).complete,0);
+ const dish=current.recipes[0];dish.compositionCheck={fingerprint:m.compositionFingerprint('dish',dish.inputs,current.items,dish.portions),checkedAt:context.updatedAt};assert(m.recipeCompositionConfirmed(dish,current.items));dish.inputs.push(part('garlic'));assert.equal(m.recipeCompositionConfirmed(dish,current.items),false);dish.inputs.pop();
+ assert(m.compositionMatches(view(current),dish,'renamed')===false);assert(m.compositionMatches(view(current),dish,'garlic'));
+ assert.deepEqual(original.workspaceRecipes.find(r=>r.itemId==='paste').inputs,n.items.find(i=>i.id==='paste').inputs,'Quantity metadata remains intact');
+ h=await harness();const dbFile=path.join(dir,'db.ts');await writeFile(dbFile,`import {accessContext,guardDatabase} from ${JSON.stringify(path.join(process.cwd(),'lib/access-context'))};export const getRawDb=()=>{const c=accessContext.getStore();return c?guardDatabase(globalThis.syncDb,c):globalThis.syncDb;};export const getAppAccessMode=()=>"application";`);
+ const apiFile=path.join(dir,'api.mjs');await build({stdin:{contents:"export * as menu from './app/api/menu/route';export * as reopen from './app/api/menu/reopen/route';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile:apiFile,logLevel:'silent',alias:{'@/db':dbFile,'@/app/chatgpt-auth':path.join(path.dirname(h.bundle),'auth.ts')},define:{'import.meta.env.DEV':'false'}});const api=await import(pathToFileURL(apiFile));
+ h.db.prepare("UPDATE notebooks SET payload=?,revision=10 WHERE id='kitchen'").run(JSON.stringify(original));
+ const command={operationId:crypto.randomUUID(),itemIds:['sauce','paste']};const send=(body=command,revision=10,extra={})=>api.reopen.POST(new Request('http://test.local/api/menu/reopen',{method:'POST',headers:{Origin:'http://test.local','Content-Type':'application/json','If-Match':String(revision),'X-Labula-Account-Id':globalThis.syncUser.userId,...extra},body:JSON.stringify(body)}));
+ assert.equal((await send(command,10,{Origin:'https://evil.test'})).status,403);assert.equal((await send(command,10,{'X-Labula-Account-Id':'another'})).status,403);
+ const response=await send();assert.equal(response.status,200,await response.clone().text());let body=await response.json();assert.equal(body.revision,11);assert.equal(body.items.find(i=>i.id==='paste').composition.ownConfirmed,false);assert.equal((await (await send()).json()).replayed,true);assert.equal(h.db.prepare('SELECT count(*) AS n FROM catalog_operations WHERE id=?').get(command.operationId).n,1);
+ assert.equal((await send({...command,itemIds:['sauce']})).status,409);assert.equal((await send({...command,operationId:crypto.randomUUID()})).status,409);
+ const retry={operationId:crypto.randomUUID(),itemIds:['sauce']};h.fail(sql=>sql.startsWith('UPDATE notebooks SET payload='));const oldError=console.error;console.error=()=>{};try{assert.equal((await send(retry,11)).status,503);}finally{console.error=oldError;}assert.equal(h.db.prepare('SELECT count(*) AS n FROM catalog_operations WHERE id=?').get(retry.operationId).n,0);h.fail(()=>false);assert.equal((await send(retry,11)).status,200);
+ globalThis.syncUser=h.cook;assert.equal((await send({...retry,operationId:crypto.randomUUID()},12)).status,403);globalThis.syncUser=h.owner;
+ console.log('PASS composition: versioned own confirmation, transitive completeness, supplier boundary, unused catalog, rename, content invalidation, cycles, missing IDs, metadata preservation, inactive menu, atomic bulk reopening, exact retries, CAS, rollback and role/origin/account guards.');
+}finally{if(h){globalThis.syncUser=h.owner;h.db.close();await rm(path.dirname(h.bundle),{recursive:true,force:true});}await rm(dir,{recursive:true,force:true});}

@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {compositionFingerprint,recipeCompositionConfirmed} from './composition-fingerprint';
 import {approvedProduction,currentProductionInputs} from './approved-production';
 import {inputSchema,validateNotebook,type Dish,type Item,type Notebook,type Recipe,type RecipeInput,type WorkspaceRecipeDefinition} from './notebook';
 import {list,values,str,decimal,type Entity} from './review-v2/model';
@@ -10,7 +11,7 @@ import {menuScope} from './menu-scope';
 export type WorkspaceComposition={
  source:'workspace'|'review'|'process'|'legacy'|'supplier'|'unavailable';
  status:'recorded'|'incomplete'|'not-recorded';inputs:RecipeInput[];gaps:string[];
- sourceLabel:string;token:string;reference:string;
+ sourceLabel:string;token:string;reference:string;ownConfirmed?:boolean;
 };
 export type WorkspaceSharedBatch={id:string;name:string;inputs:RecipeInput[];outputIds:string[];method:string};
 export type WorkspaceUse={dishId:string;name:string;recipeIds:string[];direct:boolean};
@@ -83,8 +84,10 @@ function sharedBatch(state:ReturnType<typeof sourceState>):WorkspaceSharedBatch|
  if(state.unavailable)return null;
  return process?{id:process.id,name:process.name,inputs:structuredClone(process.inputs),outputIds:process.outputs.map(o=>o.itemId),method:process.method}:null;
 }
+export const productCompositionFingerprint=compositionFingerprint;
 function itemProjection(n:Notebook,records:AppliedRecord[],item:Item,cache:ReturnType<typeof menuSources>):WorkspaceMenuItem{
  const state=sourceState(n,records,item.id,cache),batch=sharedBatch(state),output=state.process?.outputs.find(o=>o.itemId===item.id),composition=compositionFromState(state);
+ composition.ownConfirmed=item.kind==='prep'&&!!state.definition?.compositionCheck&&composition.status==='recorded'&&state.definition.compositionCheck.fingerprint===productCompositionFingerprint(item.kind,composition.inputs,n.items);
  const method=state.definition?.method??(batch?batch.method:state.unavailable?'':item.method);
  const yieldAmount=state.definition?state.definition.yieldAmount:state.sources.length||state.unavailable?null:output?baseInputAmount(output,item):item.yieldAmount;
  return {id:item.id,name:item.name,aliases:[...item.aliases],kind:item.kind,unit:item.unit,specification:item.specification,storage:structuredClone(item.storage),storageSetups:structuredClone(item.prepProfile.storage),storageSource:'Preparation & storage answers',workflow:item.prepProfile.workflow,preparationNote:item.prepProfile.note,method,yieldAmount,composition,sharedBatch:batch,usedIn:[]};
@@ -112,7 +115,7 @@ export function workspaceMenu(n:Notebook,records:AppliedRecord[],context:Workspa
   const use=item.usedIn.find(use=>use.dishId===recipe.menuId);if(use){use.direct||=direct;if(!use.recipeIds.includes(recipe.id))use.recipeIds.push(recipe.id);}else item.usedIn.push({dishId:recipe.menuId,name:n.dishes.find(d=>d.id===recipe.menuId)?.name??recipe.menuId,recipeIds:[recipe.id],direct});
   if(path.has(id)){if(!item.composition.gaps.includes('A circular product reference needs correction.'))item.composition.gaps.push('A circular product reference needs correction.');item.composition.status='incomplete';return;}
   const seen=walked.get(recipe.id)??new Set<string>();if(seen.has(id))return;seen.add(id);walked.set(recipe.id,seen);
-  for(const part of item.composition.inputs)walk(part.itemId,recipe,false,new Set(path).add(id));
+  if(item.kind==='prep')for(const part of item.composition.inputs)walk(part.itemId,recipe,false,new Set(path).add(id));
  };
  for(const recipe of recipes)for(const part of recipe.inputs)walk(part.itemId,recipe,true,new Set());
  if(cook)for(const recipe of recipes)for(const component of evidence.get(recipe.id)?.components??[])if(component.itemId&&component.use!=='Not used')reached.add(component.itemId);
@@ -121,11 +124,11 @@ export function workspaceMenu(n:Notebook,records:AppliedRecord[],context:Workspa
  const canEdit=!cook&&(context.role==='owner'||context.role==='manager')&&context.canManage!==false;
  return {revision:context.revision,updatedAt:context.updatedAt,accountId:context.accountId,canEdit,canOrdinaryEdit:canEdit||context.role==='legacy',
   dishes:n.dishes.filter(d=>!cook||recipes.some(r=>r.menuId===d.id)).map(d=>({id:d.id,name:d.name,category:d.category,...(d.note!==undefined?{note:d.note}:{}),state:d.state})),
-  recipes:recipes.map(r=>({id:r.id,menuId:r.menuId,variant:r.variant,portions:r.portions,inputs:structuredClone(r.inputs),notes:r.notes,active:r.active,recorded:r.recorded,method:(r.workshop?.steps??[]).map(step=>`${step.phase==='before'?'Preparation':'To order'}: ${step.text}`).join('\n'),...(evidence.get(r.id)?{reviewEvidence:evidence.get(r.id)}:{})})),
+  recipes:recipes.map(r=>({id:r.id,menuId:r.menuId,variant:r.variant,portions:r.portions,inputs:structuredClone(r.inputs),notes:r.notes,active:r.active,recorded:recipeCompositionConfirmed(r,n.items),method:(r.workshop?.steps??[]).map(step=>`${step.phase==='before'?'Preparation':'To order'}: ${step.text}`).join('\n'),...(evidence.get(r.id)?{reviewEvidence:evidence.get(r.id)}:{})})),
   items:[...projected.values()].filter(item=>!cook||reached.has(item.id))};
 }
 
-export const workspaceMenuCommandSchema=z.object({operationId:z.string().uuid(),itemId:z.string().min(1).max(100),baseToken:z.string().min(1).max(100),inputs:z.array(inputSchema).max(150),method:z.string().max(6000),yieldAmount:z.number().finite().positive().max(1e9).nullable(),reference:z.string().max(6000),confirmed:z.literal(true)}).strict();
+export const workspaceMenuCommandSchema=z.object({operationId:z.string().uuid(),itemId:z.string().min(1).max(100),baseToken:z.string().min(1).max(100),inputs:z.array(inputSchema).max(150),method:z.string().max(6000),yieldAmount:z.number().finite().positive().max(1e9).nullable(),reference:z.string().max(6000),listConfirmed:z.boolean().optional(),confirmed:z.literal(true)}).strict();
 export type WorkspaceMenuCommand=z.infer<typeof workspaceMenuCommandSchema>;
 export const workspaceMenuPreviewSchema=z.object({recipeIds:z.array(z.string().min(1).max(100)).max(500),dishStates:z.array(z.object({id:z.string().min(1).max(100),state:z.enum(['draft','ready','archived'])}).strict()).max(500).optional()}).strict();
 export type WorkspaceMenuPreviewRequest=z.infer<typeof workspaceMenuPreviewSchema>;
@@ -147,6 +150,8 @@ export function applyWorkspaceMenuCommand(n:Notebook,records:AppliedRecord[],com
  if(current.source==='unavailable')throw Error('The authoritative source could not be loaded. Retry before replacing its recipe.');
  if(item.kind==='bought'&&command.inputs.length&&!command.reference.trim())throw Error('Add the supplier label or document reference for these ingredients.');
  const definition:WorkspaceRecipeDefinition={itemId:item.id,kind:item.kind==='bought'?'supplier':'local',inputs:structuredClone(command.inputs),method:command.method,yieldAmount:command.yieldAmount,reference:command.reference,revision,updatedAt,source:current.source,sourceLabel:current.sourceLabel,sourceToken:current.token};
+ const prior=n.workspaceRecipes?.find(recipe=>recipe.itemId===item.id);if(command.listConfirmed===undefined&&prior?.compositionCheck&&prior.compositionCheck.fingerprint===productCompositionFingerprint(item.kind,definition.inputs,n.items))definition.compositionCheck=prior.compositionCheck;
+ if(command.listConfirmed){if(item.kind!=='prep'||!definition.inputs.length)throw Error('Only a nonempty house-made composition can be confirmed.');definition.compositionCheck={fingerprint:productCompositionFingerprint(item.kind,definition.inputs,n.items),checkedAt:updatedAt};}
  const next=structuredClone(n);next.workspaceRecipes=[...(next.workspaceRecipes??[]).filter(recipe=>recipe.itemId!==item.id),definition];
  // Check the effective approved tree as well as the local schema; no depth cap hides a cycle.
  const view=workspaceMenu(next,records,{revision,updatedAt,accountId:'validation',role:'owner'}),byId=new Map(view.items.map(item=>[item.id,item]));

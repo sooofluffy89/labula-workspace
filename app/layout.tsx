@@ -5,6 +5,7 @@ import "./ux.css";
 import "./workspace-v2.css";
 import "./today-workspace.css";
 import "./menu-workspace.css";
+import "./composition-workspace.css";
 import {ProfileProvider} from "./profile";
 import {AccessBoundary} from "./access-boundary";
 import {getChatGPTUser} from "./chatgpt-auth";

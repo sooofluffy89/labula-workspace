@@ -1,0 +1,52 @@
+[
+  {
+    "name": "health-nested-composition",
+    "status": "passed",
+    "errors": []
+  },
+  {
+    "name": "draft-add-remove-reload-save",
+    "status": "passed",
+    "errors": []
+  },
+  {
+    "name": "create-ingredient-picker-cycle-offmenu",
+    "status": "passed",
+    "errors": []
+  },
+  {
+    "name": "hidden-bulk-exact-preview-undo",
+    "status": "passed",
+    "errors": []
+  },
+  {
+    "name": "health-filters-and-indirect-ingredients",
+    "status": "passed",
+    "errors": []
+  },
+  {
+    "name": "bulk-undo-preserves-draft-status",
+    "status": "passed",
+    "errors": []
+  },
+  {
+    "name": "bulk-reopen-keeps-draft-unconfirmed",
+    "status": "passed",
+    "errors": []
+  },
+  {
+    "name": "today-plan-remains-snapshot",
+    "status": "passed",
+    "errors": []
+  },
+  {
+    "name": "modal-focus-search-mobile-detail",
+    "status": "passed",
+    "errors": []
+  },
+  {
+    "name": "narrow-desktop-reflow",
+    "status": "passed",
+    "errors": []
+  }
+]

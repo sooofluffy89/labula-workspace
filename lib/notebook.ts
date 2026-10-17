@@ -11,7 +11,7 @@ export const itemNameSchema = z.string().trim().min(1, 'Enter an item name befor
 export const units = ['g', 'ml', 'pcs'] as const;
 export const inputSchema = z.object({ itemId:z.string().min(1).max(100), amount, note:text,unit:z.enum(units).optional(),pieceMeaning:z.string().max(300).optional(),conversion:z.object({from:z.enum(units),to:z.enum(units),factor:z.number().finite().positive().max(1e9)}).nullable().optional() });
 /** Explicit product facts in Workspace 2.0. Original production evidence stays intact. */
-export const workspaceRecipeSchema = z.object({itemId:z.string().min(1).max(100),kind:z.enum(['local','supplier']),inputs:z.array(inputSchema).max(150),method:text,yieldAmount:amount,reference:text,revision:z.number().int().nonnegative(),updatedAt:z.string().max(100),source:z.enum(['workspace','review','process','legacy','supplier','unavailable']),sourceLabel:z.string().max(600),sourceToken:z.string().max(100)});
+export const workspaceRecipeSchema = z.object({itemId:z.string().min(1).max(100),kind:z.enum(['local','supplier']),inputs:z.array(inputSchema).max(150),method:text,yieldAmount:amount,reference:text,revision:z.number().int().nonnegative(),updatedAt:z.string().max(100),source:z.enum(['workspace','review','process','legacy','supplier','unavailable']),sourceLabel:z.string().max(600),sourceToken:z.string().max(100),compositionCheck:z.object({fingerprint:z.string().min(1).max(100),checkedAt:z.string().max(100)}).optional()});
 export type WorkspaceRecipeDefinition=z.infer<typeof workspaceRecipeSchema>;
 export const reviewStatusSchema=z.enum(['unverified','verified','needs-review']);
 export const timingSchema=z.object({basis:z.enum(['unknown','batch','portion','order']),portions:amount,evidence:z.enum(['unknown','estimate','measured'])});
@@ -37,7 +37,7 @@ export const itemSchema = z.object({
 export const recipeSchema = z.object({ id:z.string().min(1).max(100), menuId:z.string().min(1).max(100), variant:z.string().trim().min(1).max(160),
   portions:amount, inputs:z.array(inputSchema).max(150), notes:text, active:z.boolean(), recorded:z.boolean(), weekdayPortions:nonnegative, busyPortions:nonnegative,
   reviewStatus:reviewStatusSchema.default('unverified'),reviewNote:text.default(''),
-  workshop:workshopSchema.optional(),ingredientsReviewed:z.boolean().optional(),
+  workshop:workshopSchema.optional(),ingredientsReviewed:z.boolean().optional(),compositionCheck:z.object({fingerprint:z.string().min(1).max(100),checkedAt:z.string().max(100)}).optional(),
 });
 export const notebookSchema = z.object({schemaVersion:z.literal(4),reviewSourceRevision:z.string().max(100).optional(),workspaceRecipes:z.array(workspaceRecipeSchema).max(1000).optional(),dishes:z.array(dishSchema).max(500),processes:z.array(processSchema).max(1000),scenarios:z.array(savedScenarioSchema).max(100), distinctPairs:z.array(z.tuple([z.string(),z.string()])).max(5000), items:z.array(itemSchema).max(1000), recipes:z.array(recipeSchema).max(500), equipment:z.object({blastChiller:z.enum(['unknown','yes','no']),notes:text})});
 export type RecipeInput = z.infer<typeof inputSchema>;

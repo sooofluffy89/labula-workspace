@@ -1,6 +1,6 @@
 import {dateSchema} from './evening';
 /** Stable legacy view IDs remain valid links. URL state never contains work or writes. */
-export const workspaceDestinations = ['insights','recipes','catalog','overview','team','evening','morning','manage','rounds','history','operations','calendar','review','data'] as const;
+export const workspaceDestinations = ['insights','recipes','catalog','house-made','overview','team','evening','morning','manage','rounds','history','operations','calendar','review','data'] as const;
 export type WorkspaceDestination = typeof workspaceDestinations[number];
 export type WorkspaceRoute = {
  view:WorkspaceDestination; dish?:string; variant?:string; item?:string; itemPath?:string[]; query?:string; day?:string;
@@ -8,7 +8,7 @@ export type WorkspaceRoute = {
 };
 export type WorkspaceArea = 'today'|'menu'|'settings';
 export function workspaceArea(view:WorkspaceDestination):WorkspaceArea {
- if(['recipes','catalog','overview','manage'].includes(view))return 'menu';
+ if(['recipes','catalog','house-made','overview','manage'].includes(view))return 'menu';
  if(['team','calendar','rounds','review','data'].includes(view))return 'settings';
  return 'today';
 }
@@ -39,7 +39,7 @@ export function workspaceUrl(current:URL,input:WorkspaceRoute):URL {
  for(const key of ['view','dish','variant','item','q','kind','day','ops','check','scope','checked','trail'])url.searchParams.delete(key);
  url.searchParams.set('view',route.view);
  if(['evening','morning','history'].includes(route.view)&&route.day)url.searchParams.set('day',route.day);
- if(['recipes','catalog'].includes(route.view)){
+ if(['recipes','catalog','house-made'].includes(route.view)){
   if(route.dish)url.searchParams.set('dish',route.dish);
   if(route.variant)url.searchParams.set('variant',route.variant);
   if(route.item)url.searchParams.set('item',route.item);

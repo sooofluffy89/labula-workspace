@@ -1,0 +1,14 @@
+{
+  "baseline_site_version": 89,
+  "baseline_commit": "ef752c88d6b4ece594b80ed161754092dc94f820",
+  "site_project_id": "appgprj_6aa56065ff148191bca78164158e3a4c",
+  "audience": "public",
+  "sql_migrations_added": 0,
+  "production_rows_copied_to_development": false,
+  "production_backup_capture_verified": false,
+  "production_authenticated_write_smoke_test": false,
+  "regression_scripts_passed": 123,
+  "validation": "npm run validate",
+  "browser_results": "results.json",
+  "zoom_verification": "720x450 CSS viewport reflow equivalent; native toolbar zoom not independently observed"
+}

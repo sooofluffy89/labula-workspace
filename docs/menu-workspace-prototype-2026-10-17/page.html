@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="en" data-embed="page">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LABULA Workspace 2.0 — interactive design</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23b7262c'/%3E%3Ctext x='17' y='46' font-size='43' font-family='Arial' font-weight='bold' fill='white'%3EL%3C/text%3E%3C/svg%3E">
+<style>:root {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #25282d;
+  background: #f4f5f7;
+  font-synthesis: none;
+  --red: #bf2632;
+  --red-dark: #a31f2a;
+  --red-soft: #fbedef;
+  --surface: #ffffff;
+  --canvas: #f4f5f7;
+  --line: #e0e3e8;
+  --line-soft: #eceef1;
+  --muted: #68707d;
+  --green: #286747;
+  --green-soft: #edf6f0;
+  --amber: #8a5c15;
+  --amber-soft: #fff6e7;
+  --radius: 7px;
+  --detail-width: 360px;
+}
+
+* { box-sizing: border-box; }
+html { height: 100%; }
+body { margin: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-size: 14px; line-height: 1.4; }
+button, input, select, textarea { font: inherit; }
+button { color: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .46; }
+button, input, select, textarea, a { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 3px solid #bd5d69; outline-offset: 3px; }
+a { color: var(--red); text-underline-offset: 3px; }
+button { transition: background-color 100ms ease, border-color 100ms ease; }
+input[type="checkbox"] { width: 15px; height: 15px; margin: 0; accent-color: var(--red); cursor: pointer; flex: 0 0 auto; vertical-align: middle; }
+input[type="search"]::-webkit-search-cancel-button { cursor: pointer; }
+input, select, textarea { color: #25282d; }
+input::placeholder, textarea::placeholder { color: #7b818b; opacity: 1; }
+svg { display: block; flex: 0 0 auto; }
+.icon { width: 17px; height: 17px; display: inline-block; flex-shrink: 0; vertical-align: middle; }
+.hidden, [hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.muted, .subtle { color: var(--muted); }
+
+.prototype-bar { min-height: 26px; padding: 3px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: 0 0 auto; background: #282d36; color: #e6e9ef; font-size: 11px; line-height: 1.5; }
+.prototype-bar strong { color: #fff; font-weight: 600; }
+.prototype-tools { display: flex; align-items: center; gap: 12px; white-space: nowrap; flex-shrink: 0; }
+.prototype-tools button { padding: 0; background: none; border: 0; color: #fff; text-decoration: underline; text-decoration-color: #818894; text-underline-offset: 3px; font-size: 11px; }
+.prototype-tools button:hover { text-decoration-color: #fff; }
+.app-shell { display: flex; flex: 1; flex-direction: column; min-height: 0; min-width: 0; }
+.app-header { height: 54px; min-height: 54px; display: flex; align-items: center; gap: 28px; padding: 0 20px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.brand { display: flex; gap: 14px; align-items: center; white-space: nowrap; }
+.wordmark { color: var(--red); font-size: 28px; font-weight: 800; letter-spacing: -1.6px; line-height: 1; }
+.product-name { padding-left: 14px; border-left: 1px solid #d6dae1; color: #555d6b; font-size: 13px; line-height: 18px; }
+.primary-nav { display: flex; gap: 4px; align-items: center; height: 100%; }
+.primary-nav button { min-height: 40px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 8px 18px; background: transparent; color: #57606e; font-size: 14px; }
+.primary-nav button:hover { background: #f4f5f7; }
+.primary-nav button.active { background: var(--red-soft); color: var(--red); font-weight: 600; }
+.primary-nav .icon { width: 18px; height: 18px; }
+.header-actions { margin-left: auto; display: flex; align-items: center; gap: 13px; color: var(--muted); font-size: 12px; }
+.account-label { display: inline-flex; align-items: center; gap: 7px; }
+.account-dot { width: 6px; height: 6px; background: #6d8b77; border-radius: 50%; }
+
+.workspace { display: flex; flex: 1; flex-direction: column; min-height: 0; min-width: 0; padding: 10px 18px 14px; gap: 8px; }
+.page-heading { min-height: 32px; flex: 0 0 auto; display: flex; align-items: center; gap: 24px; }
+.page-heading h1 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -.65px; line-height: 1.2; }
+.subnav { display: flex; gap: 3px; padding: 3px; background: #e9ecf0; border-radius: 6px; }
+.subnav button { min-height: 28px; border: 0; border-radius: 4px; padding: 5px 14px; color: #626a76; background: transparent; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.subnav button:hover { color: #333943; background: #f3f4f6; }
+.subnav button.active { color: var(--red); background: white; box-shadow: 0 1px 3px #1a23300d; }
+.heading-actions { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+.save-state { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.save-state .icon { width: 13px; height: 13px; color: var(--green); }
+.save-state.dirty { color: var(--amber); }
+
+.health-bar { min-height: 44px; flex: 0 0 auto; display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.health-bar button.metric { min-width: 0; min-height: 44px; flex: 1; display: flex; align-items: center; gap: 8px; padding: 7px 16px; border: 0; border-right: 1px solid var(--line-soft); background: transparent; text-align: left; color: #565f6b; font-size: 12px; line-height: 1.3; }
+.health-bar button.metric:last-child { border-right: 0; }
+.health-bar button.metric:hover { background: #f8f9fb; }
+.metric b, .metric strong { display: block; color: #29313b; font-size: 22px; font-weight: 600; letter-spacing: -.7px; line-height: 1; white-space: nowrap; }
+.metric small { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; line-height: 1.3; }
+.metric .metric-copy { min-width: 0; }
+.metric .metric-title { display: block; font-weight: 600; color: #434b58; }
+.health-bar .metric.active { background: #fbedef; box-shadow: inset 0 -2px var(--red); }
+.health-bar .metric.warn b, .health-bar .metric.warn strong { color: var(--amber); }
+.health-bar .metric.good b, .health-bar .metric.good strong { color: var(--green); }
+.health-label { display: flex; flex-direction: column; justify-content: center; width: 132px; flex-shrink: 0; padding: 7px 14px; color: #4f5866; font-size: 11px; font-weight: 600; border-right: 1px solid var(--line-soft); }
+.health-label small { color: var(--muted); font-weight: 400; font-size: 10px; margin-top: 2px; }
+
+.workbench { display: grid; grid-template-columns: minmax(0, 1fr) var(--detail-width); gap: 12px; min-height: 0; min-width: 0; flex: 1; }
+.list-panel, .detail-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); min-height: 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
+.list-toolbar { display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 6px 10px; flex-shrink: 0; border-bottom: 1px solid var(--line-soft); }
+.search-field { display: flex; align-items: center; position: relative; flex: 1; min-width: 100px; }
+.search-field .icon { position: absolute; left: 9px; width: 15px; height: 15px; color: #7b8290; pointer-events: none; }
+.search-field input { width: 100%; height: 30px; border: 1px solid #dce0e6; background: white; border-radius: 4px; padding: 5px 9px 5px 30px; font-size: 12px; }
+.search-field:not(:has(.icon)) input { padding-left: 10px; }
+.filter-select { height: 30px; max-width: 178px; min-width: 100px; border: 1px solid #dce0e6; background: white; border-radius: 4px; padding: 5px 25px 5px 8px; font-size: 11px; cursor: pointer; }
+.search-key { position: absolute; right: 9px; top: 6px; color: #8a919d; background: #f6f7f9; border: 1px solid #e3e6eb; border-radius: 3px; padding: 0 4px; line-height: 17px; font-size: 11px; }
+.list-caption { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 12px; min-height: 24px; border-bottom: 1px solid var(--line-soft); color: var(--muted); font-size: 11px; flex: 0 0 auto; }
+.list-caption strong { color: #4a5361; font-weight: 600; }
+.list-caption button { border: 0; background: transparent; color: var(--red); font-size: inherit; padding: 0; }
+.list-caption .active-filter { color: var(--red); }
+.table-scroll { overflow: auto; min-height: 0; min-width: 0; flex: 1; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.data-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px; table-layout: fixed; }
+.data-table th { position: sticky; top: 0; z-index: 2; padding: 5px 10px; height: 28px; background: #f7f8fa; color: #6b7380; font-size: 10px; font-weight: 500; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.data-table th button { border: 0; padding: 0; background: none; font: inherit; color: inherit; display: inline-flex; gap: 4px; align-items: center; }
+.data-table td { padding: 6px 10px; height: 44px; vertical-align: middle; border-bottom: 1px solid var(--line-soft); overflow-wrap: anywhere; }
+.data-table th:first-child, .data-table td:first-child { width: 35px; padding-left: 12px; padding-right: 7px; }
+.data-table th.name-column { width: 34%; }
+.data-table th.category-column { width: 17%; }
+.data-table th.menu-column { width: 13%; }
+.data-table th.composition-column { width: 23%; }
+.data-table th.count-column { width: 13%; }
+.data-table tbody tr:hover td { background: #fafbfc; }
+.data-table tbody tr.selected td { background: #fff2f3; }
+.data-table tbody tr.selected td:first-child { box-shadow: inset 3px 0 var(--red); }
+.data-table tbody tr.checked:not(.selected) td { background: #faf6f7; }
+.data-table .name-cell { min-width: 0; }
+.name-cell button, .row-open, .row-title { border: 0; background: none; padding: 0; text-align: left; color: #2e333b; font-size: 13px; font-weight: 600; line-height: 1.25; }
+.name-cell button:hover, .row-open:hover, .row-title:hover { color: var(--red); }
+.row-title { display: block; }
+.row-subtitle { display: block; font-size: 11px; color: #7b828d; font-weight: 400; line-height: 1.25; margin-top: 3px; }
+.row-open { display: block; width: 100%; }
+.row-open button { border: 0; background: none; padding: 0; color: inherit; font: inherit; }
+.data-table .count { font-variant-numeric: tabular-nums; color: #5d6673; font-size: 12px; }
+.data-table .group-row td { height: 26px; background: #f9fafb; color: #7b828e; font-size: 10px; font-weight: 600; letter-spacing: .035em; text-transform: uppercase; }
+.table-footnote { min-height: 29px; padding: 7px 12px; border-top: 1px solid var(--line-soft); color: #7b828d; font-size: 10px; flex-shrink: 0; }
+.selection-bar { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 8px; flex: 0 0 auto; min-height: 46px; padding: 8px 11px; background: #faf3f4; border-top: 1px solid #ecd8dc; }
+.selection-summary { font-size: 12px; color: #793a43; }
+.selection-summary strong { font-weight: 600; }
+.selection-summary small { display: inline-block; color: #865c64; font-size: 10px; margin-left: 5px; }
+.selection-summary button { border: 0; background: none; padding: 0 0 0 5px; color: var(--red); font-size: 11px; text-decoration: underline; text-underline-offset: 2px; }
+.selection-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.selection-actions .button { min-height: 28px; padding: 4px 8px; font-size: 11px; }
+
+.detail-header { flex-shrink: 0; padding: 13px 15px 12px; border-bottom: 1px solid var(--line); background: #fff; }
+.breadcrumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-height: 16px; margin-bottom: 12px; color: #88909c; font-size: 10px; line-height: 1.4; }
+.breadcrumbs button { border: 0; background: none; padding: 0; color: var(--red); font-size: inherit; max-width: 100%; text-align: left; }
+.breadcrumbs .icon { width: 11px; height: 11px; color: #9ba1ab; }
+.eyebrow { margin: 0 0 5px; color: #737c89; text-transform: uppercase; letter-spacing: .075em; font-size: 9px; font-weight: 700; }
+.detail-header h2 { margin: 0; color: #272d35; font-size: 21px; line-height: 1.2; font-weight: 600; letter-spacing: -.6px; overflow-wrap: anywhere; }
+.detail-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 9px; }
+.detail-scroll { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; padding: 0 15px; scrollbar-gutter: stable; }
+.detail-section { padding: 15px 0; border-bottom: 1px solid var(--line-soft); }
+.detail-section:last-child { border-bottom: 0; }
+.detail-section h3 { margin: 0 0 9px; font-size: 12px; color: #424a56; font-weight: 600; }
+.section-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; font-size: 12px; color: #424a56; font-weight: 600; }
+.section-title h3 { margin: 0; }
+.section-title small { color: #8a909a; font-size: 10px; font-weight: 400; }
+.section-description { margin: 0 0 11px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.field { display: block; margin-bottom: 11px; }
+.field:last-child { margin-bottom: 0; }
+.field label, label.field > span, .form-field label { display: block; margin: 0 0 5px; color: #606977; font-size: 11px; font-weight: 500; }
+.field input:not([type="checkbox"]), .field textarea, .field select, .form-field input:not([type="checkbox"]), .form-field textarea, .form-field select { width: 100%; min-width: 0; height: 33px; border: 1px solid #dce0e6; border-radius: 4px; padding: 6px 9px; background: #fff; font-size: 12px; line-height: 1.4; }
+.field textarea, .form-field textarea { height: 62px; min-height: 50px; resize: vertical; }
+.field small, .form-field small { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.field-inline { display: flex; align-items: center; gap: 8px; }
+.field-inline label { margin-bottom: 0; }
+.composition-list { display: flex; flex-direction: column; gap: 6px; }
+.composition-row { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 7px 8px; background: #fff; border: 1px solid #e5e8ed; border-radius: 5px; }
+.component-type { flex: 0 0 27px; width: 27px; height: 27px; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: #f0f2f5; color: #7a8391; font-size: 10px; font-weight: 600; }
+.component-type.house, .component-type.house-made { background: #fbedef; color: var(--red); }
+.component-type .icon { width: 15px; height: 15px; }
+.component-info { flex: 1; min-width: 0; }
+.component-info button { display: block; width: 100%; color: #333b46; background: none; border: 0; padding: 0; text-align: left; font-size: 12px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.component-info button:hover { color: var(--red); }
+.component-info small { display: block; color: #7b8290; font-size: 10px; line-height: 1.3; margin-top: 3px; }
+.component-info small.warning { color: var(--amber); }
+.remove-button { border: 0; background: transparent; flex: 0 0 25px; width: 25px; height: 27px; padding: 5px; border-radius: 4px; color: #8b939e; display: flex; align-items: center; justify-content: center; }
+.remove-button:hover { color: var(--red); background: var(--red-soft); }
+.remove-button .icon { width: 14px; height: 14px; }
+.add-component { margin-top: 9px; width: 100%; justify-content: center; border-style: dashed !important; }
+.confirmation-check { display: flex; align-items: flex-start; gap: 8px; padding: 11px 0 0; color: #596372; font-size: 11px; line-height: 1.5; }
+.confirmation-check input { margin-top: 2px; }
+.confirmation-check strong { display: block; color: #38434e; font-size: 11px; font-weight: 600; }
+.confirmation-check small { display: block; font-size: 10px; color: #7b8491; margin-top: 2px; }
+.status-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 500; color: #6c7582; white-space: normal; line-height: 1.35; }
+.status-badge::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: 0 0 5px; }
+.status-badge.good { color: var(--green); }
+.status-badge.warn { color: var(--amber); }
+.status-badge.muted { color: #7a838f; }
+.status-badge.danger { color: #aa2936; }
+.detail-badges .status-badge { padding: 3px 6px; border-radius: 4px; background: #f3f5f7; }
+.detail-badges .status-badge.good { background: var(--green-soft); }
+.detail-badges .status-badge.warn { background: var(--amber-soft); }
+.detail-badges .status-badge.danger { background: var(--red-soft); }
+.notice { margin: 10px 0 0; padding: 9px 10px; color: #657181; background: #f5f7fa; border: 1px solid #e5e9ef; border-radius: 5px; font-size: 11px; line-height: 1.5; }
+.notice strong { font-weight: 600; }
+.notice p { margin: 0; }
+.notice p + p { margin-top: 5px; }
+.notice.warning { color: #8b631e; background: #fff9ed; border-color: #efe1bc; }
+.notice.success { color: #416e52; background: #f1f7f3; border-color: #dcebe1; }
+.notice button { border: 0; background: transparent; padding: 0; color: inherit; text-align: left; text-decoration: underline; text-underline-offset: 2px; font: inherit; }
+.notice .button { margin-top: 7px; text-decoration: none; }
+.usage-list { list-style: none; margin: 0; padding: 0; }
+.usage-row { min-height: 29px; display: flex; gap: 9px; align-items: flex-start; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f2f5; font-size: 11px; }
+.usage-row:last-child { border-bottom: 0; }
+.usage-row button { border: 0; background: none; padding: 0; color: #495361; text-align: left; font-size: 11px; line-height: 1.4; }
+.usage-row button:hover { color: var(--red); }
+.usage-row small { color: #8b929d; font-size: 10px; white-space: nowrap; }
+.usage-row .via { display: block; color: #8b929d; font-size: 10px; margin-top: 2px; }
+.detail-footer { flex: 0 0 auto; padding: 10px 12px; border-top: 1px solid var(--line); background: #fafbfc; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 7px; }
+.footer-state { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #7b8390; }
+.footer-state.dirty { color: var(--amber); }
+.footer-state .icon { width: 12px; height: 12px; }
+.footer-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+.footer-actions .button { min-height: 31px; padding: 6px 9px; font-size: 11px; }
+.mobile-back { display: none; }
+
+.button { min-height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 11px; border: 1px solid #dce0e6; border-radius: 5px; background: white; color: #4e5866; font-size: 12px; font-weight: 500; line-height: 1.35; text-decoration: none; white-space: nowrap; }
+.button:hover:not(:disabled) { background: #f7f8fa; border-color: #c8cdd5; }
+.button.primary, button.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+.button.primary:hover:not(:disabled), button.primary:hover:not(:disabled) { background: var(--red-dark); border-color: var(--red-dark); }
+.button.secondary { background: #fff; color: #525c6a; }
+.button.ghost { border-color: transparent; background: transparent; color: #68717f; }
+.button.ghost:hover:not(:disabled) { background: #eceff3; }
+.button.small { min-height: 27px; padding: 4px 8px; font-size: 11px; }
+.button.danger { color: #a72b38; border-color: #e6c9ce; }
+.button .icon { width: 14px; height: 14px; }
+.icon-button { width: 29px; height: 29px; display: inline-flex; align-items: center; justify-content: center; padding: 5px; background: transparent; border: 1px solid transparent; border-radius: 5px; color: #7a8390; }
+.icon-button:hover { background: #eff1f4; }
+.empty-state { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; padding: 28px 20px; color: #818995; text-align: center; font-size: 12px; line-height: 1.6; }
+.empty-state h3 { margin: 0 0 5px; color: #586271; font-size: 14px; font-weight: 500; }
+.empty-state p { max-width: 260px; margin: 0; }
+.empty-state .icon { width: 30px; height: 30px; margin-bottom: 13px; color: #a7adb7; }
+.empty-state .button { margin-top: 13px; }
+.empty-composition { margin-bottom: 9px; border: 1px dashed #dce0e7; border-radius: 5px; padding: 15px; font-size: 11px; line-height: 1.6; color: #828b98; text-align: center; }
+
+.dialog-backdrop { position: fixed; inset: 0; z-index: 50; background: #1d263d66; display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(2px); }
+.dialog { background: #fff; width: 470px; max-width: 100%; max-height: min(760px, 90dvh); border-radius: 10px; box-shadow: 0 16px 70px #1821343d; border: 1px solid #d8dce3; display: flex; flex-direction: column; overflow: hidden; }
+.dialog.wide { width: 680px; }
+.dialog-header { display: flex; align-items: center; gap: 12px; padding: 17px 20px 14px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.dialog-header h2 { margin: 0; font-size: 18px; letter-spacing: -.4px; font-weight: 600; color: #2d3541; }
+.dialog-header .icon-button { margin-left: auto; }
+.dialog-header p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+.dialog-body { padding: 17px 20px; overflow: auto; min-height: 0; font-size: 12px; }
+.dialog-body > p:first-child { margin-top: 0; }
+.dialog-body p { color: #697382; font-size: 12px; line-height: 1.6; }
+.dialog-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 12px 20px; background: #fafbfc; border-top: 1px solid var(--line); flex-shrink: 0; }
+.dialog-footer .footer-state { margin-right: auto; }
+.picker-search { position: relative; margin-bottom: 12px; }
+.picker-search input { width: 100%; height: 35px; border-radius: 5px; border: 1px solid #d5dce5; padding: 8px 10px; font-size: 12px; }
+.picker-results { max-height: 330px; overflow: auto; border: 1px solid #e1e5eb; border-radius: 5px; }
+.picker-option { display: flex; align-items: center; gap: 10px; min-height: 48px; width: 100%; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--line-soft); background: #fff; text-align: left; font-size: 12px; }
+.picker-option:last-child { border-bottom: 0; }
+.picker-option:hover { background: #f9f4f5; }
+.picker-option.selected { background: #fff2f3; }
+.picker-option small { display: block; color: #8b919c; font-size: 10px; margin-top: 2px; }
+.picker-option .option-trailing { margin-left: auto; color: #818996; font-size: 10px; }
+.picker-option .icon { width: 15px; height: 15px; }
+.picker-option:disabled { background: #f8f9fa; opacity: .6; }
+.picker-create { margin-top: 12px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+.form-field.full { grid-column: 1 / -1; }
+.form-field { min-width: 0; }
+.type-choices { display: flex; gap: 8px; }
+.type-choice { flex: 1; display: flex; gap: 7px; align-items: flex-start; border: 1px solid #e0e4e9; border-radius: 5px; padding: 10px; font-size: 12px; }
+.type-choice:has(input:checked) { background: #fdf3f4; border-color: #d88f98; }
+.type-choice small { display: block; margin-top: 3px; color: #7d8592; font-size: 10px; }
+.preview-list { border: 1px solid var(--line); border-radius: 5px; overflow: hidden; margin: 12px 0; }
+.preview-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 10px 12px; border-bottom: 1px solid var(--line-soft); font-size: 12px; }
+.preview-row:last-child { border-bottom: 0; }
+.preview-row small { display: block; font-size: 10px; color: #838b97; margin-top: 2px; }
+.preview-change { color: #687485; font-size: 11px; white-space: nowrap; }
+.more-menu { display: flex; flex-direction: column; gap: 5px; }
+.more-menu .button { justify-content: flex-start; min-height: 37px; }
+.toast-region { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 100; width: max-content; max-width: calc(100% - 32px); display: flex; align-items: center; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { border: 1px solid #3f4855; background: #313a46; color: #fff; border-radius: 6px; padding: 10px 16px; box-shadow: 0 5px 20px #111b2b24; font-size: 12px; line-height: 1.5; }
+
+.today-layout { display: grid; grid-template-columns: minmax(0, 1fr) var(--detail-width); gap: 12px; min-height: 0; min-width: 0; flex: 1; }
+.today-list { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); min-height: 0; overflow: auto; }
+.today-list-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--line); }
+.today-list-header h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.today-list-header small { color: var(--muted); font-size: 11px; }
+.today-row { display: flex; gap: 14px; align-items: center; min-height: 68px; padding: 11px 16px; border-bottom: 1px solid var(--line-soft); }
+.today-row:hover { background: #fcfcfd; }
+.today-row:last-child { border-bottom: 0; }
+.today-row > div:first-child { min-width: 0; flex: 1; }
+.today-row strong { display: block; font-size: 13px; font-weight: 600; }
+.today-row small { display: block; font-size: 11px; color: #89919d; margin-top: 3px; }
+.today-row .button { min-height: 38px; }
+.today-actions { display: flex; align-items: center; gap: 6px; }
+.today-actions .button.active { color: var(--green); background: #eff6f2; border-color: #b8d7c3; }
+.today-actions .button.warn.active { color: var(--amber); background: #fff6e7; border-color: #e9d2a6; }
+.today-actions .button.danger.active { color: #a42c39; background: #fbedef; border-color: #e4b9c1; }
+.today-summary { display: flex; flex-direction: column; min-height: 0; overflow: auto; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.today-summary h2 { margin: 0 0 7px; font-size: 18px; font-weight: 600; letter-spacing: -.4px; }
+.today-summary h3 { margin: 20px 0 8px; font-size: 12px; font-weight: 600; }
+.today-summary p { margin: 4px 0 10px; color: #758090; font-size: 12px; line-height: 1.6; }
+.today-summary .summary-number { font-size: 35px; letter-spacing: -1.5px; line-height: 1.1; font-weight: 600; margin-top: 12px; }
+.today-summary .button { margin-top: 12px; width: 100%; }
+.today-summary .notice { margin-top: 15px; }
+.progress-track { height: 5px; border-radius: 3px; background: #edf0f3; overflow: hidden; margin: 10px 0 5px; }
+.progress-fill { height: 100%; background: var(--green); border-radius: inherit; transition: width 180ms ease; }
+.today-scope { padding: 9px 16px; color: #7b8491; font-size: 11px; border-bottom: 1px solid var(--line); background: #fafbfc; }
+.guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.guide-card { border: 1px solid #e3e7ec; border-radius: 6px; padding: 13px; background: #fafbfc; }
+.guide-card h3 { margin: 0 0 7px; color: #3d4755; font-size: 12px; }
+.guide-card p { margin: 0; font-size: 11px; color: #75808f; line-height: 1.6; }
+.guide-card .step { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; background: var(--red-soft); color: var(--red); border-radius: 50%; font-size: 10px; margin-right: 5px; }
+.shortcut { display: inline-block; border: 1px solid #d9dee5; background: #fff; color: #657080; border-radius: 3px; padding: 1px 5px; font-size: 10px; }
+
+@media (min-width: 1700px) {
+  :root { --detail-width: 400px; }
+  .workspace { padding: 14px 26px 18px; gap: 10px; }
+  .app-header { padding: 0 28px; }
+  .prototype-bar { padding-left: 26px; padding-right: 26px; }
+  .workbench, .today-layout { gap: 16px; }
+  .data-table td { padding-top: 7px; padding-bottom: 7px; }
+  .detail-header { padding: 16px 19px 13px; }
+  .detail-scroll { padding: 0 19px; }
+  .detail-footer { padding: 12px 16px; }
+}
+
+@media (max-width: 1200px) and (min-width: 1001px) {
+  .app-header { gap: 20px; padding: 0 16px; }
+  .workspace { padding-left: 12px; padding-right: 12px; }
+  .workbench, .today-layout { gap: 9px; }
+  :root { --detail-width: 335px; }
+  .health-bar button.metric { padding-left: 10px; padding-right: 10px; gap: 6px; }
+  .health-label { width: 109px; padding-left: 10px; padding-right: 10px; }
+  .metric b, .metric strong { font-size: 20px; }
+  .metric small { font-size: 9px; }
+  .filter-select { min-width: 86px; max-width: 132px; font-size: 10px; }
+  .list-toolbar { gap: 5px; padding-left: 8px; padding-right: 8px; }
+  .search-field input { font-size: 11px; }
+  .data-table th, .data-table td { padding-left: 7px; padding-right: 7px; }
+  .data-table td { font-size: 12px; }
+  .status-badge { font-size: 9px; }
+  .data-table .row-title { font-size: 12px; }
+  .data-table .row-subtitle { font-size: 10px; }
+}
+
+@media (max-width: 1000px) {
+  .prototype-bar { padding-left: 14px; padding-right: 14px; }
+  .app-header { gap: 18px; padding: 0 15px; }
+  .workspace { padding: 10px 12px 12px; }
+  .page-heading { gap: 18px; }
+  .workbench { display: flex; flex-direction: column; }
+  .workbench .list-panel { display: flex; flex: 1; }
+  .workbench .detail-panel { display: none; }
+  .workbench.detail-open .list-panel { display: none; }
+  .workbench.detail-open .detail-panel { display: flex; flex: 1; }
+  .detail-header { padding: 12px 16px; }
+  .detail-scroll { padding: 0 16px; }
+  .detail-header h2 { font-size: 21px; }
+  .detail-footer { padding: 11px 16px; }
+  .detail-scroll .detail-section { max-width: 760px; }
+  .mobile-back { display: inline-flex; align-items: center; gap: 4px; padding: 0; margin: 0 0 10px; border: 0; background: transparent; color: var(--red); font-size: 12px; }
+  .mobile-back .icon { width: 14px; height: 14px; }
+  .breadcrumbs { margin-bottom: 9px; }
+  .health-bar button.metric { padding: 7px 12px; }
+  .health-label { display: none; }
+  .today-layout { grid-template-columns: minmax(0, 1fr) 280px; }
+  .today-row { padding: 10px 12px; gap: 8px; }
+  .today-actions { gap: 4px; }
+  .today-actions .button { padding: 7px 8px; font-size: 11px; }
+  .today-summary { padding: 15px; }
+}
+
+@media (max-width: 680px) {
+  .prototype-bar { min-height: 27px; padding: 4px 10px; font-size: 9px; gap: 8px; }
+  .prototype-bar .prototype-note { display: none; }
+  .prototype-tools { gap: 9px; }
+  .prototype-tools button { font-size: 9px; }
+  .app-header { height: 52px; min-height: 52px; gap: 12px; padding: 0 11px; }
+  .brand { gap: 8px; }
+  .wordmark { font-size: 24px; letter-spacing: -1.5px; }
+  .product-name { border: 0; padding: 0; font-size: 9px; max-width: 48px; white-space: normal; line-height: 1.2; }
+  .primary-nav { margin-left: auto; gap: 1px; }
+  .primary-nav button { min-height: 36px; gap: 5px; padding: 6px 9px; font-size: 12px; }
+  .primary-nav .icon { width: 15px; height: 15px; }
+  .header-actions { margin: 0; gap: 0; }
+  .header-actions .account-label, .header-actions > span { display: none; }
+  .header-actions .button { padding: 6px; min-width: 28px; font-size: 0; gap: 0; }
+  .header-actions .button .icon { width: 16px; height: 16px; }
+  .workspace { padding: 9px 9px 10px; gap: 8px; }
+  .page-heading { flex-wrap: wrap; gap: 9px 10px; }
+  .page-heading h1 { font-size: 20px; margin-right: auto; }
+  .subnav { order: 3; width: 100%; justify-content: stretch; }
+  .subnav button { flex: 1; padding: 6px 8px; font-size: 12px; }
+  .heading-actions { margin-left: auto; gap: 7px; }
+  .heading-actions .save-state { font-size: 9px; }
+  .heading-actions .button { min-height: 30px; padding: 6px 8px; font-size: 11px; }
+  .health-bar { min-height: 51px; }
+  .health-bar button.metric { flex: 1; padding: 7px 8px; gap: 4px; min-height: 51px; flex-wrap: wrap; align-content: center; align-items: center; font-size: 9px; }
+  .metric b, .metric strong { font-size: 18px; letter-spacing: -.5px; }
+  .metric small { display: none; }
+  .metric .metric-title { font-weight: 400; }
+  .health-bar button.metric .metric-copy { max-width: 100%; }
+  .list-toolbar { flex-wrap: wrap; padding: 8px; gap: 6px; }
+  .search-field { flex: 1 1 100%; }
+  .search-field input { height: 33px; font-size: 12px; }
+  .filter-select { flex: 1; max-width: none; min-width: 0; height: 31px; padding-left: 7px; font-size: 10px; }
+  .list-toolbar > .button { min-height: 31px; font-size: 11px; }
+  .list-caption { font-size: 10px; padding: 5px 9px; min-height: 25px; }
+  .data-table { min-width: 590px; }
+  .data-table td { height: 44px; }
+  .data-table th { font-size: 10px; }
+  .selection-bar { padding: 8px; gap: 7px; }
+  .selection-actions { width: 100%; justify-content: flex-start; }
+  .selection-actions .button { min-height: 31px; }
+  .detail-header { padding: 12px; }
+  .detail-scroll { padding: 0 12px; }
+  .detail-footer { padding: 10px 12px; }
+  .detail-footer .footer-actions .button { min-height: 35px; }
+  .composition-row { min-height: 51px; }
+  .component-info button { font-size: 13px; }
+  .component-info small { font-size: 11px; }
+  .remove-button { width: 31px; height: 31px; flex-basis: 31px; }
+  .section-description { font-size: 12px; }
+  .notice { font-size: 12px; }
+  .usage-row button { font-size: 12px; }
+  .status-badge { font-size: 10px; }
+  .dialog-backdrop { padding: 10px; }
+  .dialog { max-height: calc(100dvh - 20px); border-radius: 8px; }
+  .dialog-header { padding: 14px; }
+  .dialog-body { padding: 14px; }
+  .dialog-footer { padding: 11px 14px; }
+  .dialog-header h2 { font-size: 17px; }
+  .dialog-footer .button { min-height: 36px; }
+  .form-grid { grid-template-columns: 1fr; gap: 12px; }
+  .form-field.full { grid-column: auto; }
+  .guide-grid { grid-template-columns: 1fr; }
+  .picker-option { min-height: 52px; }
+  .picker-search input { height: 37px; }
+  .today-layout { display: flex; flex-direction: column; overflow: auto; gap: 10px; }
+  .today-list { overflow: visible; min-height: auto; flex: 0 0 auto; }
+  .today-row { flex-wrap: wrap; min-height: 79px; padding: 11px 12px; gap: 8px; }
+  .today-row > div:first-child { flex: 1 1 45%; }
+  .today-actions { flex: 0 0 auto; }
+  .today-actions .button { min-height: 40px; padding: 7px 8px; }
+  .today-summary { min-height: auto; overflow: visible; flex: 0 0 auto; padding: 15px; }
+  .today-summary h2 { font-size: 17px; }
+  .today-summary .summary-number { font-size: 28px; }
+  .today-summary .button { min-height: 39px; }
+}
+
+@media (max-width: 370px) {
+  .app-header { gap: 7px; padding-left: 9px; padding-right: 9px; }
+  .brand { gap: 6px; }
+  .wordmark { font-size: 22px; }
+  .product-name { font-size: 8px; max-width: 39px; }
+  .primary-nav button { padding-left: 7px; padding-right: 7px; font-size: 11px; gap: 4px; }
+  .primary-nav .icon { width: 13px; height: 13px; }
+  .header-actions .button { min-width: 23px; padding: 4px; }
+  .health-bar button.metric { padding-left: 6px; padding-right: 6px; }
+  .heading-actions .save-state { display: none; }
+  .detail-footer .footer-state { max-width: 110px; }
+  .today-row > div:first-child { flex-basis: 100%; }
+  .today-actions { width: 100%; }
+  .today-actions .button { flex: 1; }
+}
+
+@media (max-height: 560px) and (min-width: 681px) {
+  .prototype-bar { min-height: 22px; padding-top: 2px; padding-bottom: 2px; }
+  .app-header { height: 45px; min-height: 45px; }
+  .primary-nav button { min-height: 33px; }
+  .workspace { gap: 6px; padding-top: 7px; padding-bottom: 8px; }
+  .health-bar, .health-bar button.metric { min-height: 36px; }
+  .health-bar button.metric { padding-top: 4px; padding-bottom: 4px; }
+  .metric b, .metric strong { font-size: 19px; }
+  .metric small { display: none; }
+  .detail-header { padding-top: 9px; padding-bottom: 8px; }
+  .breadcrumbs { margin-bottom: 5px; }
+  .detail-header h2 { font-size: 18px; }
+  .detail-badges { margin-top: 5px; }
+  .mobile-back { margin-bottom: 5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Integrated prototype elements share the same compact component language. */
+button.brand { border: 0; background: transparent; padding: 0; text-align: left; }
+.avatar { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #eef0f3; color: #737c89; font-size: 10px; font-weight: 600; }
+.metric-denominator { color: #88909d; font-size: 15px; font-weight: 400; letter-spacing: -.5px; }
+.metric-symbol { color: #7d8796; }
+.search-field kbd { position: absolute; right: 7px; top: 6px; width: 17px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #e3e6eb; border-radius: 3px; background: #f8f9fb; color: #969da8; font: 10px Arial, sans-serif; pointer-events: none; }
+.search-field input { padding-right: 29px; }
+.list-caption { min-height: 28px; }
+.list-caption > div { display: flex; gap: 5px; }
+.list-caption .button { min-height: 20px; padding: 1px 4px; font-size: 10px; }
+.data-table th.name-cell { width: 38%; }
+.data-table th.category-cell { width: 16%; }
+.data-table:has(th.category-cell) th:nth-child(4) { width: 14%; }
+.data-table:has(th.category-cell) th:last-child { width: calc(32% - 35px); }
+.data-table:not(:has(th.category-cell)) th:nth-child(3) { width: 26%; }
+.data-table:not(:has(th.category-cell)) th:nth-child(4) { width: 18%; }
+.data-table:not(:has(th.category-cell)) th:last-child { width: calc(18% - 35px); }
+.data-table .row-title { font-size: 14px; font-weight: 600; }
+.data-table .category-cell { font-size: 12px; color: #737b88; }
+.data-table th.category-cell { font-size: 10px; }
+.data-table .status-badge { font-size: 11px; }
+.data-table td:not(.name-cell):not(.check-cell) { font-size: 12px; }
+.status-badge:has(.icon)::before { display: none; }
+.status-badge .icon { width: 12px; height: 12px; }
+.cell-secondary { display: block; margin-top: 2px; color: #8b929d; font-size: 10px; }
+.number { font-variant-numeric: tabular-nums; }
+.menu-state { display: inline-flex; gap: 5px; align-items: center; border: 1px solid #e4e7ed; border-radius: 4px; background: #f8f9fa; color: #8b939e; font-size: 10px; min-height: 24px; padding: 3px 7px; white-space: nowrap; }
+.menu-state::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: #a1a7b1; }
+.menu-state.on { background: #fff; color: #596775; border-color: #e2e6ea; }
+.menu-state.on::before { background: #7b9585; }
+.menu-state:hover { border-color: #b4bcc7; background: #f4f6f8; }
+.draft-dot { display: inline-block; vertical-align: middle; width: 5px; height: 5px; border-radius: 50%; background: #b17d2f; margin-left: 6px; }
+.held-row { color: var(--amber); }
+.selection-summary { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.selection-summary > span { color: #927078; font-size: 10px; }
+.selection-summary .button { text-decoration: none; padding: 2px 4px; }
+.detail-title-row { display: flex; align-items: flex-start; gap: 9px; }
+.detail-title-row > div { flex: 1; min-width: 0; }
+.detail-title-row > .icon-button { margin-top: 12px; flex-shrink: 0; }
+.detail-variant { color: #7d8591; font-size: 11px; margin: 4px 0 0; }
+.detail-usage-count { color: #88909b; font-size: 10px; }
+.section-title > span { color: #8b929d; font-size: 10px; font-weight: 400; }
+.shared-hint { margin: -1px 0 11px; color: #7c8593; font-size: 11px; line-height: 1.55; }
+.component-note { display: block; color: #8b939e; margin-top: 3px; font-size: 10px; }
+.composition-empty { padding: 16px 12px; border: 1px dashed #dce1e7; border-radius: 5px; text-align: center; color: #8b939e; font-size: 11px; line-height: 1.6; }
+.composition-empty p { margin: 0; color: #616d7c; font-weight: 500; }
+.add-ingredients { margin-top: 9px; width: 100%; border-style: dashed; font-size: 11px; }
+.own-state { display: flex; align-items: center; gap: 5px; margin: 12px 0 0; color: #7e8795; font-size: 10px; }
+.own-state .icon { width: 12px; height: 12px; }
+.confirmation-field { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; color: #526070; font-size: 11px; line-height: 1.5; }
+.confirmation-field input { margin-top: 1px; }
+.notice .issue-link { display: grid; grid-template-columns: 1fr 13px; width: 100%; margin-top: 8px; text-decoration: none; text-align: left; font-weight: 500; }
+.notice .issue-link small { grid-column: 1 / -1; color: #9a7d47; font-size: 10px; font-weight: 400; margin-top: 2px; }
+.notice .issue-link:hover { text-decoration: underline; }
+.optional-details { margin-top: 14px; padding-top: 11px; border-top: 1px solid var(--line-soft); font-size: 11px; color: #737d8b; }
+.optional-details summary { cursor: pointer; font-size: 10px; list-style-position: outside; margin-left: 12px; line-height: 1.5; }
+.optional-details summary span { color: #9ba2ac; font-size: 9px; margin-left: 3px; }
+.optional-details[open] summary { margin-bottom: 10px; }
+.optional-details .muted { font-size: 10px; line-height: 1.5; }
+.quantity-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 9px; }
+.quantity-row strong { grid-column: 1 / -1; color: #657181; font-size: 10px; font-weight: 500; }
+.quantity-row input { width: 100%; min-width: 0; padding: 6px 7px; border: 1px solid #dde2e8; border-radius: 4px; font-size: 10px; height: 29px; }
+.quantity-row input:focus-visible { outline-offset: 1px; }
+.form-field { display: block; color: #657180; font-size: 11px; line-height: 1.4; }
+.form-field > input, .form-field > select, .form-field > textarea { margin-top: 5px; }
+.optional-details .form-field { margin-top: 12px; font-size: 10px; }
+.metadata-list { margin: 13px 0; display: grid; grid-template-columns: minmax(70px, 35%) 1fr; gap: 8px 12px; font-size: 11px; line-height: 1.5; }
+.metadata-list dt { color: #9098a3; }
+.metadata-list dd { margin: 0; color: #576575; }
+.detail-section > p { font-size: 11px; line-height: 1.6; }
+button.usage-row { width: 100%; border: 0; border-bottom: 1px solid var(--line-soft); background: transparent; text-align: left; color: #586575; }
+button.usage-row:hover { color: var(--red); background: #faf7f8; }
+button.usage-row small { display: block; margin-top: 2px; font-size: 9px; }
+button.usage-row .icon { width: 12px; height: 12px; margin-top: 3px; color: #a5adb8; }
+.footer-state.pending { color: var(--amber); }
+.footer-state small { display: block; font-size: 9px; }
+.footer-state:has(small) { display: block; }
+.mobile-back.button { display: none; }
+.picker-search { display: flex; align-items: center; gap: 8px; }
+.picker-search .search-field { flex: 1; }
+.picker-search .search-field input { padding-left: 30px; }
+.picker-search .filter-select { height: 35px; }
+.picker-option { cursor: pointer; }
+.picker-option > small:last-child { margin-left: auto; max-width: 130px; text-align: right; }
+.picker-option.unavailable { background: #fafbfc; color: #8a93a0; cursor: default; }
+.picker-option.unavailable .component-type { opacity: .6; }
+.picker-create { color: #9199a4; font-size: 11px; }
+.preview-row > span { display: inline-flex; align-items: center; gap: 5px; color: #8a939f; font-size: 11px; }
+.preview-row > span b { color: #536170; font-weight: 500; }
+.preview-row > strong { font-size: 12px; font-weight: 500; }
+.issue-queue { display: flex; flex-direction: column; border: 1px solid #e4e8ee; border-radius: 6px; overflow: hidden; }
+.issue-queue-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 0; border-bottom: 1px solid var(--line-soft); background: #fff; text-align: left; font-size: 12px; color: #626e7e; }
+.issue-queue-row:hover { background: #fdf6f7; }
+.issue-queue-row:last-child { border-bottom: 0; }
+.issue-queue-row > span:first-child { color: #ab7b80; }
+.issue-queue-row strong { display: block; color: #485666; font-size: 12px; font-weight: 600; }
+.issue-queue-row small { display: block; margin-top: 3px; color: #98a0ab; font-size: 10px; }
+.issue-queue-row .impact-count { display: flex; align-items: center; gap: 8px; margin-left: auto; white-space: nowrap; color: #a17b38; font-size: 11px; }
+button.guide-card { position: relative; text-align: left; padding: 15px 16px 28px; }
+button.guide-card:hover { border-color: #d9aeb5; background: #fdf6f7; }
+button.guide-card > strong { font-size: 12px; line-height: 1.5; color: #4b5969; font-weight: 600; }
+button.guide-card > p { margin-top: 7px; font-size: 11px; }
+button.guide-card > .icon { position: absolute; bottom: 10px; right: 12px; color: #a6adb7; }
+.menu-actions { display: flex; flex-direction: column; gap: 7px; }
+.menu-actions .button { justify-content: flex-start; }
+.form-error:not(:empty) { color: #ae3541; font-size: 11px; }
+.toast { display: flex; align-items: center; gap: 9px; pointer-events: auto; }
+.toast .button, .toast .icon-button { color: #e9edf3; }
+.toast .button:hover, .toast .icon-button:hover { background: #4d5868; }
+.toast > .icon { width: 15px; height: 15px; }
+.toast .button { text-decoration: underline; }
+.date-label { color: #89929f; font-size: 11px; }
+.health-bar.today-summary { flex-direction: row; padding: 0; overflow: hidden; flex-shrink: 0; }
+.health-bar.today-summary .metric { display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 7px 16px; flex: 0 1 31%; border-right: 1px solid var(--line-soft); font-size: 12px; color: #626f80; }
+.today-summary-note { display: flex; flex: 1; align-items: center; color: #8a94a1; padding: 8px 16px; font-size: 10px; line-height: 1.5; }
+.workbench.today-layout { overflow: hidden; }
+.today-layout .today-list { border: 0; border-radius: 0; flex: 1; min-height: 0; overflow: auto; }
+.today-name { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; text-align: left; }
+.today-name strong { font-size: 13px; line-height: 1.35; }
+.today-name small { font-size: 10px; line-height: 1.4; }
+.today-name:hover strong { color: var(--red); }
+.today-row.selected { background: #fff5f6; box-shadow: inset 3px 0 var(--red); }
+.today-actions .button { font-size: 11px; min-width: 86px; }
+.button.answer-good { border-color: #bfd6c7; background: #edf5f0; color: #407353; }
+.button.answer-good:hover { background: #e3f0e8; border-color: #abcab6; }
+.button.answer-low { border-color: #e9d1a2; background: #fff6e7; color: #926a26; }
+.button.answer-low:hover { background: #fff0d8; border-color: #ddbf86; }
+.today-footer { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; background: #fafbfc; border-top: 1px solid var(--line); color: #88929f; font-size: 11px; }
+.today-footer .button { min-height: 34px; }
+.today-row.task-ready .today-name strong { color: #6e8778; }
+
+@media (max-width: 1000px) {
+  .mobile-back.button { display: inline-flex; min-height: 24px; padding: 0; margin-bottom: 8px; }
+  .today-layout { display: flex; }
+  .today-layout .list-panel { flex: 1; min-height: 0; }
+  .today-summary-note { font-size: 9px; padding-left: 12px; padding-right: 12px; }
+}
+
+@media (max-width: 680px) {
+  .prototype-description { display: none; }
+  .header-actions .button span { display: none; }
+  .header-actions .avatar { display: none; }
+  .metric-denominator { font-size: 12px; }
+  .metric-symbol .icon { width: 16px; height: 16px; }
+  .health-bar button.metric { font-size: 9px; }
+  .health-bar button.metric:first-child { flex: 1.15; }
+  .search-field kbd { top: 8px; }
+  .data-table .row-title { font-size: 13px; }
+  .data-table .status-badge { font-size: 10px; }
+  .data-table .category-cell { font-size: 11px; }
+  .detail-title-row > .icon-button { margin-top: 11px; }
+  .optional-details summary { font-size: 11px; }
+  .own-state { font-size: 11px; }
+  .confirmation-field { font-size: 12px; }
+  .component-note { font-size: 11px; }
+  .detail-scroll .detail-section > p { font-size: 12px; }
+  .add-ingredients { min-height: 36px; }
+  .usage-row small { white-space: normal; }
+  .detail-footer .footer-state { font-size: 9px; }
+  .picker-search { flex-wrap: wrap; }
+  .picker-search .search-field { flex-basis: 100%; }
+  .picker-search .filter-select { flex: 0 1 160px; }
+  .issue-queue-row { gap: 8px; padding: 11px 9px; }
+  .issue-queue-row .impact-count { font-size: 9px; gap: 3px; }
+  .issue-queue-row strong { font-size: 11px; }
+  .issue-queue-row small { font-size: 9px; }
+  .preview-row { flex-wrap: wrap; gap: 4px; }
+  .preview-row > span { margin-left: auto; }
+  .today-layout .today-list { flex: 1; min-height: 0; overflow: auto; }
+  .today-layout .list-panel { flex: 1; min-height: 0; }
+  .today-name { flex: 1 1 100%; }
+  .today-actions { width: 100%; padding-left: 37px; }
+  .today-actions .button { min-width: 0; flex: 1; min-height: 36px; }
+  .today-row { min-height: 98px; }
+  .today-footer { padding: 9px; flex-wrap: wrap; font-size: 10px; }
+  .today-footer .button { margin-left: auto; min-height: 34px; font-size: 10px; }
+  .today-summary-note { display: none; }
+  .health-bar.today-summary .metric { flex: 1; min-height: 51px; padding: 8px 12px; font-size: 10px; }
+  .health-bar.today-summary .metric:last-of-type { border-right: 0; }
+  .date-label { display: none; }
+}
+
+@media (max-width: 370px) {
+  .prototype-bar { font-size: 9px; }
+  .prototype-tools { gap: 7px; }
+  .health-bar button.metric { padding-left: 5px; padding-right: 5px; }
+  .health-bar button.metric:last-child .metric-symbol { display: none; }
+  .health-bar .metric b { font-size: 17px; }
+  .metric-denominator { font-size: 11px; }
+  .today-actions { padding-left: 0; }
+}
+
+/* A desktop Page can be narrower than the browser window. Keep its selected
+   item visible: only a genuine phone-width viewport uses list/detail routing. */
+@media (min-width: 560px) and (max-width: 1000px) {
+  .workbench,
+  .workbench.today-layout { display: grid; min-height: 0; min-width: 0; }
+  .workbench .list-panel,
+  .workbench .detail-panel,
+  .workbench.detail-open .list-panel,
+  .workbench.detail-open .detail-panel { display: flex; min-height: 0; min-width: 0; }
+  .mobile-back,
+  .mobile-back.button { display: none; }
+  .today-layout .today-list { overflow: auto; min-height: 0; }
+}
+
+@media (min-width: 760px) and (max-width: 1000px) {
+  :root { --detail-width: 310px; }
+  .workbench,
+  .workbench.today-layout { grid-template-columns: minmax(0, 1fr) var(--detail-width); grid-template-rows: minmax(0, 1fr); gap: 10px; overflow: hidden; }
+  .list-toolbar { flex-wrap: wrap; padding: 8px; gap: 6px; }
+  .list-toolbar .search-field { flex-basis: 100%; }
+  .list-toolbar .filter-select { flex: 1; min-width: 0; max-width: none; font-size: 10px; }
+  .data-table { min-width: 610px; }
+  .detail-header { padding: 12px; }
+  .detail-scroll { padding: 0 12px; }
+  .detail-footer { padding: 9px 10px; }
+  .detail-footer .footer-state { font-size: 9px; }
+  .detail-footer .footer-actions { gap: 4px; }
+  .detail-footer .button { padding: 6px 7px; font-size: 10px; }
+  .detail-header h2 { font-size: 20px; }
+  .today-row { flex-wrap: wrap; align-items: center; gap: 9px; }
+  .today-name { flex-basis: 100%; }
+  .today-actions { margin-left: 37px; }
+  .today-actions .button { min-width: 88px; }
+  .today-footer { flex-wrap: wrap; padding: 10px; }
+  .today-footer .button { margin-left: auto; }
+}
+
+@media (min-width: 560px) and (max-width: 759px) {
+  .workbench,
+  .workbench.today-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(230px, .85fr) minmax(290px, 1.15fr); gap: 10px; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+  .workbench .list-panel,
+  .workbench.detail-open .list-panel { min-height: 230px; }
+  .workbench .detail-panel,
+  .workbench.detail-open .detail-panel { min-height: 290px; }
+  .detail-header { padding: 10px 14px; }
+  .detail-scroll { padding: 0 14px; }
+  .detail-footer { padding: 9px 14px; }
+  .detail-header h2 { font-size: 20px; }
+  .breadcrumbs { margin-bottom: 6px; }
+  .detail-badges { margin-top: 6px; }
+  .detail-title-row > .icon-button { margin-top: 8px; }
+  .detail-section { padding-top: 12px; padding-bottom: 12px; }
+  .data-table { min-width: 610px; }
+  .list-toolbar { flex-wrap: wrap; padding: 7px 8px; gap: 6px; }
+  .list-toolbar .search-field { flex: 1 1 100%; }
+  .list-toolbar .filter-select { flex: 1; min-width: 0; max-width: none; }
+  .today-row { min-height: 66px; flex-wrap: nowrap; }
+  .today-name { flex: 1; }
+  .today-actions { width: auto; padding-left: 0; }
+  .today-actions .button { flex: none; min-width: 82px; }
+  .today-summary-note { display: none; }
+  .health-bar.today-summary .metric { flex: 1; }
+  .today-footer { padding: 9px 12px; }
+}
+
+html[data-embed="page"] body{height:900px;min-height:900px;}
+@media(max-width:760px){html[data-embed="page"] body{height:840px;min-height:840px;}}
+</style>
+</head>
+<body>
+<div class="prototype-bar" lang="cs"><span><strong>Klikací návrh</strong><span class="prototype-description"> · skutečné názvy jídel, ukázkové složení · změny pouze v prototypu</span></span><div class="prototype-tools"><button data-action="guide">Co vyzkoušet</button><button data-action="reset">Obnovit ukázku</button></div></div>
+<div class="app-shell">
+<header class="app-header"><button class="brand" data-action="area" data-id="menu" aria-label="LABULA Workspace 2.0"><span class="wordmark">LABULA</span><span class="product-name">Workspace 2.0</span></button><nav class="primary-nav" aria-label="Main navigation"><button data-action="area" data-id="today" id="nav-today"></button><button data-action="area" data-id="menu" id="nav-menu"></button></nav><div class="header-actions"><button class="button ghost" data-action="settings" id="settings-button"></button><span class="avatar" aria-label="Demo user">JL</span></div></header>
+<main class="workspace" id="workspace"></main>
+</div>
+<div id="dialogs"></div><div class="toast-region" id="toasts" aria-live="polite" aria-atomic="true"></div>
+<script>/* LABULA Workspace 2.0 clickable design prototype.
+ * Dish names/variants follow lib/menu.ts; all compositions and check data are
+ * synthetic examples, not the restaurant's recorded recipes or inventory.
+ * No network, persistence or production application code is used here.
+ */
+(function (root) {
+  'use strict';
+
+  const clone = value => JSON.parse(JSON.stringify(value));
+  const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  const values = data => Object.values(data && data.entities || {});
+  const entity = (data, id) => data && data.entities && data.entities[id];
+  const ref = (id, amount = '', note = '') => ({id, amount, note});
+
+  function children(data, id) {
+    const item = entity(data, id);
+    if (!item || item.type === 'ingredient') return [];
+    return [...new Set((item.inputs || []).map(input => input.id).filter(Boolean))];
+  }
+
+  function descendants(data, id) {
+    const seen = new Set([id]);
+    const result = [];
+    function visit(parentId) {
+      for (const childId of children(data, parentId)) {
+        if (seen.has(childId)) continue;
+        seen.add(childId);
+        result.push(childId);
+        visit(childId);
+      }
+    }
+    visit(id);
+    return result;
+  }
+
+  function activeRecipes(data) {
+    return values(data).filter(item => item.type === 'dish' && item.active === true);
+  }
+
+  function ownState(item) {
+    if (!item) return 'empty';
+    if (item.type === 'ingredient') return 'confirmed';
+    if (!item.inputs || !item.inputs.length) return 'empty';
+    return item.confirmed ? 'confirmed' : 'draft';
+  }
+
+  function issues(data, id) {
+    const found = new Map();
+    const visited = new Set();
+    const path = new Set();
+    function add(itemId, reason) { found.set(itemId + ':' + reason, {id: itemId, reason}); }
+    function visit(itemId) {
+      if (path.has(itemId)) { add(itemId, 'Circular composition reference'); return; }
+      if (visited.has(itemId)) return;
+      const item = entity(data, itemId);
+      if (!item) { add(itemId, 'Referenced item is unavailable'); return; }
+      if (item.type === 'ingredient') { visited.add(itemId); return; }
+      path.add(itemId);
+      if (ownState(item) === 'empty') add(itemId, 'No components added yet');
+      else if (!item.confirmed) add(itemId, 'Composition not confirmed');
+      for (const childId of children(data, itemId)) {
+        const child = entity(data, childId);
+        if (child && child.type === 'dish') add(childId, 'A dish cannot be used as a component');
+        visit(childId);
+      }
+      path.delete(itemId);
+      visited.add(itemId);
+    }
+    visit(id);
+    return [...found.values()];
+  }
+
+  function complete(data, id) { return Boolean(entity(data, id)) && issues(data, id).length === 0; }
+
+  function activeUses(data, id) {
+    return activeRecipes(data).filter(item => item.id !== id && descendants(data, item.id).includes(id));
+  }
+
+  function parents(data, id) {
+    return values(data).filter(item => children(data, item.id).includes(id));
+  }
+
+  function usedItems(data, type) {
+    const reachable = new Set(activeRecipes(data).flatMap(item => descendants(data, item.id)));
+    return values(data).filter(item => item.type === type && reachable.has(item.id));
+  }
+
+  function usedIngredients(data) { return usedItems(data, 'ingredient'); }
+  function usedHouseMade(data) { return usedItems(data, 'house'); }
+
+  function health(data) {
+    const active = activeRecipes(data);
+    const broken = new Set();
+    for (const recipe of active) {
+      for (const issue of issues(data, recipe.id)) {
+        if (issue.reason === 'Circular composition reference' || issue.reason === 'Referenced item is unavailable' || issue.reason === 'A dish cannot be used as a component') {
+          broken.add(issue.id + ':' + issue.reason);
+        }
+      }
+    }
+    return {
+      activeVariants: active.length,
+      totalDishes: new Set(values(data).filter(item => item.type === 'dish').map(item => item.dishId || item.id)).size,
+      completeVariants: active.filter(item => complete(data, item.id)).length,
+      ownToCheck: active.filter(item => ownState(item) !== 'confirmed').length,
+      houseToCheck: usedHouseMade(data).filter(item => ownState(item) !== 'confirmed').length,
+      broken: broken.size,
+    };
+  }
+
+  function wouldCycle(data, parentId, childId) {
+    return parentId === childId || descendants(data, childId).includes(parentId);
+  }
+
+  function saveEntity(data, id, patch) {
+    if (!id || typeof id !== 'string') throw new Error('An item ID is required.');
+    const existing = entity(data, id);
+    const candidate = {...(existing || {id, confirmed: false, inputs: [], notes: '', aliases: []}), ...clone(patch), id};
+    if (!['dish', 'house', 'ingredient'].includes(candidate.type)) throw new Error('Choose a dish, house-made item or ingredient.');
+    candidate.name = String(candidate.name || '').trim();
+    if (!candidate.name) throw new Error('Add a name before saving.');
+    candidate.notes = String(candidate.notes || '');
+    candidate.aliases = [...new Set((candidate.aliases || []).map(value => String(value).trim()).filter(Boolean))];
+    if (!Array.isArray(candidate.inputs)) throw new Error('The component list is invalid.');
+    candidate.inputs = candidate.inputs.map(input => ({id: String(input.id || ''), amount: String(input.amount || ''), note: String(input.note || '')}));
+    const duplicate = values(data).find(item => item.id !== id && item.type === candidate.type && normalize(item.name) === normalize(candidate.name) && (candidate.type !== 'dish' || normalize(item.variant || 'Standard') === normalize(candidate.variant || 'Standard')));
+    if (duplicate) throw new Error('An item with this name already exists. Choose the existing item or a different name.');
+    if (candidate.type === 'ingredient' && candidate.inputs.length) throw new Error('A bought ingredient does not need a house-made composition.');
+    const seen = new Set();
+    for (const input of candidate.inputs) {
+      if (!input.id || !entity(data, input.id)) throw new Error('A component is unavailable. Choose an existing item.');
+      if (seen.has(input.id)) throw new Error('This component is already in the list.');
+      seen.add(input.id);
+      if (entity(data, input.id).type === 'dish') throw new Error('Choose an ingredient or a house-made item as the component.');
+      if (wouldCycle(data, id, input.id)) throw new Error('This would create a circular recipe. Choose another component.');
+    }
+    const changedInputs = JSON.stringify(existing && existing.inputs || []) !== JSON.stringify(candidate.inputs);
+    if (candidate.type === 'ingredient') candidate.confirmed = true;
+    else {
+      if (changedInputs && patch.confirmed !== true) candidate.confirmed = false;
+      candidate.confirmed = candidate.confirmed === true;
+      if (candidate.confirmed && !candidate.inputs.length) throw new Error('Add at least one component before confirming the list.');
+    }
+    if (candidate.type === 'dish') {
+      candidate.active = candidate.active === true;
+      candidate.dishId = candidate.dishId || id;
+      candidate.variant = candidate.variant || 'Standard';
+    }
+    // No mutation of an editor draft, input array or the saved snapshot.
+    // Frozen copies make accidental edits of the saved composition observable.
+    candidate.inputs = Object.freeze(candidate.inputs.map(input => Object.freeze({...input})));
+    const next = clone(data);
+    next.entities[id] = candidate;
+    next.revision = Number(data.revision || 0) + 1;
+    return next;
+  }
+
+  function seed() {
+    const entities = {};
+    function ingredient(id, name, group, aliases = [], notes = '') {
+      entities[id] = {id, type: 'ingredient', name, group, confirmed: true, inputs: [], notes, aliases};
+    }
+    ingredient('ingredient-silken-tofu', 'Silken tofu', 'Tofu & proteins', ['Soft tofu']);
+    ingredient('ingredient-garlic', 'Garlic', 'Vegetables', ['Česnek']);
+    ingredient('ingredient-oil', 'Rapeseed oil', 'Pantry', ['Oil']);
+    ingredient('ingredient-chilli', 'Dried chilli', 'Spices', ['Chili']);
+    ingredient('ingredient-soy', 'Light soy sauce', 'Pantry', ['Soy sauce'], 'Bought product. Supplier label belongs in product details; it does not create kitchen tasks.');
+    ingredient('ingredient-vinegar', 'Rice vinegar', 'Pantry');
+    ingredient('ingredient-cucumber', 'Cucumber', 'Vegetables');
+    ingredient('ingredient-sesame', 'Sesame seeds', 'Pantry');
+    ingredient('ingredient-sugar', 'Sugar', 'Pantry');
+    ingredient('ingredient-salt', 'Salt', 'Pantry');
+    ingredient('ingredient-eggplant', 'Eggplant', 'Vegetables', ['Aubergine']);
+    ingredient('ingredient-starch', 'Potato starch', 'Pantry');
+    ingredient('ingredient-chicken', 'Chicken', 'Tofu & proteins');
+    ingredient('ingredient-ginger', 'Ginger', 'Vegetables');
+    ingredient('ingredient-century-egg', 'Century egg', 'Tofu & proteins');
+    ingredient('ingredient-paprika', 'Smoked paprika', 'Spices');
+    ingredient('ingredient-flour', 'Wheat flour', 'Pantry');
+    ingredient('ingredient-wood-ear', 'Wood ear mushroom', 'Vegetables');
+    ingredient('ingredient-beef', 'Beef', 'Tofu & proteins');
+    ingredient('ingredient-noodles', 'Wheat noodles', 'Noodles');
+    ingredient('ingredient-sweet-noodles', 'Sweet-potato noodles', 'Noodles');
+    ingredient('ingredient-pork', 'Pork', 'Tofu & proteins');
+    ingredient('ingredient-cabbage', 'Chinese cabbage', 'Vegetables');
+    ingredient('ingredient-firm-tofu', 'Firm tofu', 'Tofu & proteins');
+    ingredient('ingredient-rice', 'Rice', 'Pantry');
+    ingredient('ingredient-spring-onion', 'Spring onion', 'Vegetables');
+    ingredient('ingredient-black-pepper', 'Black pepper', 'Spices');
+
+    function house(id, name, confirmed, ids, notes = '') {
+      entities[id] = {id, type: 'house', name, confirmed, inputs: ids.map(value => typeof value === 'string' ? ref(value) : value), notes, aliases: []};
+    }
+    house('house-garlic-paste', 'Garlic paste', true, [ref('ingredient-garlic', '500 g'), ref('ingredient-oil', '100 ml')]);
+    house('house-chilli-sauce', 'Chilli sauce', false, ['house-garlic-paste', 'ingredient-chilli', 'ingredient-soy', 'ingredient-vinegar'], 'Example: check that this component list is complete.');
+    house('house-cucumber-dressing', 'Cucumber dressing', true, ['house-garlic-paste', 'ingredient-vinegar', 'ingredient-soy', 'ingredient-sugar']);
+    house('house-eggplant-coating', 'Eggplant coating', true, ['ingredient-starch', 'ingredient-flour', 'ingredient-salt']);
+    house('house-chicken-marinade', 'Chicken marinade', true, ['house-garlic-paste', 'ingredient-ginger', 'ingredient-soy']);
+    house('house-paprika-dressing', 'Smoky paprika dressing', true, ['ingredient-paprika', 'ingredient-oil', 'ingredient-vinegar']);
+    house('house-dough', 'House dough', true, ['ingredient-flour', 'ingredient-oil', 'ingredient-salt']);
+    house('house-mushroom-dressing', 'Mushroom dressing', false, ['ingredient-soy', 'ingredient-vinegar', 'ingredient-sesame']);
+    house('house-braised-beef', 'Braised beef', true, ['ingredient-beef', 'house-garlic-paste', 'ingredient-ginger', 'ingredient-soy']);
+    house('house-chicken-broth', 'Chicken broth', true, ['ingredient-chicken', 'ingredient-ginger', 'ingredient-spring-onion', 'ingredient-salt']);
+    house('house-xiao-mian-base', 'Xiao Mian base', true, ['house-chilli-sauce', 'house-chicken-broth', 'ingredient-soy']);
+    house('house-pickled-cabbage', 'Pickled cabbage', true, ['ingredient-cabbage', 'ingredient-salt', 'ingredient-vinegar']);
+    house('house-marinated-tofu', 'Marinated tofu', true, ['ingredient-firm-tofu', 'ingredient-soy', 'ingredient-ginger']);
+    house('house-mapo-base', 'Mapo base', true, ['house-chilli-sauce', 'ingredient-pork', 'ingredient-soy']);
+    house('house-seasonal-dressing', 'Seasonal dressing', false, [], 'New component idea. Not used in the current menu.');
+
+    function dish(dishId, slug, name, category, variant, active, confirmed, ids, notes = '') {
+      const id = 'dish-' + dishId + '-' + slug;
+      entities[id] = {id, type: 'dish', dishId, name, category, variant, active, confirmed, inputs: ids.map(value => typeof value === 'string' ? ref(value) : value), notes, aliases: []};
+    }
+    dish('s1', 'standard', 'Silken tofu chili', 'Starters', 'Standard', true, true, [ref('ingredient-silken-tofu', '150 g'), ref('house-chilli-sauce', '25 g'), 'ingredient-spring-onion', 'ingredient-sesame']);
+    dish('s2', 'standard', 'Crispy eggplant fries', 'Starters', 'Standard', true, true, ['ingredient-eggplant', 'house-eggplant-coating', 'house-chilli-sauce']);
+    dish('s3', 'standard', 'Spicy cucumber', 'Starters', 'Standard', true, true, ['ingredient-cucumber', 'house-cucumber-dressing', 'ingredient-sesame']);
+    dish('s4', 'standard', '"Lollipop" chicken', 'Starters', 'Standard', true, true, ['ingredient-chicken', 'house-chicken-marinade', 'ingredient-starch']);
+    dish('s5', 'standard', 'Century egg, smoky paprika, dough', 'Starters', 'Standard', true, true, ['ingredient-century-egg', 'house-paprika-dressing', 'house-dough']);
+    dish('s6', 'standard', 'Wood ear mushroom', 'Starters', 'Standard', true, false, ['ingredient-wood-ear', 'house-mushroom-dressing', 'ingredient-spring-onion']);
+    dish('s7', 'standard', 'Spicy Braised Beef Slices', 'Starters', 'Standard', true, true, ['house-braised-beef', 'house-chilli-sauce', 'ingredient-spring-onion']);
+    dish('m1', 'standard', 'Lá Bù Lá beef (Our signature dish)', 'Main Dishes', 'Standard', true, true, ['house-braised-beef', 'ingredient-rice', 'ingredient-cabbage']);
+    dish('m1', 'beef-max', 'Lá Bù Lá beef (Our signature dish)', 'Main Dishes', 'Beef MAX', true, true, [ref('house-braised-beef', '250 g'), 'ingredient-rice', 'ingredient-cabbage']);
+    dish('m2', 'standard', 'Xiao Mian', 'Main Dishes', 'Standard', true, true, ['ingredient-noodles', 'house-xiao-mian-base', 'house-braised-beef', 'ingredient-spring-onion']);
+    dish('m2', 'tofu-chicken-broth', 'Xiao Mian', 'Main Dishes', 'Tofu with chicken broth — confirm', true, false, ['ingredient-noodles', 'house-xiao-mian-base', 'ingredient-silken-tofu'], 'Example: chicken broth is included. Check the real variant before confirming; this prototype makes no dietary claim.');
+    dish('m2', 'marinated-tofu', 'Xiao Mian', 'Main Dishes', 'Marinated tofu version', false, true, ['ingredient-noodles', 'house-marinated-tofu', 'house-cucumber-dressing']);
+    dish('m3', 'standard', 'Sweet-potato noodles bowl', 'Main Dishes', 'Standard', true, true, ['ingredient-sweet-noodles', 'house-chicken-broth', 'ingredient-cabbage', 'ingredient-spring-onion']);
+    dish('m3', 'braised-tofu', 'Sweet-potato noodles bowl', 'Main Dishes', 'Braised tofu version', false, true, ['ingredient-sweet-noodles', 'house-marinated-tofu', 'ingredient-cabbage']);
+    dish('m4', 'standard', "Stir-fry Pork with Siehuan 'Paoeai'", 'Main Dishes', 'Standard', true, true, ['ingredient-pork', 'house-pickled-cabbage', 'house-garlic-paste', 'ingredient-rice']);
+    dish('m5', 'standard', 'Taste of Hometown', 'Main Dishes', 'Standard', false, true, ['ingredient-pork', 'house-pickled-cabbage', 'ingredient-rice']);
+    dish('m6', 'standard', 'Kids Menu', 'Main Dishes', 'Standard', false, false, []);
+    dish('p1', 'chicken-feet', 'Braised Chicken Feet/Pork Feet', 'Specials', 'Chicken feet', false, false, ['ingredient-chicken', 'house-chicken-marinade']);
+    dish('p1', 'pork-feet', 'Braised Chicken Feet/Pork Feet', 'Specials', 'Pork feet', false, true, ['ingredient-pork', 'house-garlic-paste', 'ingredient-soy']);
+    dish('p2', 'standard', 'Beef skewers', 'Specials', 'Standard', false, true, ['ingredient-beef', 'ingredient-black-pepper', 'ingredient-salt']);
+    dish('p3', 'standard', 'Lá Bù Lá Mapo Tofu', 'Specials', 'Standard', true, true, ['ingredient-silken-tofu', 'house-mapo-base', 'ingredient-rice']);
+    dish('p4', 'standard', 'Today Green Market-until sold-out', 'Specials', 'Standard', false, false, []);
+    dish('p5', 'standard', 'Secret Hidden Menu-until sold-out', 'Specials', 'Standard', false, false, []);
+    dish('p6', 'standard', "Children's menu", 'Specials', 'Standard', false, false, []);
+
+    return {
+      entities,
+      tracked: ['house-chilli-sauce', 'house-garlic-paste', 'house-chicken-broth', 'house-braised-beef', 'house-pickled-cabbage', 'ingredient-silken-tofu', 'ingredient-cucumber'],
+      checks: {'house-chilli-sauce': 'low', 'house-garlic-paste': 'enough', 'house-chicken-broth': 'low', 'house-braised-beef': 'enough', 'house-pickled-cabbage': 'enough', 'ingredient-silken-tofu': 'enough', 'ingredient-cucumber': 'low'},
+      plan: null,
+      revision: 1,
+    };
+  }
+
+  const api = {seed, clone, children, descendants, activeRecipes, ownState, issues, complete, activeUses, parents, usedIngredients, usedHouseMade, health, wouldCycle, saveEntity};
+  root.LabulaPrototypeModel = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>(() => {
+'use strict';
+const M=window.LabulaPrototypeModel;
+const $=id=>document.getElementById(id);
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const icons={menu:'<path d="m3 3 18 18M4 3v5a3 3 0 0 0 3 3h1m-1-8v4m3-4v5m9-5c-4 3-6 6-4 8l2 2m-6 2-8 8m15-8 4-4"/>',today:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18m-14 5 3 3 6-6"/>',search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',plus:'<path d="M12 5v14M5 12h14"/>',close:'<path d="m6 6 12 12M6 18 18 6"/>',back:'<path d="m12 5-7 7 7 7M5 12h15"/>',chevron:'<path d="m9 5 7 7-7 7"/>',check:'<path d="m5 12 4 4L19 6"/>',alert:'<path d="m12 3 10 18H2L12 3Z M12 9v5m0 3v.1"/>',settings:'<path d="M4 6h5m4 0h7M4 12h9m4 0h3M4 18h2m4 0h10"/><circle cx="11" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>',more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',download:'<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',undo:'<path d="M4 10h9a6 6 0 0 1 0 12M4 10l5-5m-5 5 5 5"/>',edit:'<path d="m15 4 5 5M4 20l5-1L21 7a2 2 0 0 0-5-5L4 15v5Z"/>',house:'<path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8"/>',box:'<path d="m3 7 9-4 9 4v14H3V7Zm0 0h18M9 3v4"/>'};
+const icon=(name,size=16)=>`<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||icons.menu}</svg>`;
+const button=(text,action,id='',kind='secondary',extra='')=>`<button class="button ${kind}" data-action="${action}" ${id?`data-id="${esc(id)}"`:''} ${extra}>${text}</button>`;
+const storageKey='labula-composition-prototype-v1';
+let data=M.seed(),drafts={},localAvailable=true,widgetAvailable=typeof window.openai?.setWidgetState==='function';
+try{const saved=window.openai?.widgetState?.prototypeVersion===1?window.openai.widgetState:JSON.parse(localStorage.getItem(storageKey)||'null');if((saved?.version===1||saved?.prototypeVersion===1)&&saved.data?.entities){data=saved.data;drafts=saved.drafts||{};}}catch{localAvailable=false;}
+let area='menu',tab='menu',todayView='evening',todaySelected=null,dialog=null,toastTimer=null,lastUndo=null,picker=null,mobileDetail=false;
+const contexts={menu:{scope:'current',status:'all',category:'all',q:'',selected:[],root:'dish-s1-standard',trail:['dish-s1-standard'],onlySelected:false,pinned:[],scroll:0},house:{scope:'all',status:'all',category:'all',q:'',selected:[],root:'house-chilli-sauce',trail:['house-chilli-sauce'],onlySelected:false,pinned:[],scroll:0},ingredients:{scope:'current',status:'all',category:'all',q:'',selected:[],root:null,trail:[],onlySelected:false,pinned:[],scroll:0}};
+const ctx=()=>contexts[tab];
+const normalize=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const typeLabel=e=>e?.type==='dish'?'Menu dish':e?.type==='house'?'House-made':'Ingredient';
+const entity=id=>data.entities[id];
+const all=()=>Object.values(data.entities);
+const compositionFields=e=>e?{inputs:e.inputs,notes:e.notes||'',confirmed:e.confirmed}:null;
+const isDirty=id=>drafts[id]&&JSON.stringify(compositionFields(drafts[id].value))!==JSON.stringify(compositionFields(entity(id)));
+const currentId=()=>ctx().trail.at(-1)||ctx().root;
+const effective=id=>drafts[id]?{...entity(id),...compositionFields(drafts[id].value)}:entity(id);
+const uniqueDishes=items=>new Set(items.map(e=>e.dishId||e.id)).size;
+const uses=id=>M.activeUses(data,id);
+const parents=id=>M.parents(data,id);
+function persist(){const state={version:1,prototypeVersion:1,data,drafts};try{localStorage.setItem(storageKey,JSON.stringify(state));localAvailable=true;}catch{localAvailable=false;}if(widgetAvailable){try{const result=window.openai.setWidgetState(state);if(result?.catch)result.catch(()=>{widgetAvailable=false;});}catch{widgetAvailable=false;}}}
+function commit(next){data=next;persist();}
+function draft(id){if(!drafts[id])drafts[id]={value:M.clone(entity(id)),removed:null};return drafts[id];}
+function notify(message,undo=false){clearTimeout(toastTimer);$('toasts').innerHTML=`<div class="toast">${icon('check')}<span>${esc(message)}</span>${undo?button('Undo','undo','','ghost small'):''}<button class="icon-button" data-action="dismiss-toast" aria-label="Dismiss">${icon('close')}</button></div>`;toastTimer=setTimeout(()=>$('toasts').innerHTML='',undo?16000:6500);}
+function saveSnapshot(next,message){const previous=M.clone(data);commit(next);lastUndo={data:previous,revision:data.revision};notify(message,true);}
+function ownLabel(e){return e.type==='ingredient'?'Bought':({empty:'Not started',draft:'Needs confirmation',confirmed:'Own list confirmed'}[M.ownState(e)]);}
+function stateBadge(e,own=false){if(e.type==='ingredient')return '<span class="status-badge muted">Bought</span>';const done=own?M.ownState(e)==='confirmed':M.complete(data,e.id);const label=done?(own?'Confirmed':'Complete'):M.ownState(e)==='empty'?'Not started':M.ownState(e)==='confirmed'?(own?'Confirmed':'House-made to check'):'Needs confirmation';return `<span class="status-badge ${done?'good':'warn'}">${done?icon('check',12):icon('alert',12)}${label}</span>`;}
+function inputName(id){return entity(id)?.name||'Unavailable ingredient';}
+function displayName(e){return e.type==='dish'&&e.variant&&e.variant!=='Standard'?`${e.name} · ${e.variant}`:e.name;}
+function tabItems(){return all().filter(e=>e.type===(tab==='menu'?'dish':tab==='house'?'house':'ingredient'));}
+function matches(e,c=ctx()){
+ if(c.onlySelected)return c.selected.includes(e.id);
+ const used=e.type==='dish'?e.active:uses(e.id).length>0;
+ if(c.scope==='current'&&!used||c.scope==='off'&&used)return false;
+ if(c.category!=='all'&&(e.category||e.group)!==c.category)return false;
+ if(c.status==='attention'&&M.complete(data,e.id)||c.status==='complete'&&!M.complete(data,e.id))return false;
+ if(c.status==='own-attention'&&M.ownState(e)==='confirmed')return false;
+ if(['empty','draft','confirmed'].includes(c.status)&&M.ownState(e)!==c.status)return false;
+ const names=[e.name,e.variant,...(e.aliases||[]),...M.descendants(data,e.id).flatMap(id=>[entity(id)?.name,...(entity(id)?.aliases||[])])].filter(Boolean).join(' ');
+ return normalize(names).includes(normalize(c.q));
+}
+function rows(){return tabItems().filter(e=>matches(e)||ctx().pinned.includes(e.id));}
+function rememberScroll(){const el=document.querySelector('.table-scroll');if(el&&area==='menu')ctx().scroll=el.scrollTop;}
+function selectTab(next){rememberScroll();tab=next;mobileDetail=false;if(!ctx().root||!entity(ctx().root)){const first=tabItems().find(e=>matches(e))||tabItems()[0];ctx().root=first?.id;ctx().trail=first?[first.id]:[];}render();}
+function openRoot(id){rememberScroll();ctx().root=id;ctx().trail=[id];mobileDetail=true;render();if(matchMedia('(max-width: 559px)').matches)document.querySelector('.detail-header h2')?.focus();else if(matchMedia('(max-width: 759px)').matches)document.querySelector('.detail-panel')?.scrollIntoView({block:'nearest'});}
+function openNested(id){rememberScroll();if(!entity(id))return;ctx().trail.push(id);renderDetail();document.querySelector('.detail-scroll')?.scrollTo(0,0);}
+function openInMenu(id){area='menu';const e=entity(id);tab=e.type==='dish'?'menu':e.type==='house'?'house':'ingredients';if(!matches(e))ctx().pinned.push(id);openRoot(id);}
+function render(){
+ $('nav-menu').innerHTML=icon('menu',19)+'<span>Menu</span>';$('nav-today').innerHTML=icon('today',19)+'<span>Today</span>';$('settings-button').innerHTML=icon('settings')+'<span>Settings</span>';
+ $('nav-menu').classList.toggle('active',area==='menu');$('nav-today').classList.toggle('active',area==='today');
+ if(area==='today'){renderToday();return;}
+ const c=ctx(),h=M.health(data),unconfirmedHouse=M.usedHouseMade(data).filter(e=>M.ownState(e)!=='confirmed');
+ $('workspace').innerHTML=`<div class="page-heading"><h1>Menu</h1><nav class="subnav" aria-label="Menu views">${[['menu','Menu'],['house','House-made'],['ingredients','Ingredients']].map(([id,label])=>`<button data-action="tab" data-id="${id}" class="${tab===id?'active':''}" aria-current="${tab===id?'page':'false'}">${label}</button>`).join('')}</nav><div class="heading-actions">${button(icon('plus')+(tab==='menu'?'Add dish':tab==='house'?'Add house-made':'Add ingredient'),'new','','primary')}${button(icon('more'),'more','','ghost','aria-label="More actions"')}</div></div>
+ <div class="health-bar" aria-label="Current menu composition"><button class="metric" data-action="health" data-id="complete"><b>${h.completeVariants}<span class="metric-denominator"> / ${h.activeVariants}</span></b><span>active variants complete<small>including house-made composition</small></span></button><button class="metric ${h.ownToCheck?'warn':''}" data-action="health" data-id="lists"><b>${h.ownToCheck}</b><span>dish lists to check<small>current menu</small></span></button><button class="metric ${unconfirmedHouse.length?'warn':''}" data-action="health" data-id="house"><b>${unconfirmedHouse.length}</b><span>house-made to complete<small>${uniqueDishes(M.activeRecipes(data).filter(e=>M.issues(data,e.id).some(i=>entity(i.id)?.type==='house')))} dishes affected</small></span></button><button class="metric" data-action="issues"><span class="metric-symbol">${icon('alert',18)}</span><span>Review issues<small>Start with the largest impact</small></span></button></div>
+ <div class="workbench ${mobileDetail?'detail-open':''}"><section class="list-panel" aria-label="${tab==='menu'?'Menu variants':tab==='house'?'House-made':'Ingredients'}"><div class="list-toolbar"><label class="search-field">${icon('search')}<input id="table-search" type="search" placeholder="${tab==='menu'?'Search dishes, variants or ingredients…':tab==='house'?'Search house-made or ingredients…':'Search ingredients or aliases…'}" aria-label="Search list" value="${esc(c.q)}"><kbd>/</kbd></label><select class="filter-select" id="scope-filter" aria-label="Scope">${(tab==='menu'?[['current','Current menu'],['all','All dishes'],['off','Off menu']]:tab==='house'?[['all','All house-made'],['current','Used in current menu'],['off','Not in current menu']]:[['current','Used in current menu'],['all','All ingredients'],['off','Not in current menu']]).map(([value,label])=>`<option value="${value}" ${c.scope===value?'selected':''}>${label}</option>`).join('')}</select>${tab!=='ingredients'?`<select class="filter-select" id="status-filter" aria-label="Composition status">${[['all','Any composition'],['complete','Complete'],['attention','Needs attention'],['own-attention','Own list to check'],['empty','Not started'],['draft','Needs confirmation'],['confirmed','Own list confirmed']].map(([value,label])=>`<option value="${value}" ${c.status===value?'selected':''}>${label}</option>`).join('')}</select>`:''}${tab==='menu'?`<select class="filter-select category-filter" id="category-filter" aria-label="Category">${['all','Starters','Main Dishes','Specials'].map(value=>`<option ${c.category===value?'selected':''} value="${value}">${value==='all'?'All categories':value}</option>`).join('')}</select>`:''}</div><div class="list-caption" id="list-caption"></div><div class="table-scroll"><table class="data-table"><thead><tr><th class="check-cell"><input type="checkbox" id="select-all" aria-label="Select all filtered rows"></th><th class="name-cell">${tab==='menu'?'Dish / variant':tab==='house'?'House-made item':'Ingredient'}</th>${tab==='menu'?'<th class="category-cell">Category</th><th>Menu</th><th>Composition</th>':tab==='house'?'<th>Own composition</th><th>Current dishes</th><th>House-made uses</th>':'<th>Group</th><th>Current dishes</th><th>House-made uses</th>'}</tr></thead><tbody id="table-body"></tbody></table><div id="empty-list"></div></div><div class="selection-bar" id="selection-bar"></div></section><aside class="detail-panel" id="detail-panel" aria-label="Selected item details"></aside></div>`;
+ renderRows();renderDetail();const scroller=document.querySelector('.table-scroll');if(scroller)scroller.scrollTop=c.scroll;
+}
+function renderRows(){if(area!=='menu')return;const c=ctx(),visible=rows();
+ $('table-body').innerHTML=visible.map(e=>{const dishUses=uses(e.id),directParents=parents(e.id).filter(x=>x.type==='house'),pinned=c.pinned.includes(e.id)&&!matches(e);return `<tr class="${c.root===e.id?'selected':''}" data-row="${esc(e.id)}"><td class="check-cell"><input type="checkbox" data-select="${esc(e.id)}" aria-label="Select ${esc(displayName(e))}" ${c.selected.includes(e.id)?'checked':''}></td><td class="name-cell"><button class="row-open" data-action="open" data-id="${esc(e.id)}"><span class="row-title">${esc(e.name)}${isDirty(e.id)?'<span class="draft-dot" title="Unsaved changes"></span>':''}</span>${e.type==='dish'&&all().filter(x=>x.dishId===e.dishId&&x.type==='dish').length>1?`<span class="row-subtitle">${esc(e.variant||'Standard')}</span>`:''}${pinned?'<span class="row-subtitle held-row">Kept here after your change</span>':''}</button></td>${e.type==='dish'?`<td class="category-cell">${esc(e.category)}</td><td><button class="menu-state ${e.active?'on':''}" data-action="toggle-menu" data-id="${esc(e.id)}">${e.active?'On menu':'Off menu'}</button></td><td>${stateBadge(e)}</td>`:e.type==='house'?`<td>${stateBadge(e,true)}</td><td><span class="number">${uniqueDishes(dishUses)}</span>${dishUses.length!==uniqueDishes(dishUses)?`<small class="cell-secondary">${dishUses.length} variants</small>`:''}</td><td>${directParents.length||'—'}</td>`:`<td>${esc(e.group||'—')}</td><td>${uniqueDishes(dishUses)||'—'}</td><td>${directParents.length||'—'}</td>`}</tr>`;}).join('');
+ const matching=visible.filter(e=>matches(e)).length;const count=tab==='menu'?`${matching} variants · ${uniqueDishes(visible.filter(e=>matches(e)))} dishes`:`${matching} ${tab==='house'?'house-made items':'ingredients'}`;
+ $('list-caption').innerHTML=`<span>${count}${tab==='house'&&c.scope==='all'?` · ${M.usedHouseMade(data).length} used in current menu`:''}${c.onlySelected?' · selected items':''}</span><div>${c.pinned.length?button('Apply filters again','reapply','','ghost small'):''}${c.q||c.status!=='all'||c.category!=='all'||c.onlySelected?button('Reset filters','clear-filters','','ghost small'):''}${button('Export view','export','','ghost small')}</div>`;
+ $('empty-list').innerHTML=visible.length?'':`<div class="empty-state">${icon('search',24)}<h3>No matching items</h3><p>Try another search or reset the filters.</p>${button('Reset filters','clear-filters')}</div>`;
+ const selected=c.selected;const hidden=selected.filter(id=>!visible.some(e=>e.id===id)).length;
+ $('selection-bar').hidden=!selected.length;
+ $('selection-bar').innerHTML=selected.length?`<div class="selection-summary"><strong>${selected.length} selected</strong>${hidden?`<span>${hidden} outside this view</span>`:''}${button(c.onlySelected?'Show all results':'Show selected','show-selected','','ghost small')}${button('Clear','clear-selection','','ghost small')}</div><div class="selection-actions">${tab==='menu'?button('Set on menu','bulk','on','secondary small')+button('Set off menu','bulk','off','secondary small'):tab==='ingredients'?button('Change group','bulk-group','','secondary small'):button('Reopen lists','bulk','reopen','secondary small')}${button(icon('download')+'Export selected','export-selected','','secondary small')}</div>`:'';
+ const allCheck=$('select-all');allCheck.checked=visible.length>0&&visible.every(e=>selected.includes(e.id));allCheck.indeterminate=visible.some(e=>selected.includes(e.id))&&!allCheck.checked;
+}
+function renderDetail(){if(area!=='menu')return;const id=currentId(),e=effective(id);const panel=$('detail-panel');if(!e){panel.innerHTML='<div class="empty-state"><h3>Select an item</h3><p>Its composition and usage will appear here.</p></div>';return;}
+ const saved=entity(id),dirty=isDirty(id),issues=M.issues(data,id),ownIssues=issues.filter(i=>i.id===id),dependencyIssues=issues.filter(i=>i.id!==id),u=uses(id),p=parents(id);const breadcrumb=ctx().trail.map((entry,i)=>i===ctx().trail.length-1?`<span>${esc(entity(entry)?.name||'Item')}</span>`:`<button data-action="breadcrumb" data-id="${i}">${esc(entity(entry)?.name||'Item')}</button>${icon('chevron',12)}`).join('');
+ panel.innerHTML=`<div class="detail-header"><button class="mobile-back button ghost small" data-action="back-list">${icon('back')}Back to list</button><div class="breadcrumbs">${breadcrumb||'Select an item'}</div><div class="detail-title-row"><div><p class="eyebrow">${typeLabel(e)}</p><h2 tabindex="-1">${esc(e.name)}</h2>${e.type==='dish'&&e.variant&&e.variant!=='Standard'?`<p class="detail-variant">${esc(e.variant)}</p>`:''}</div><button class="icon-button" data-action="metadata" data-id="${esc(id)}" aria-label="Edit name and details">${icon('edit')}</button></div><div class="detail-badges">${e.type==='ingredient'?'<span class="status-badge muted">Bought</span>':stateBadge(saved)}${e.type==='dish'?`<span class="status-badge muted">${e.active?'On menu':'Off menu'}</span>`:`<span class="detail-usage-count">${uniqueDishes(u)} current ${uniqueDishes(u)===1?'dish':'dishes'}</span>`}</div></div>
+ <div class="detail-scroll">${e.type==='ingredient'?`<section class="detail-section"><p class="muted">Bought as an ingredient. No house-made recipe is needed.</p><dl class="metadata-list"><dt>Group</dt><dd>${esc(e.group||'Not assigned')}</dd><dt>Alternative names</dt><dd>${esc((e.aliases||[]).join(', ')||'None')}</dd></dl>${e.notes?`<p>${esc(e.notes)}</p>`:''}${button('Edit ingredient details','metadata',id,'secondary small')}</section>`:`<section class="detail-section"><div class="section-title"><h3>Composition</h3><span>${e.inputs.length} direct items</span></div>${e.type==='house'?`<p class="shared-hint">One shared item · changes apply in all ${uniqueDishes(u)} current ${uniqueDishes(u)===1?'dish':'dishes'}${p.filter(x=>x.type==='house').length?` and ${p.filter(x=>x.type==='house').length} house-made items`:''}.</p>`:''}<div class="composition-list">${e.inputs.map(part=>{const child=entity(part.id);return `<div class="composition-row"><span class="component-type ${child?.type==='house'?'house':''}">${icon(child?.type==='house'?'house':'box',15)}</span><div class="component-info"><button data-action="nested" data-id="${esc(part.id)}">${esc(child?.name||'Unavailable ingredient')}</button><small>${child?.type==='house'?'House-made · '+ownLabel(child):'Ingredient'}</small>${part.amount||part.note?`<span class="component-note">${esc([part.amount,part.note].filter(Boolean).join(' · '))}</span>`:''}</div><button class="remove-button icon-button" data-action="remove-input" data-id="${esc(part.id)}" aria-label="Remove ${esc(child?.name||'ingredient')} from this composition">${icon('close',14)}</button></div>`;}).join('')||'<div class="composition-empty"><p>No ingredients yet.</p><span>Add what goes into this item, then confirm the list.</span></div>'}</div>${button(icon('plus')+'Add ingredients','picker',id,'secondary add-ingredients')}${drafts[id]?.removed?button(icon('undo')+'Undo removal','undo-remove',id,'ghost small'):''}
+ ${dirty?`<div class="notice">You are editing a draft. Save to update the menu overview.</div><label class="confirmation-field"><input type="checkbox" id="confirm-list" ${e.confirmed?'checked':''}>This list includes all ingredients</label>`:`<p class="own-state">${saved.confirmed?icon('check',14):icon('alert',14)}${ownLabel(saved)}</p>`}
+ ${!dirty&&dependencyIssues.length?`<div class="notice warning"><strong>${dependencyIssues.length} ${dependencyIssues.length===1?'component needs':'components need'} attention</strong>${dependencyIssues.slice(0,4).map(i=>`<button class="issue-link" data-action="nested" data-id="${esc(i.id)}">${esc(inputName(i.id))}${icon('chevron',13)}<small>${esc(i.reason)}</small></button>`).join('')}</div>`:''}
+ <details class="optional-details"><summary>Quantities & composition notes <span>optional</span></summary><p class="muted">Existing amounts and notes stay with each ingredient.</p>${e.inputs.map(part=>`<div class="quantity-row"><strong>${esc(inputName(part.id))}</strong><input aria-label="Amount for ${esc(inputName(part.id))}" data-amount="${esc(part.id)}" value="${esc(part.amount||'')}" placeholder="Amount, if known"><input aria-label="Note for ${esc(inputName(part.id))}" data-note="${esc(part.id)}" value="${esc(part.note||'')}" placeholder="Ingredient note"></div>`).join('')}<label class="form-field">Composition note<textarea rows="3" id="composition-note">${esc(e.notes||'')}</textarea></label></details>
+ </section>`}
+ ${e.type!=='dish'?renderUsage(id,p,u):`<section class="detail-section"><div class="section-title"><h3>Dish settings</h3></div><div class="detail-settings-actions">${button(e.active?'Set off menu':'Set on menu','toggle-menu',id,'secondary small')}${button(icon('plus')+'Add variant','variant',id,'ghost small')}</div><p class="muted">You can confirm a composition before putting it on the menu.</p></section>`}</div><div class="detail-footer" id="detail-footer"></div>`;
+ renderFooter();
+}
+function renderUsage(id,p,u){const direct=p.filter(e=>e.type==='house'||e.type==='dish'&&e.active),inactive=p.filter(e=>e.type==='dish'&&!e.active),indirect=u.filter(e=>!p.some(parent=>parent.id===e.id));return `<section class="detail-section"><div class="section-title"><h3>Used in</h3><span>${uniqueDishes(u)} current ${uniqueDishes(u)===1?'dish':'dishes'}</span></div><div class="usage-list">${direct.map(e=>`<button class="usage-row" data-action="usage" data-id="${esc(e.id)}"><span>${esc(displayName(e))}<small>${e.type==='house'?'House-made · direct':'Menu dish · direct'}</small></span>${icon('chevron',13)}</button>`).join('')}${indirect.map(e=>`<button class="usage-row" data-action="usage" data-id="${esc(e.id)}"><span>${esc(displayName(e))}<small>Via house-made</small></span>${icon('chevron',13)}</button>`).join('')}${!direct.length&&!indirect.length?'<p class="muted">Not used in the current menu.</p>':''}</div>${inactive.length?`<details class="optional-details"><summary>${inactive.length} off-menu ${inactive.length===1?'variant':'variants'}</summary>${inactive.map(e=>`<button class="usage-row" data-action="usage" data-id="${esc(e.id)}">${esc(displayName(e))}${icon('chevron',13)}</button>`).join('')}</details>`:''}</section>`;}
+function renderFooter(){const el=$('detail-footer');if(!el)return;const id=currentId(),e=effective(id);if(!e)return;const dirty=isDirty(id);el.innerHTML=`<div class="footer-state ${dirty?'pending':''}">${dirty?'Unsaved changes':localAvailable||widgetAvailable?'Saved in prototype':'Kept in this session'}${e.type==='house'&&dirty?`<small>Updates ${uniqueDishes(uses(id))} current dishes</small>`:''}</div><div class="footer-actions">${dirty?button('Discard','discard',id,'ghost small')+button('Save composition','save',id,'primary'):e.type!=='ingredient'&&!e.confirmed?button(icon('check')+'Confirm list','confirm',id,'primary',e.inputs.length?'':'disabled title="Add ingredients first"'):e.type!=='ingredient'?button('Next to complete','next','','secondary small'):''}</div>`;}
+function showDialog(title,body,footer='',wide=false){dialog={title};$('dialogs').innerHTML=`<div class="dialog-backdrop"><section class="dialog ${wide?'wide':''}" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><header class="dialog-header"><h2 id="dialog-title">${esc(title)}</h2><button class="icon-button" data-action="close-dialog" aria-label="Close dialog">${icon('close')}</button></header><div class="dialog-body">${body}</div>${footer?`<footer class="dialog-footer">${footer}</footer>`:''}</section></div>`;setTimeout(()=>document.querySelector('.dialog input:not([type=checkbox]),.dialog button')?.focus(),0);}
+function closeDialog(){dialog=null;$('dialogs').innerHTML='';document.querySelector('.detail-header h2')?.focus({preventScroll:true});}
+function openPicker(id){picker={parent:id,q:'',type:'all',selected:[]};showDialog('Add ingredients',`<p class="muted">Choose existing ingredients or house-made items for <strong>${esc(entity(id).name)}</strong>.</p><div class="picker-search"><label class="search-field">${icon('search')}<input id="picker-query" type="search" placeholder="Name or alternative name…" aria-label="Search ingredients to add"></label><select class="filter-select" id="picker-type"><option value="all">All items</option><option value="house">House-made</option><option value="ingredient">Ingredients</option></select></div><div class="picker-results" id="picker-results"></div><div class="picker-create">Can't find it? ${button(icon('plus')+'Create new item','new-in-picker','','ghost small')}</div>`,button('Cancel','close-dialog','','ghost')+button('Add selected','add-picked','','primary','id="add-picked" disabled'),true);renderPicker();}
+function renderPicker(){if(!picker||!$('picker-results'))return;const selected=effective(picker.parent).inputs.map(i=>i.id);const list=all().filter(e=>e.type!=='dish'&&e.id!==picker.parent&&(picker.type==='all'||e.type===picker.type)&&normalize([e.name,...(e.aliases||[])].join(' ')).includes(normalize(picker.q)));$('picker-results').innerHTML=list.map(e=>{const cycle=M.wouldCycle(data,picker.parent,e.id),added=selected.includes(e.id);return `<label class="picker-option ${cycle||added?'unavailable':''}"><input type="checkbox" data-pick="${esc(e.id)}" ${picker.selected.includes(e.id)||added?'checked':''} ${cycle||added?'disabled':''}><span class="component-type ${e.type==='house'?'house':''}">${icon(e.type==='house'?'house':'box',16)}</span><span><strong>${esc(e.name)}</strong><small>${typeLabel(e)}${e.type==='house'?' · '+ownLabel(e):''}</small></span>${added?'<small>Already added</small>':cycle?'<small>Would create a circular recipe</small>':''}</label>`;}).join('')||'<div class="empty-state"><p>No matching items.</p></div>';$('add-picked').disabled=!picker.selected.length;$('add-picked').textContent=picker.selected.length?`Add ${picker.selected.length} ${picker.selected.length===1?'item':'items'}`:'Add selected';}
+function createDialog(kind,variantOf=null,fromPicker=false){const base=variantOf?entity(variantOf):null;const name=fromPicker?(picker?.q||''):'';showDialog(base?'Add variant':kind==='dish'?'Add dish':kind==='house'?'Add house-made item':'Add ingredient',`<form id="create-form" data-kind="${kind}" ${base?`data-parent="${esc(base.id)}"`:''} data-picker="${fromPicker}"><p class="muted">${base?'A new variant starts off menu.':kind==='dish'?'Start off menu, add the composition, then put it on the menu.':'Create once and reuse throughout the menu.'}</p><div class="form-grid"><label class="form-field">${base?'Variant name':kind==='dish'?'Dish name':'Item name'}<input id="new-name" name="name" required maxlength="160" value="${esc(name)}" placeholder="${base?'e.g. Vegetarian':kind==='house'?'e.g. Chilli sauce':'Name'}"></label>${kind!=='dish'?`<label class="form-field">Type<select name="type"><option value="ingredient" ${kind==='ingredient'?'selected':''}>Ingredient · bought</option><option value="house" ${kind==='house'?'selected':''}>House-made · made here</option></select></label>`:!base?'<label class="form-field">Category<select name="category"><option>Starters</option><option>Main Dishes</option><option>Specials</option></select></label>':''}</div><p id="form-error" class="form-error" role="alert"></p></form>`,button('Cancel','close-dialog','','ghost')+`<button class="button primary" type="submit" form="create-form">${fromPicker?'Create & add to draft':base?'Add variant':'Create item'}</button>`);}
+function metadataDialog(id){const e=entity(id);showDialog('Edit details',`<form id="metadata-form" data-id="${esc(id)}"><div class="form-grid"><label class="form-field">Name<input name="name" value="${esc(e.name)}" required maxlength="160"></label>${e.type==='dish'?`<label class="form-field">Variant<input name="variant" value="${esc(e.variant||'Standard')}" required maxlength="160"></label><label class="form-field">Category<select name="category">${['Starters','Main Dishes','Specials'].map(c=>`<option ${e.category===c?'selected':''}>${c}</option>`).join('')}</select></label>`:`<label class="form-field">Alternative names<input name="aliases" value="${esc((e.aliases||[]).join(', '))}" placeholder="Separate with commas"></label>${e.type==='ingredient'?`<label class="form-field">Group<input name="group" value="${esc(e.group||'')}" placeholder="e.g. Vegetables"></label>`:''}`}</div><p class="muted">${e.type==='dish'?'Dish name and category are shared by its variants.':'This is one shared catalog item. Its identity stays the same.'}</p><p id="form-error" class="form-error" role="alert"></p></form>`,button('Cancel','close-dialog','','ghost')+'<button type="submit" form="metadata-form" class="button primary">Save details</button>');}
+function bulkPreview(action,ids=ctx().selected){const list=[...new Set(ids)].map(entity).filter(Boolean);if(!list.length)return;const before=M.clone(data);let next=M.clone(data);for(const e of list){const patch=action==='reopen'?{confirmed:false}:{active:action==='on'};next=M.saveEntity(next,e.id,patch);}const affected=list.filter(e=>action==='reopen'?e.confirmed:e.active!==(action==='on'));const beforeActive=uniqueDishes(M.activeRecipes(data)),afterActive=uniqueDishes(M.activeRecipes(next));const rowsHtml=list.map(e=>`<div class="preview-row"><strong>${esc(displayName(e))}</strong><span>${action==='reopen'?e.confirmed?'Confirmed':'Open':e.active?'On menu':'Off menu'} ${icon('chevron',13)} <b>${action==='reopen'?'Open':action==='on'?'On menu':'Off menu'}</b></span></div>`).join('');showDialog(action==='reopen'?'Reopen ingredient lists':'Review menu change',`<p>${affected.length} of ${list.length} selected ${list.length===1?'item will':'items will'} change.</p>${action!=='reopen'?`<div class="notice">Current dishes: <strong>${beforeActive} → ${afterActive}</strong><br>Future checks follow the updated menu. A published morning plan keeps its confirmed work.</div>`:'<p class="muted">Existing ingredients and notes are kept. Only the list confirmation is reopened.</p>'}<div class="preview-list">${rowsHtml}</div>${action==='on'&&list.some(e=>!M.complete(next,e.id))?'<div class="notice warning">Some compositions still need attention. They will remain visible in the menu overview.</div>':''}`,button('Cancel','close-dialog','','ghost')+button(`Apply ${affected.length} ${affected.length===1?'change':'changes'}`,'apply-bulk','','primary',affected.length?'':'disabled'));dialog={...dialog,bulk:{next,before,ids:list.map(e=>e.id),revision:data.revision,action}};}
+function exportRows(ids){const list=ids.map(entity).filter(Boolean),csvCell=v=>'"'+String(v??'').replaceAll('"','""')+'"';const records=[['Name','Variant','Type','On menu','Own list','Complete composition','Ingredients','Notes'],...list.map(e=>[e.name,e.variant||'',typeLabel(e),e.type==='dish'?e.active?'Yes':'No':'',ownLabel(e),e.type==='ingredient'?'':M.complete(data,e.id)?'Yes':'No',(e.inputs||[]).map(p=>[inputName(p.id),p.amount,p.note].filter(Boolean).join(' · ')).join('; '),e.notes])];const csv='\ufeff'+records.map(row=>row.map(csvCell).join(',')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='labula-prototype-'+tab+'.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),3000);notify(`${list.length} rows exported from this prototype`);}
+function showIssues(){const map=new Map();for(const e of M.activeRecipes(data))for(const issue of M.issues(data,e.id)){if(!map.has(issue.id))map.set(issue.id,{...issue,variants:new Set()});map.get(issue.id).variants.add(e.id);}const list=[...map.values()].sort((a,b)=>b.variants.size-a.variants.size);showDialog('Complete the menu composition',`<p class="muted">Fix a shared item once to improve every dish that uses it.</p><div class="issue-queue">${list.map(i=>`<button class="issue-queue-row" data-action="issue-open" data-id="${esc(i.id)}"><span>${icon(entity(i.id)?.type==='house'?'house':'menu',18)}</span><span><strong>${esc(inputName(i.id))}</strong><small>${esc(i.reason)}</small></span><span class="impact-count">${i.variants.size} ${i.variants.size===1?'variant':'variants'}${icon('chevron',14)}</span></button>`).join('')||'<div class="empty-state">All active menu compositions are complete.</div>'}</div>`,button('Close','close-dialog','','secondary'),true);}
+function showGuide(){showDialog('Vyzkoušej si nový Workspace',`<div lang="cs"><p class="muted">Názvy jídel odpovídají LABULA. Receptury, kontroly a zásoby jsou ukázkové; vše měníš jen v prototypu.</p><div class="guide-grid">${[['sauce','1. Dokonči společnou omáčku','Otevři Chilli sauce, přidej surovinu a potvrď seznam. Sleduj změnu hodnocení jídel.'],['nested','2. Projdi složení do hloubky','Jídlo → omáčka → česneková pasta → ingredience. Zpět se vrátíš bez ztráty kontextu.'],['house','3. Najdi nepoužitý house-made','Všechny položky jsou v House-made, včetně těch mimo menu. Doplň si novou komponentu.'],['bulk','4. Vyzkoušej hromadnou změnu','Označ varianty, změň filtr a ověř skrytý výběr i náhled dopadu.'],['today','5. Přejdi z večera do rána','Označ stav sledovaných položek a zveřejni ukázkový ranní plán.'],['ingredients','6. Prozkoumej použití suroviny','Uvidíš přímé použití i jídla, ve kterých je surovina přes house-made.']].map(([id,title,text])=>`<button class="guide-card" data-action="guide-start" data-id="${id}"><strong>${title}</strong><p>${text}</p>${icon('chevron',16)}</button>`).join('')}</div><p class="muted">Rozpracované změny zůstávají při přepínání zachované. Tlačítkem Obnovit ukázku se kdykoli vrátíš na začátek. Today ukazuje směr budoucího sjednocení, ne finální pravidla plánování výroby.</p></div>`,button('Prohlédnout aplikaci','close-dialog','','primary'),true);}
+
+function trackedItems(){return (data.tracked||[]).map(entity).filter(e=>e&&uses(e.id).length);}
+function renderToday(){const list=trackedItems(),plan=data.plan,selected=entity(todaySelected)||list[0];todaySelected=selected?.id;const answered=list.filter(e=>data.checks[e.id]).length,low=list.filter(e=>data.checks[e.id]==='low'),tasks=plan?.tasks||[],ready=tasks.filter(t=>t.ready).length;
+ $('workspace').innerHTML=`<div class="page-heading"><h1>Today</h1><nav class="subnav" aria-label="Daily work"><button data-action="today-tab" data-id="evening" class="${todayView==='evening'?'active':''}">Evening check</button><button data-action="today-tab" data-id="morning" class="${todayView==='morning'?'active':''}">Morning prep</button></nav><div class="heading-actions"><span class="date-label">17 Oct 2026 · example day</span>${button(icon('settings')+'Tracked items','tracking','','ghost small')}</div></div><div class="health-bar today-summary"><div class="metric"><b>${todayView==='evening'?answered:ready}<span class="metric-denominator"> / ${todayView==='evening'?list.length:tasks.length}</span></b><span>${todayView==='evening'?'items checked':'tasks ready'}<small>${todayView==='evening'?'Only explicitly tracked items':plan?'Published example plan':'No plan published yet'}</small></span></div><div class="metric"><b>${todayView==='evening'?low.length:tasks.length-ready}</b><span>${todayView==='evening'?'items need attention':'remaining tasks'}<small>${todayView==='evening'?'Prepare or restock':'Shared components appear once'}</small></span></div><div class="today-summary-note">${todayView==='evening'?'Check what you have. Publish what the morning needs.':plan?'This plan keeps the menu snapshot used when it was published.':'Publish an evening check to create a morning plan.'}</div></div>
+ <div class="workbench today-layout ${mobileDetail?'detail-open':''}"><section class="list-panel"><div class="list-caption"><strong>${todayView==='evening'?'Evening check':'Morning prep'}</strong><span>${todayView==='evening'?'Current menu · tracked items':plan?'Published plan · demo':'Not published'}</span></div><div class="today-list">${todayView==='evening'?list.map(e=>`<div class="today-row ${todaySelected===e.id?'selected':''}"><button class="today-name" data-action="today-select" data-id="${esc(e.id)}"><span class="component-type ${e.type==='house'?'house':''}">${icon(e.type==='house'?'house':'box',17)}</span><span><strong>${esc(e.name)}</strong><small>${typeLabel(e)} · ${uniqueDishes(uses(e.id))} current ${uniqueDishes(uses(e.id))===1?'dish':'dishes'}</small></span></button><div class="today-actions"><button class="button ${data.checks[e.id]==='enough'?'answer-good':'secondary'}" data-action="check-enough" data-id="${esc(e.id)}">${icon('check')}Enough</button><button class="button ${data.checks[e.id]==='low'?'answer-low':'secondary'}" data-action="check-low" data-id="${esc(e.id)}">${e.type==='house'?'Needs prep':'Needs restock'}</button></div></div>`).join('')||'<div class="empty-state"><h3>No tracked items</h3><p>Choose which menu items the kitchen checks.</p></div>':plan?tasks.map(t=>`<div class="today-row ${t.ready?'task-ready':''}"><button class="today-name" data-action="today-select" data-id="${esc(t.id)}"><span class="component-type ${t.type==='house'?'house':''}">${icon(t.type==='house'?'house':'box',17)}</span><span><strong>${esc(t.name)}</strong><small>${t.type==='house'?'Prepare':'Restock'} · ${t.dishes.length} dishes at publication</small></span></button><div class="today-actions"><button class="button ${t.ready?'answer-good':'secondary'}" data-action="ready" data-id="${esc(t.id)}">${icon('check')}${t.ready?'Ready':'Mark ready'}</button></div></div>`).join('')||'<div class="empty-state"><h3>Nothing to prepare</h3><p>The published check marked all tracked items as enough.</p></div>':`<div class="empty-state">${icon('today',30)}<h3>The morning starts with a check</h3><p>Mark what is needed, then publish the example plan.</p>${button('Open evening check','today-tab','evening','primary')}</div>`}</div><div class="today-footer"><span>${todayView==='evening'?`${list.length-answered} unchecked · ${low.length} need attention`:plan?`${ready} of ${tasks.length} ready`:'No morning tasks yet'}</span>${todayView==='evening'?button('Review & publish plan','publish-plan','','primary',answered===list.length&&list.length?'':'disabled title="Check every tracked item first"'):button('Back to evening check','today-tab','evening','secondary')}</div></section><aside class="detail-panel">${selected?`<div class="detail-header"><button class="mobile-back button ghost small" data-action="back-list">${icon('back')}Back to list</button><p class="eyebrow">${typeLabel(selected)}</p><h2 tabindex="-1">${esc(selected.name)}</h2><div class="detail-badges">${stateBadge(selected)}<span class="detail-usage-count">${uniqueDishes(uses(selected.id))} current ${uniqueDishes(uses(selected.id))===1?'dish':'dishes'}</span></div></div><div class="detail-scroll"><section class="detail-section"><div class="section-title"><h3>${selected.type==='ingredient'?'Ingredient details':'Current composition'}</h3></div>${selected.type==='ingredient'?'<p class="muted">This ingredient is bought. Restocking is separate from house-made preparation.</p>':`<div class="composition-list">${selected.inputs.map(p=>`<div class="composition-row"><span class="component-type ${entity(p.id)?.type==='house'?'house':''}">${icon(entity(p.id)?.type==='house'?'house':'box',15)}</span><div class="component-info"><button data-action="issue-open" data-id="${esc(p.id)}">${esc(inputName(p.id))}</button><small>${typeLabel(entity(p.id))}</small></div></div>`).join('')}</div>`}<p class="muted">These ingredients explain the item. They do not become morning tasks automatically.</p></section>${renderUsage(selected.id,parents(selected.id),uses(selected.id))}</div><div class="detail-footer"><span class="footer-state">Shared item</span>${button('Open in Menu','issue-open',selected.id,'secondary small')}</div>`:'<div class="empty-state">Select an item</div>'}</aside></div>`;
+}
+function trackingDialog(){const items=[...M.usedHouseMade(data),...M.usedIngredients(data)];showDialog('Items included in evening checks',`<p class="muted">Choose what the kitchen actually checks. Composition ingredients are not added automatically.</p><div class="picker-results">${items.map(e=>`<label class="picker-option"><input type="checkbox" data-track="${esc(e.id)}" ${(data.tracked||[]).includes(e.id)?'checked':''}><span><strong>${esc(e.name)}</strong><small>${typeLabel(e)}</small></span></label>`).join('')}</div>`,button('Done','close-tracking','','primary'),true);}
+function publishDialog(){const list=trackedItems(),low=list.filter(e=>data.checks[e.id]==='low');if(list.some(e=>!data.checks[e.id]))return;showDialog('Publish the example morning plan?',`<p>Only the ${low.length} tracked ${low.length===1?'item marked':'items marked'} as needed will become tasks.</p><div class="preview-list">${low.map(e=>`<div class="preview-row"><strong>${esc(e.name)}</strong><span>${e.type==='house'?'Prepare':'Restock'}</span></div>`).join('')||'<p>Everything is marked as enough. The plan will have no tasks.</p>'}</div><div class="notice">The plan keeps this menu snapshot. Later composition changes will not silently rewrite these tasks.</div>${data.plan?'<p class="muted">This replaces the previous example plan and resets its Ready marks.</p>':''}`,button('Back to check','close-dialog','','ghost')+button('Publish example plan','confirm-publish','','primary'));}
+
+document.addEventListener('click',event=>{
+ const target=event.target.closest('[data-action]');if(!target||target.disabled)return;const action=target.dataset.action,id=target.dataset.id;
+ try{
+ switch(action){
+ case 'area':rememberScroll();area=id;mobileDetail=false;render();break;
+ case 'tab':selectTab(id);break;
+ case 'open':openRoot(id);break;
+ case 'nested':openNested(id);break;
+ case 'usage':openInMenu(id);break;
+ case 'breadcrumb':ctx().trail=ctx().trail.slice(0,Number(id)+1);renderDetail();break;
+ case 'back-list':mobileDetail=false;render();document.querySelector(`[data-row="${ctx().root}"] .row-open`)?.focus();break;
+ case 'picker':openPicker(id);break;
+ case 'add-picked':{const parent=picker.parent,d=draft(parent);for(const child of picker.selected)if(!d.value.inputs.some(p=>p.id===child))d.value.inputs.push({id:child,amount:'',note:''});d.value.confirmed=false;persist();closeDialog();render();break;}
+ case 'remove-input':{const parent=currentId(),d=draft(parent),index=d.value.inputs.findIndex(p=>p.id===id);if(index<0)break;d.removed={part:M.clone(d.value.inputs[index]),index};d.value.inputs.splice(index,1);d.value.confirmed=false;persist();renderDetail();renderRows();break;}
+ case 'undo-remove':{const d=drafts[id];if(!d?.removed)break;if(!d.value.inputs.some(p=>p.id===d.removed.part.id))d.value.inputs.splice(d.removed.index,0,d.removed.part);d.removed=null;persist();renderDetail();renderRows();break;}
+ case 'save':{const e=drafts[id]?.value;if(!e)break;const next=M.saveEntity(data,id,compositionFields(e));delete drafts[id];ctx().pinned=[...new Set([...ctx().pinned,id])];commit(next);render();notify('Composition saved. Menu overview updated.');break;}
+ case 'confirm':{const next=M.saveEntity(data,id,{confirmed:true});ctx().pinned=[...new Set([...ctx().pinned,id])];commit(next);render();notify('Own ingredient list confirmed');break;}
+ case 'discard':delete drafts[id];persist();render();notify('Draft discarded. Saved composition kept.');break;
+ case 'next':{const list=tabItems().filter(e=>e.type!=='ingredient'&&!M.complete(data,e.id));const index=list.findIndex(e=>e.id===currentId());const next=list[(index+1)%list.length];if(next){ctx().pinned.push(next.id);openRoot(next.id);}else notify('All compositions in this view are complete');break;}
+ case 'metadata':metadataDialog(id);break;
+ case 'new':createDialog(tab==='menu'?'dish':tab==='house'?'house':'ingredient');break;
+ case 'variant':createDialog('dish',id);break;
+ case 'new-in-picker':createDialog(picker?.type==='house'?'house':'ingredient',null,true);break;
+ case 'toggle-menu':bulkPreview(entity(id).active?'off':'on',[id]);break;
+ case 'bulk':bulkPreview(id);break;
+ case 'apply-bulk':{const b=dialog.bulk;if(data.revision!==b.revision){notify('The example changed. Open the preview again.');closeDialog();break;}for(const affected of b.ids){ctx().pinned.push(affected);if(drafts[affected]&&b.action==='reopen')drafts[affected].value.confirmed=false;}saveSnapshot(b.next,'Group change applied');closeDialog();render();break;}
+ case 'bulk-group':showDialog('Change ingredient group',`<form id="group-form"><p>${ctx().selected.length} selected ingredients, including items outside the current filter.</p><label class="form-field">Group<input name="group" placeholder="e.g. Vegetables" required maxlength="80"></label></form>`,button('Cancel','close-dialog','','ghost')+'<button form="group-form" type="submit" class="button primary">Save group</button>');break;
+ case 'show-selected':ctx().onlySelected=!ctx().onlySelected;ctx().pinned=[];renderRows();break;
+ case 'clear-selection':ctx().selected=[];ctx().onlySelected=false;renderRows();break;
+ case 'reapply':ctx().pinned=[];renderRows();break;
+ case 'clear-filters':Object.assign(ctx(),{scope:tab==='house'?'all':'current',status:'all',category:'all',q:'',onlySelected:false,pinned:[]});render();break;
+ case 'health':area='menu';if(id==='house'){tab='house';Object.assign(ctx(),{scope:'current',status:'own-attention',q:'',category:'all',onlySelected:false,pinned:[]});}else{tab='menu';Object.assign(ctx(),{scope:'current',status:id==='lists'?'own-attention':'attention',q:'',category:'all',onlySelected:false,pinned:[]});}render();break;
+ case 'issues':showIssues();break;
+ case 'issue-open':closeDialog();openInMenu(id);break;
+ case 'export':exportRows(rows().map(e=>e.id));break;
+ case 'export-selected':exportRows(ctx().selected);break;
+ case 'more':showDialog('Menu actions',`<div class="menu-actions">${button(icon('download')+'Export current view','export','','secondary')}${button(icon('alert')+'Review composition issues','issues','','secondary')}${button('How this prototype works','guide','','ghost')}</div>`,button('Close','close-dialog'));break;
+ case 'undo':if(lastUndo&&lastUndo.revision===data.revision){const next=M.clone(lastUndo.data);next.revision=data.revision+1;commit(next);lastUndo=null;render();notify('Group change undone');}else notify('A newer change was saved. The earlier change can no longer be undone.');break;
+ case 'dismiss-toast':$('toasts').innerHTML='';break;
+ case 'close-dialog':closeDialog();break;
+ case 'guide':showGuide();break;
+ case 'guide-start':closeDialog();if(id==='sauce')openInMenu('house-chilli-sauce');else if(id==='nested'){area='menu';tab='menu';openRoot('dish-s1-standard');}else if(id==='house'){area='menu';selectTab('house');}else if(id==='bulk'){area='menu';tab='menu';ctx().selected=M.activeRecipes(data).slice(0,3).map(e=>e.id);render();}else if(id==='ingredients'){area='menu';openInMenu('ingredient-garlic');}else{area='today';todayView='evening';render();}break;
+ case 'reset':showDialog('Obnovit ukázková data?',`<p lang="cs">Zruší se pouze změny a rozpracované návrhy v tomto prototypu. Skutečná aplikace LABULA se nemění.</p>`,button('Zpět','close-dialog','','ghost')+button('Obnovit ukázku','confirm-reset','','primary'));break;
+ case 'confirm-reset':data=M.seed();drafts={};lastUndo=null;persist();for(const c of Object.values(contexts)){c.selected=[];c.pinned=[];c.onlySelected=false;c.q='';c.status='all';c.category='all';c.scroll=0;}contexts.menu.scope='current';contexts.house.scope='all';contexts.ingredients.scope='current';area='menu';tab='menu';ctx().root='dish-s1-standard';ctx().trail=[ctx().root];mobileDetail=false;closeDialog();render();notify('Ukázková data obnovena');break;
+ case 'settings':showDialog('Workspace settings',`<p class="muted">This is an interactive design of LABULA Workspace 2.0.</p><dl class="metadata-list"><dt>Data</dt><dd>Illustrative compositions · real menu names</dd><dt>Changes</dt><dd>${localAvailable?'Saved only in this browser’s prototype storage':'Kept only in this session'}</dd><dt>Layout</dt><dd>Compact desktop · always-visible detail</dd><dt>Production</dt><dd>No connection to the live kitchen data</dd></dl><div class="notice">Use the guide to try the main workflows. Reset restores the example data.</div>`,button('Open guide','guide','','secondary')+button('Close','close-dialog','','primary'));break;
+ case 'today-tab':todayView=id;mobileDetail=false;render();break;
+ case 'today-select':todaySelected=id;mobileDetail=true;render();if(matchMedia('(max-width: 559px)').matches)document.querySelector('.detail-header h2')?.focus();else if(matchMedia('(max-width: 759px)').matches)document.querySelector('.detail-panel')?.scrollIntoView({block:'nearest'});break;
+ case 'check-enough':case 'check-low':{const next=M.clone(data);next.checks[id]=action==='check-enough'?'enough':'low';next.revision++;commit(next);todaySelected=id;render();break;}
+ case 'tracking':trackingDialog();break;
+ case 'close-tracking':closeDialog();render();break;
+ case 'publish-plan':publishDialog();break;
+ case 'confirm-publish':{const next=M.clone(data);next.plan={sourceRevision:data.revision,publishedAt:new Date().toISOString(),tasks:trackedItems().filter(e=>data.checks[e.id]==='low').map(e=>({id:e.id,name:e.name,type:e.type,ready:false,inputs:M.clone(e.inputs),dishes:[...new Set(uses(e.id).map(x=>x.dishId||x.id))]}))};next.revision++;commit(next);closeDialog();todayView='morning';render();notify('Example morning plan published');break;}
+ case 'ready':{const next=M.clone(data),task=next.plan?.tasks.find(t=>t.id===id);if(task){task.ready=!task.ready;next.revision++;commit(next);render();}break;}
+ }
+ }catch(error){notify(error.message||'The change could not be applied. Your draft is kept.');}
+});
+document.addEventListener('input',event=>{const el=event.target;if(el.id==='table-search'){ctx().q=el.value;ctx().pinned=[];ctx().onlySelected=false;renderRows();}else if(el.id==='picker-query'){picker.q=el.value;renderPicker();}else if(el.dataset.amount||el.dataset.note){const id=currentId(),d=draft(id),part=d.value.inputs.find(p=>p.id===(el.dataset.amount||el.dataset.note));if(part){part[el.dataset.amount?'amount':'note']=el.value;persist();renderFooter();renderRows();}}else if(el.id==='composition-note'){draft(currentId()).value.notes=el.value;persist();renderFooter();renderRows();}});
+document.addEventListener('change',event=>{const el=event.target;
+ if(['scope-filter','status-filter','category-filter'].includes(el.id)){ctx()[el.id==='scope-filter'?'scope':el.id==='status-filter'?'status':'category']=el.value;ctx().pinned=[];ctx().onlySelected=false;renderRows();}
+ else if(el.dataset.select){const c=ctx();c.selected=el.checked?[...new Set([...c.selected,el.dataset.select])]:c.selected.filter(id=>id!==el.dataset.select);renderRows();}
+ else if(el.id==='select-all'){const ids=rows().map(e=>e.id);ctx().selected=el.checked?[...new Set([...ctx().selected,...ids])]:ctx().selected.filter(id=>!ids.includes(id));renderRows();}
+ else if(el.id==='picker-type'){picker.type=el.value;renderPicker();}
+ else if(el.dataset.pick){picker.selected=el.checked?[...new Set([...picker.selected,el.dataset.pick])]:picker.selected.filter(id=>id!==el.dataset.pick);renderPicker();}
+ else if(el.id==='confirm-list'){draft(currentId()).value.confirmed=el.checked;persist();renderFooter();}
+ else if(el.dataset.track){const next=M.clone(data);next.tracked=el.checked?[...new Set([...next.tracked,el.dataset.track])]:next.tracked.filter(id=>id!==el.dataset.track);next.revision++;commit(next);}
+});
+document.addEventListener('submit',event=>{event.preventDefault();const form=event.target,values=new FormData(form);try{
+ if(form.id==='create-form'){const parent=form.dataset.parent?entity(form.dataset.parent):null,type=parent?'dish':values.get('type')||form.dataset.kind,id=(type==='dish'?'dish':type==='house'?'house':'ingredient')+'-demo-'+Date.now().toString(36);const name=String(values.get('name')).trim();const e={id,type,name:parent?parent.name:name,variant:parent?name:type==='dish'?'Standard':undefined,dishId:parent?parent.dishId:type==='dish'?id:undefined,category:parent?.category||String(values.get('category')||''),active:false,confirmed:false,inputs:[],notes:'',aliases:[],group:''};const next=M.saveEntity(data,id,e);commit(next);if(form.dataset.picker==='true'&&picker){const d=draft(picker.parent);d.value.inputs.push({id,amount:'',note:''});d.value.confirmed=false;persist();closeDialog();render();notify('New shared item added to your draft');}else{closeDialog();openInMenu(id);notify('Created in the prototype');}}
+ else if(form.id==='metadata-form'){const id=form.dataset.id,e=entity(id),name=String(values.get('name')).trim();let next=data;if(e.type==='dish'){for(const sibling of all().filter(x=>x.type==='dish'&&x.dishId===e.dishId)){next=M.saveEntity(next,sibling.id,{name,category:String(values.get('category')),...(sibling.id===id?{variant:String(values.get('variant')).trim()}:{})});if(drafts[sibling.id])Object.assign(drafts[sibling.id].value,{name,category:String(values.get('category')),...(sibling.id===id?{variant:String(values.get('variant')).trim()}:{})});}}else{const patch={name,aliases:String(values.get('aliases')||'').split(',').map(s=>s.trim()).filter(Boolean),...(e.type==='ingredient'?{group:String(values.get('group')||'')}:{})};next=M.saveEntity(next,id,patch);if(drafts[id])Object.assign(drafts[id].value,patch);}commit(next);closeDialog();render();notify('Shared details updated');}
+ else if(form.id==='group-form'){let next=data;for(const id of ctx().selected)next=M.saveEntity(next,id,{group:String(values.get('group')).trim()});saveSnapshot(next,'Ingredient group updated');closeDialog();render();}
+ }catch(error){const el=$('form-error');if(el)el.textContent=error.message;else notify(error.message);}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&dialog){event.preventDefault();closeDialog();}else if(event.key==='/'&&!dialog&&!['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)){event.preventDefault();$('table-search')?.focus();}else if(dialog&&event.key==='Tab'){const focusable=[...document.querySelectorAll('.dialog button,.dialog input,.dialog select,.dialog textarea')].filter(el=>!el.disabled&&el.getClientRects().length);const first=focusable[0],last=focusable.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}}});
+window.addEventListener('beforeunload',persist);
+window.addEventListener('openai:set_globals',event=>{const state=event.detail?.globals?.widgetState;if(state?.prototypeVersion===1&&state.data?.entities&&JSON.stringify(state.data)!==JSON.stringify(data)){data=M.clone(state.data);drafts=M.clone(state.drafts||{});render();}});
+window.LabulaPrototype={getData:()=>M.clone(data),getDrafts:()=>M.clone(drafts),getContext:()=>({area,tab,context:M.clone(ctx())})};
+render();
+})();
+</script>
+</body></html>
