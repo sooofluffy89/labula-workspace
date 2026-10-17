@@ -77,3 +77,27 @@ export async function reopenWorkspaceCompositions(user:ChatGPTUser,revision:numb
  if(!result[0].meta.changes||!result[1].meta.changes){if(await replay())return {...await readWorkspaceMenu(user),replayed:true};throw new RequestError('The menu changed during saving. Refresh the preview.',409,'revision_conflict');}
  return {...await readWorkspaceMenu(user),replayed:false};
 }
+
+/** A single revision and receipt cover every list in a component edit. */
+export async function previewWorkspaceComponents(user:ChatGPTUser,revision:number,raw:unknown){
+ if(!await canManage(user))throw new RequestError('Only the owner or a Manager can change shared composition.',403,'role_restricted');
+ const {prepareComponentBulk}=await import('./composition-bulk');const before=await readNotebook(user);if(before.revision!==revision)throw new RequestError('The menu changed. Review a new preview.',409,'revision_conflict');
+ const n=migrateNotebook(JSON.parse(before.payload)),records=await workspaceApprovedRecords();
+ try{const {next,preview}=prepareComponentBulk(n,records,raw,revision,new Date().toISOString());let legacyPlanBlock:string|undefined;try{await legacyPlanScopeGuard(n,next,{beforeRecords:records,afterRecords:records});}catch(error){if(error instanceof RequestError&&error.code==='legacy_plan_scope')legacyPlanBlock=error.message;else throw error;}return {...preview,...(legacyPlanBlock?{legacyPlanBlock}:{})};}catch(error){if(error instanceof RequestError)throw error;throw new RequestError(error instanceof Error?error.message:'Review these component changes.');}
+}
+export async function writeWorkspaceComponents(user:ChatGPTUser,revision:number,raw:unknown){
+ if(!await canManage(user))throw new RequestError('Only the owner or a Manager can change shared composition.',403,'role_restricted');
+ const {componentBulkCommandSchema,prepareComponentBulk}=await import('./composition-bulk');const command=componentBulkCommandSchema.parse(raw),{operationId,sourceToken,...edit}=command,request=JSON.stringify(command),db=getRawDb();
+ const replay=async()=>{const prior=await db.prepare('SELECT id,request,actor_id,before_revision FROM catalog_operations WHERE id=?').bind(operationId).first<MenuReceipt>();if(!prior)return false;if(prior.actor_id!==user.userId||prior.before_revision!==revision||prior.request!==request)throw new RequestError('This request ID belongs to another change.',409,'command_mismatch');return true;};
+ if(await replay())return {...await readWorkspaceMenu(user),operationId,replayed:true};
+ const before=await readNotebook(user);if(before.revision!==revision){if(await replay())return {...await readWorkspaceMenu(user),operationId,replayed:true};throw new RequestError('The menu changed. Review a new preview.',409,'revision_conflict');}
+ const n=migrateNotebook(JSON.parse(before.payload)),records=await workspaceApprovedRecords(),now=new Date().toISOString();let next:Notebook;
+ try{const prepared=prepareComponentBulk(n,records,edit,revision,now);if(prepared.preview.sourceToken!==sourceToken)throw new RequestError('The composition source changed. Review a new preview.',409,'composition_conflict');next=prepared.next;}catch(error){if(error instanceof RequestError)throw error;throw new RequestError(error instanceof Error?error.message:'Review these component changes.');}
+ const payload=notebookPayload(next),guard=await legacyPlanScopeGuard(n,next,{beforeRecords:records,afterRecords:records});
+ const result=await db.batch([
+  db.prepare("INSERT INTO catalog_operations (id,kind,request,actor_id,actor_email,before_revision,after_revision,before_payload,after_payload,summary,created_at,retired_id,undo_of) SELECT ?,'workspace-components',?,?,?,revision,revision+1,payload,?,?,?,NULL,NULL FROM notebooks WHERE id=? AND revision=? AND "+guard.sql).bind(operationId,request,user.userId,user.email,payload,'Bulk '+edit.mode+' components in '+edit.ids.length+' lists',now,'kitchen',revision,...guard.args),
+  db.prepare('UPDATE notebooks SET payload=?,revision=revision+1,updated_at=?,updated_by=? WHERE id=? AND revision=? AND EXISTS (SELECT 1 FROM catalog_operations WHERE id=? AND before_revision=?)').bind(payload,now,user.email,'kitchen',revision,operationId,revision),
+ ]);
+ if(!result[0].meta.changes||!result[1].meta.changes){if(await replay())return {...await readWorkspaceMenu(user),operationId,replayed:true};await legacyPlanScopeGuard(n,next,{beforeRecords:records,afterRecords:records});throw new RequestError('The menu changed during saving. Review a new preview.',409,'revision_conflict');}
+ return {...await readWorkspaceMenu(user),operationId,replayed:false};
+}

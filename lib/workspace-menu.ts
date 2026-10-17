@@ -11,7 +11,7 @@ import {menuScope} from './menu-scope';
 export type WorkspaceComposition={
  source:'workspace'|'review'|'process'|'legacy'|'supplier'|'unavailable';
  status:'recorded'|'incomplete'|'not-recorded';inputs:RecipeInput[];gaps:string[];
- sourceLabel:string;token:string;reference:string;ownConfirmed?:boolean;
+ sourceLabel:string;token:string;reference:string;ownConfirmed?:boolean;gapCodes?:('composition_missing'|'source_review'|'cycle')[];
 };
 export type WorkspaceSharedBatch={id:string;name:string;inputs:RecipeInput[];outputIds:string[];method:string};
 export type WorkspaceUse={dishId:string;name:string;recipeIds:string[];direct:boolean};
@@ -52,7 +52,7 @@ export function workspaceComposition(n:Notebook,records:AppliedRecord[],itemId:s
 }
 function compositionFromState(state:ReturnType<typeof sourceState>):WorkspaceComposition{
  const {item,graph,sources,process,definition,entities,token}=state,itemId=item.id;
- if(definition)return {source:definition.kind==='supplier'?'supplier':'workspace',status:definition.inputs.length?'recorded':'not-recorded',inputs:structuredClone(definition.inputs),gaps:definition.inputs.length?[]:[definition.kind==='supplier'?'Supplier composition not recorded.':'Product composition not recorded.'],sourceLabel:definition.kind==='supplier'?'Supplier ingredients · Workspace 2.0':'Product recipe · Workspace 2.0',token,reference:definition.reference};
+ if(definition)return {source:definition.kind==='supplier'?'supplier':'workspace',status:definition.inputs.length?'recorded':'not-recorded',inputs:structuredClone(definition.inputs),gaps:definition.inputs.length?[]:[definition.kind==='supplier'?'Supplier composition not recorded.':'Product composition not recorded.'],gapCodes:definition.inputs.length?[]:['composition_missing'],sourceLabel:definition.kind==='supplier'?'Supplier ingredients · Workspace 2.0':'Product recipe · Workspace 2.0',token,reference:definition.reference};
  if(item.kind==='bought'){
   const supplier=supplierSource(state);
   return {source:'supplier',status:supplier?.inputs.length?(supplier.gaps.length?'incomplete':'recorded'):'not-recorded',inputs:supplier?.inputs??[],gaps:supplier?.gaps??['Supplier composition not recorded.'],sourceLabel:'Supplier ingredients',token,reference:supplier?.reference??''};
@@ -75,8 +75,8 @@ function compositionFromState(state:ReturnType<typeof sourceState>):WorkspaceCom
   return {source:'review',status:gaps.length?'incomplete':'recorded',inputs,gaps:[...new Set(gaps)],sourceLabel:sources.map(s=>s.name).join(' / '),token,reference:'Approved Review evidence retained'};
  }
  if(state.unavailable)return {source:'unavailable',status:'incomplete',inputs:[],gaps:['The authoritative approved source is unavailable. The superseded recipe is not shown as current.'],sourceLabel:'Approved source unavailable',token,reference:''};
- if(process){const shared=process.outputs.length>1;return {source:'process',status:shared?'incomplete':process.inputs.length?'recorded':'not-recorded',inputs:shared?[]:structuredClone(process.inputs),gaps:shared?['Product composition not confirmed. Shared batch inputs are shown separately.']:process.inputs.length?[]:['Product composition not recorded.'],sourceLabel:process.name,token,reference:''};}
- return {source:'legacy',status:item.inputs.length?'recorded':'not-recorded',inputs:structuredClone(item.inputs),gaps:item.inputs.length?[]:['Product composition not recorded.'],sourceLabel:'Existing recipe',token,reference:''};
+ if(process){const shared=process.outputs.length>1;return {source:'process',status:shared?'incomplete':process.inputs.length?'recorded':'not-recorded',inputs:shared?[]:structuredClone(process.inputs),gaps:shared?['Product composition not confirmed. Shared batch inputs are shown separately.']:process.inputs.length?[]:['Product composition not recorded.'],gapCodes:shared?['source_review']:process.inputs.length?[]:['composition_missing'],sourceLabel:process.name,token,reference:''};}
+ return {source:'legacy',status:item.inputs.length?'recorded':'not-recorded',inputs:structuredClone(item.inputs),gaps:item.inputs.length?[]:['Product composition not recorded.'],gapCodes:item.inputs.length?[]:['composition_missing'],sourceLabel:'Existing recipe',token,reference:''};
 }
 function sharedBatch(state:ReturnType<typeof sourceState>):WorkspaceSharedBatch|null{
  const {sources,process,entities}=state;
@@ -113,7 +113,7 @@ export function workspaceMenu(n:Notebook,records:AppliedRecord[],context:Workspa
  const walk=(id:string,recipe:Recipe,direct:boolean,path:Set<string>)=>{
   const item=projected.get(id);if(!item)return;reached.add(id);
   const use=item.usedIn.find(use=>use.dishId===recipe.menuId);if(use){use.direct||=direct;if(!use.recipeIds.includes(recipe.id))use.recipeIds.push(recipe.id);}else item.usedIn.push({dishId:recipe.menuId,name:n.dishes.find(d=>d.id===recipe.menuId)?.name??recipe.menuId,recipeIds:[recipe.id],direct});
-  if(path.has(id)){if(!item.composition.gaps.includes('A circular product reference needs correction.'))item.composition.gaps.push('A circular product reference needs correction.');item.composition.status='incomplete';return;}
+  if(path.has(id)){if(!item.composition.gaps.includes('A circular product reference needs correction.')){item.composition.gaps.push('A circular product reference needs correction.');item.composition.gapCodes=[...(item.composition.gapCodes??item.composition.gaps.slice(0,-1).map(()=>'source_review' as const)),'cycle'];}item.composition.status='incomplete';return;}
   const seen=walked.get(recipe.id)??new Set<string>();if(seen.has(id))return;seen.add(id);walked.set(recipe.id,seen);
   if(item.kind==='prep')for(const part of item.composition.inputs)walk(part.itemId,recipe,false,new Set(path).add(id));
  };
