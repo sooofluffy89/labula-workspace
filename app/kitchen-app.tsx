@@ -37,9 +37,9 @@ export default function KitchenApp({account='',role='legacy'}:{account?:string;r
    pending.current=next.view;pendingDay.current=next.day;
    setRequest(previous=>({view:next.view==='morning'?'morning':next.view==='rounds'?'manage':'evening',serial:previous.serial+1,day:next.day,rounds:next.view==='rounds',operations:next.view==='history'?'history':next.view==='calendar'?'calendar':undefined}));
    if(next.view==='morning'||next.view==='evening')lastToday.current=next;
-  }else if(next.view==='recipes'||next.view==='catalog'||next.view==='house-made'){
+  }else if(next.view==='recipes'||next.view==='catalog'){
    lastMenu.current=next;setMenuVisited(true);
-   setMenu({view:next.view==='recipes'?'dishes':next.view==='house-made'||next.kind==='prep'?'house-made':'ingredients',dishId:next.dish,variantId:next.variant,itemId:next.item,itemPath:next.itemPath,query:next.query,kind:next.kind==='review'?'all':next.kind,scope:next.scope,checkedOnly:next.checkedOnly});
+   setMenu({view:next.view==='recipes'?'dishes':'ingredients',dishId:next.dish,variantId:next.variant,itemId:next.item,itemPath:next.itemPath,query:next.query,kind:next.kind==='review'?'all':next.kind,scope:next.scope,checkedOnly:next.checkedOnly});
   }else if(next.view==='team')setTeamVisited(true);
   else if(next.view==='review')setReviewVisited(true);
  },'morning');
@@ -58,9 +58,9 @@ export default function KitchenApp({account='',role='legacy'}:{account?:string;r
    navigate(next,blocked||requested||current.get('view')===next.view&&!current.get('day'),false);
   }
  };
- const openMenu=(selection:MenuSelection)=>{const next:WorkspaceRoute={view:selection.view==='dishes'?'recipes':selection.view==='house-made'?'house-made':'catalog',dish:selection.dishId,variant:selection.variantId,item:selection.itemId,itemPath:selection.itemPath,query:selection.query,kind:selection.kind,scope:selection.scope,checkedOnly:selection.checkedOnly};const sameDetail=route.view===next.view&&route.dish===next.dish&&route.variant===next.variant&&route.item===next.item&&JSON.stringify(route.itemPath??[])===JSON.stringify(next.itemPath??[]);const url=workspaceUrl(new URL(location.href),next);if(!sameDetail&&history.state?.labulaWorkspace?.previousUrl===url.href){history.back();return;}navigate(next,sameDetail);};
- const openItem=(id:string)=>go({view:nb.data.items.find(item=>item.id===id)?.kind==='prep'?'house-made':'catalog',item:id,scope:'all'});
- const manageChecklist=()=>go({view:'catalog',checkedOnly:true,kind:'all',scope:'all'});
+ const openMenu=(selection:MenuSelection)=>{const next:WorkspaceRoute={view:selection.view==='dishes'?'recipes':'catalog',dish:selection.dishId,variant:selection.variantId,item:selection.itemId,itemPath:selection.itemPath,query:selection.query,kind:selection.kind,scope:selection.scope,checkedOnly:selection.checkedOnly};const sameDetail=route.view===next.view&&route.dish===next.dish&&route.variant===next.variant&&route.item===next.item&&JSON.stringify(route.itemPath??[])===JSON.stringify(next.itemPath??[]);const url=workspaceUrl(new URL(location.href),next);if(!sameDetail&&history.state?.labulaWorkspace?.previousUrl===url.href){history.back();return;}navigate(next,sameDetail);};
+ const openItem=(id:string)=>go({view:'catalog',item:id,scope:'all'});
+ const manageChecklist=()=>go({view:'catalog',checkedOnly:true,scope:'all'});
  const stockActive=stockDestinations.includes(route.view),area=workspaceArea(route.view);
  const settings=['team','calendar','rounds','data'].includes(route.view);
  // Keep the legacy read-only WebMCP navigation contract; no operational command is exposed.

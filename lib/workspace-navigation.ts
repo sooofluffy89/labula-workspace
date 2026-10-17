@@ -13,6 +13,7 @@ export function workspaceArea(view:WorkspaceDestination):WorkspaceArea {
  return 'today';
 }
 export function canonicalWorkspaceRoute(route:WorkspaceRoute):WorkspaceRoute {
+ if(route.view==='house-made')return {...route,view:'catalog',kind:'prep',scope:route.scope??'all'};
  if(route.view==='insights')return {...route,view:'morning'};
  if(route.view==='overview')return {...route,view:'recipes'};
  if(route.view==='manage')return {...route,view:'catalog',checkedOnly:true,scope:'all'};
